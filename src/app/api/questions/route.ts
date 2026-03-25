@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
         bm.state as bookmark_state,
         bm.updatedAt as bookmark_updatedAt
       FROM questions_fts
-      JOIN questions q ON q.rowid = questions_fts.rowid
+      JOIN "Question" q ON q.rowid = questions_fts.rowid
       LEFT JOIN "Bookmark" bm ON bm.questionId = q.id
       WHERE questions_fts MATCH ?
       ${filterClause}
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
     const countRows = await db.$queryRawUnsafe<[{ n: bigint }]>(
       `SELECT count(*) as n
       FROM questions_fts
-      JOIN questions q ON q.rowid = questions_fts.rowid
+      JOIN "Question" q ON q.rowid = questions_fts.rowid
       LEFT JOIN "Bookmark" bm ON bm.questionId = q.id
       WHERE questions_fts MATCH ?
       ${filterClause}`,

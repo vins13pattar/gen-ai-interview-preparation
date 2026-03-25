@@ -9,17 +9,18 @@
     "lint": "eslint",
     "db:push": "prisma db push",
     "db:seed": "npx tsx scripts/seed.ts",
-    "db:reset": "rm -f prisma/local.db .keyfile && prisma db push && npx tsx scripts/seed.ts",
-    "setup": "prisma db push && npx tsx scripts/seed.ts"
+    "db:migrate-fts5": "npx tsx scripts/migrate-fts5.ts",
+    "db:reset": "rm -f prisma/local.db .keyfile && prisma db push && npx tsx scripts/seed.ts && npx tsx scripts/migrate-fts5.ts",
+    "setup": "prisma db push && npx tsx scripts/seed.ts && npx tsx scripts/migrate-fts5.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
     "@prisma/client": "^5.22.0",
-    "next": "16.2.1",
+    "next": "15.2.4",
     "openai": "^6.32.0",
     "prisma": "^5.22.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
