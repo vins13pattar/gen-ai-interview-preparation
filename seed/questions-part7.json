@@ -1,0 +1,702 @@
+[
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "foundational",
+    "question": "When should you fine-tune an LLM vs use RAG vs rely on prompting alone?",
+    "idealAnswerCore": "Use prompting for general tasks; RAG when knowledge is dynamic; fine-tuning when you need behavior/style changes, domain-specific reasoning, or a specialized smaller model for cost/speed.",
+    "idealAnswerFraming": "Frame as orthogonal dimensions: prompting addresses behavior at inference time, RAG addresses knowledge, fine-tuning addresses internalized behavior and domain reasoning.",
+    "idealAnswerKeyPoints": [
+      "Prompting: zero-cost, flexible, but limited by context length and inability to teach new reasoning patterns",
+      "RAG: best for factual, attributable, frequently updated knowledge — adds retrieval latency",
+      "Fine-tuning for behavior: format consistency, tone, refusal patterns, task specialization not achievable via prompting",
+      "Fine-tuning for knowledge: works but expensive to update; better to use RAG for dynamic knowledge",
+      "Decision matrix: 1) can prompting solve it? 2) is the issue knowledge or behavior? 3) how often does the knowledge change?"
+    ],
+    "idealAnswerFollowups": [
+      "What is the cost breakdown of fine-tuning vs RAG at 1M queries/month?",
+      "Can you combine fine-tuning and RAG effectively?"
+    ],
+    "tags": ["fine-tuning", "rag", "decision-framework", "prompting"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you choose LoRA rank (r) and alpha (α) hyperparameters?",
+    "idealAnswerCore": "LoRA rank r controls the expressivity of the adaptation (higher r = more capacity but more parameters); alpha is a scaling factor where alpha/r controls the learning rate of LoRA updates relative to the base model — common starting point is r=8-16, alpha=2r.",
+    "idealAnswerFraming": "In practice, set alpha=2r (so the effective learning rate is 2) and tune r: r=4 for simple style tasks, r=16-64 for complex domain adaptation, r=128+ for aggressive capability transfer.",
+    "idealAnswerKeyPoints": [
+      "LoRA adds ΔW = B·A where A ∈ R^{r×d_in} and B ∈ R^{d_out×r}; parameter count = r × (d_in + d_out)",
+      "r=4: ~1M additional parameters for a 7B model; r=64: ~16M additional parameters",
+      "alpha: scales the LoRA output by alpha/r; setting alpha=16, r=8 → scale=2; alpha=8, r=8 → scale=1",
+      "Practical recipe: start with r=16, alpha=32 for most tasks; increase r if underfitting; decrease if overfitting",
+      "rsLoRA (Scaled LoRA): use alpha/sqrt(r) scaling for better stability at high rank values"
+    ],
+    "idealAnswerFollowups": [
+      "What is rsLoRA and why does it improve stability at high ranks?",
+      "How do you determine the optimal LoRA rank via ablation?"
+    ],
+    "tags": ["lora", "rank", "hyperparameters", "peft"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "Which modules should you apply LoRA to in a transformer model?",
+    "idealAnswerCore": "Apply LoRA to attention projections (q_proj, k_proj, v_proj, o_proj) and optionally to FFN layers (gate_proj, up_proj, down_proj) — covering attention gives the most benefit per parameter; adding FFN layers increases quality for large domain shifts.",
+    "idealAnswerFraming": "The Hu et al. 2022 paper showed that applying LoRA to query and value projections alone is often sufficient. For instruction tuning, covering all 8 projection matrices typically improves quality 5-10%.",
+    "idealAnswerKeyPoints": [
+      "Attention projections are the primary targets: q, k, v, o projections change how the model attends to information",
+      "FFN projections (gate, up, down) change what the model stores in its feedforward memory",
+      "For style/format tuning: q+v only often suffices",
+      "For domain knowledge adaptation: add k, o, and FFN projections for broader coverage",
+      "Embedding layers: can be included but provide marginal benefit for most tasks and add significant parameters"
+    ],
+    "idealAnswerFollowups": [
+      "What is the intuition for why q and v projections matter most?",
+      "How does LoRA rank allocation differ across layers (bottom vs top)?"
+    ],
+    "tags": ["lora", "attention", "target-modules", "peft"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is DoRA (Weight-Decomposed Low-Rank Adaptation) and how does it improve over LoRA?",
+    "idealAnswerCore": "DoRA decomposes pre-trained weights into magnitude and direction components, applying LoRA only to the direction component while learning a separate magnitude scalar, more closely mimicking full fine-tuning's behavior and improving quality especially at low ranks.",
+    "idealAnswerFraming": "DoRA (Liu et al. 2024) showed that LoRA's updates are limited by magnitude-direction coupling; decoupling them allows the model to adjust directions (semantic content) independently of scale, improving convergence.",
+    "idealAnswerKeyPoints": [
+      "Standard LoRA: W' = W + BA (additive update couples magnitude and direction changes)",
+      "DoRA: W' = (m / ||W + BA||) × (W + BA) where m is a learned magnitude vector per output dimension",
+      "The magnitude m is a learnable scalar per output neuron; the direction is updated by LoRA",
+      "Empirically: DoRA matches or exceeds LoRA with the same rank on code, math, and instruction following",
+      "DoRA is available in HuggingFace PEFT as use_dora=True in LoraConfig"
+    ],
+    "idealAnswerFollowups": [
+      "When would you choose DoRA over standard LoRA?",
+      "How does DoRA's parameter count compare to LoRA with the same rank?"
+    ],
+    "tags": ["dora", "lora", "peft", "weight-decomposition"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is soft prompt tuning and how does it differ from LoRA?",
+    "idealAnswerCore": "Soft prompt tuning prepends a small number of learnable continuous token embeddings to the input, training only these embeddings while keeping the model frozen — extremely parameter-efficient but limited expressivity compared to LoRA.",
+    "idealAnswerFraming": "Soft prompts are attractive for privacy-preserving fine-tuning (the base model is unchanged) and multi-task serving (switch prompts per task), but they require very large models to match LoRA quality.",
+    "idealAnswerKeyPoints": [
+      "Add P soft prompt embeddings to the beginning of the sequence; only these P × d parameters are trained (e.g., 20 × 4096 = 82K params)",
+      "The base model is completely frozen — inference requires only loading one model + small prompt embeddings",
+      "Lester et al. 2021: soft prompts approach full fine-tuning quality for 11B+ models but underperform for smaller models",
+      "Prefix tuning (Li & Liang 2021): extends soft prompts to all layers (prepend to K and V at each layer), significantly improving expressivity",
+      "LoRA vs prompt tuning: LoRA is more expressive and works at all model sizes; prompt tuning is simpler but less capable"
+    ],
+    "idealAnswerFollowups": [
+      "What is prefix tuning and how does it differ from soft prompt tuning?",
+      "What are the advantages of soft prompts for multi-task serving?"
+    ],
+    "tags": ["soft-prompts", "prompt-tuning", "peft", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is gradient accumulation and why is it important for fine-tuning on limited hardware?",
+    "idealAnswerCore": "Gradient accumulation splits a large effective batch size across multiple smaller forward-backward passes, accumulating gradients before a single optimizer update — enabling large effective batch sizes on GPUs with limited memory.",
+    "idealAnswerFraming": "Without gradient accumulation, a 7B model on a single A100 (80 GB) may only support batch size 1-2. With accumulation of 16, you get an effective batch size of 32+ without multiple GPUs.",
+    "idealAnswerKeyPoints": [
+      "Instead of computing gradients for a batch of 32 and updating, compute for 4 micro-batches of 8, accumulate gradients, then update",
+      "The gradients from each micro-batch are summed (not averaged during accumulation) and divided at the update step",
+      "Key caveat: batch norm statistics should be computed on micro-batch size, not effective batch — but transformer models don't use batch norm",
+      "Effective batch size for training: micro_batch_size × accumulation_steps × num_gpus",
+      "Training dynamics: larger effective batch sizes require scaling the learning rate (linear or sqrt scaling rules)"
+    ],
+    "idealAnswerFollowups": [
+      "How does gradient accumulation interact with learning rate scaling?",
+      "What is the difference between gradient accumulation and gradient checkpointing?"
+    ],
+    "tags": ["gradient-accumulation", "training", "memory", "batch-size"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is the Alpaca and ShareGPT dataset format for instruction fine-tuning?",
+    "idealAnswerCore": "Alpaca format uses (instruction, input, output) triples for single-turn instruction following; ShareGPT format uses multi-turn conversation arrays with role annotations (system/human/gpt), enabling fine-tuning on realistic chat interactions.",
+    "idealAnswerFraming": "Knowing dataset formats is essential for production fine-tuning. Mixing Alpaca and ShareGPT data without format normalization causes training instability. Most modern fine-tuning uses ShareGPT-style chat format.",
+    "idealAnswerKeyPoints": [
+      "Alpaca: {\"instruction\": \"...\", \"input\": \"...\", \"output\": \"...\"} — input is optional context; instruction is the task",
+      "ShareGPT: {\"conversations\": [{\"from\": \"human\", \"value\": \"...\"}, {\"from\": \"gpt\", \"value\": \"...\"}]}",
+      "Modern chat format: convert to the target model's chat template before tokenization (apply_chat_template)",
+      "Loss masking: when fine-tuning on chat data, mask out loss for human turns — only compute loss on assistant responses",
+      "Common mistake: computing loss on all tokens (including user messages) leads to the model learning to predict user inputs, degrading instruction-following"
+    ],
+    "idealAnswerFollowups": [
+      "How do you convert between Alpaca and ShareGPT formats?",
+      "What is the correct way to mask user turn tokens when fine-tuning on chat data?"
+    ],
+    "tags": ["dataset-format", "alpaca", "sharegpt", "instruction-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you generate synthetic data for fine-tuning and what quality filters should you apply?",
+    "idealAnswerCore": "Synthetic data generation uses a strong LLM to create (instruction, response) pairs based on seed examples or domain-specific prompts; quality filters include LLM-as-judge scoring, deduplication, and perplexity-based filtering to remove low-quality samples.",
+    "idealAnswerFraming": "Emphasize that synthetic data quality control is as important as generation. Alpaca-GPT4 (GPT-4 generated responses for Alpaca instructions) showed that higher-quality responses, even in smaller quantities, outperform larger noisy datasets.",
+    "idealAnswerKeyPoints": [
+      "Generation: use GPT-4/Claude to generate responses for a diverse seed set of instructions; generate multiple candidates per instruction",
+      "Quality: LLM-as-judge scores each response (relevance, accuracy, clarity); filter below threshold (e.g., <4/5)",
+      "Deduplication: remove near-duplicate instructions using embedding similarity or MinHash to ensure diversity",
+      "Self-instruct: bootstrap diverse instructions from a small seed by generating new instructions from the model itself",
+      "Format validation: ensure correct chat template formatting, expected response length, no harmful content"
+    ],
+    "idealAnswerFollowups": [
+      "What is self-instruct and how does it generate diverse training data?",
+      "How do you validate synthetic data quality without human annotation?"
+    ],
+    "tags": ["synthetic-data", "data-generation", "quality", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is SPIN (Self-Play Fine-Tuning) and how does it improve without human-labeled preference data?",
+    "idealAnswerCore": "SPIN iteratively fine-tunes a model to distinguish its own previous-generation outputs from the ground-truth training data, using the previous model as a synthetic negative generator in a DPO-like objective without needing explicit human preference annotations.",
+    "idealAnswerFraming": "SPIN is clever because it avoids the expensive human preference annotation pipeline of RLHF by using the model's own past outputs as 'losing' examples — as the model improves, the negatives get harder, creating a self-improvement dynamic.",
+    "idealAnswerKeyPoints": [
+      "Each training iteration: use previous model checkpoint to generate responses; treat these as 'rejected' responses",
+      "Ground-truth supervised responses are 'chosen'; DPO loss maximizes chosen over rejected",
+      "Alternating between generating and updating prevents model collapse",
+      "Improvement plateaus after 2-3 iterations as the gap between current and previous model shrinks",
+      "Avoids costly human annotation while achieving significant alignment improvements; competitive with DPO on standard benchmarks"
+    ],
+    "idealAnswerFollowups": [
+      "How does SPIN compare to DPO with human-annotated preference pairs?",
+      "What prevents SPIN from collapsing to a degenerate solution?"
+    ],
+    "tags": ["spin", "self-play", "dpo", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is ORPO (Odds Ratio Preference Optimization) and how does it differ from DPO?",
+    "idealAnswerCore": "ORPO combines supervised fine-tuning and preference optimization into a single training pass by adding an odds-ratio penalty term to the SFT cross-entropy loss — no separate reference model needed, making it more memory-efficient than DPO.",
+    "idealAnswerFraming": "ORPO (Hong et al. 2024) is practical because DPO requires storing a frozen reference model (doubling memory); ORPO eliminates this by using a log-odds ratio between chosen and rejected responses computed against the current model itself.",
+    "idealAnswerKeyPoints": [
+      "DPO requires: current model + frozen reference model (2× memory)",
+      "ORPO loss: L = L_SFT + λ × L_OR where L_OR = -log σ(log (p_θ(y_w)/p_θ(y_l)) / (1/(p_θ(y_w))+1/(p_θ(y_l))))",
+      "The odds ratio naturally normalizes for response length, avoiding the length bias in DPO",
+      "Single-phase training: simultaneously learns to follow instructions (SFT part) and align preferences (OR part)",
+      "Mistral-ORPO achieves competitive results with DPO-trained models at lower memory cost"
+    ],
+    "idealAnswerFollowups": [
+      "What is the length bias problem in DPO and how does ORPO address it?",
+      "How does SimPO differ from ORPO?"
+    ],
+    "tags": ["orpo", "preference-optimization", "dpo", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is SimPO (Simple Preference Optimization) and what makes it more stable than DPO?",
+    "idealAnswerCore": "SimPO eliminates the reference model by using the average log-likelihood per token as the implicit reference, adding a margin constraint between chosen and rejected responses to prevent degenerate solutions.",
+    "idealAnswerFraming": "SimPO addresses DPO's two main issues: reference model dependency (removed) and length bias (fixed by per-token normalization). It consistently outperforms DPO and RLHF on AlpacaEval 2.0 and MT-Bench.",
+    "idealAnswerKeyPoints": [
+      "DPO loss uses log ratio against reference model: log(π_θ(y_w|x)/π_ref(y_w|x)) - log(π_θ(y_l|x)/π_ref(y_l|x))",
+      "SimPO: replace reference with length-normalized reward: (1/|y|) log π_θ(y|x) as the score",
+      "Add a target reward margin γ: the chosen response score must exceed rejected by at least γ",
+      "No reference model → 50% less GPU memory during training",
+      "Length normalization: dividing log-prob by sequence length removes the bias toward longer responses"
+    ],
+    "idealAnswerFollowups": [
+      "How does the target reward margin γ affect the quality-diversity trade-off?",
+      "What is the intuition behind using per-token log-probability as an implicit reference?"
+    ],
+    "tags": ["simpo", "preference-optimization", "dpo", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is GRPO (Group Relative Policy Optimization) and how did DeepSeek use it to train R1?",
+    "idealAnswerCore": "GRPO eliminates the value function critic by estimating baselines from group samples — generating multiple responses per prompt and using the group mean reward as the baseline — drastically reducing memory while enabling reinforcement learning from verifiable rewards.",
+    "idealAnswerFraming": "GRPO is the training algorithm behind DeepSeek-R1's chain-of-thought reasoning. It avoids PPO's expensive critic model by computing relative rewards within a group of samples, making RL practical for LLMs at scale.",
+    "idealAnswerKeyPoints": [
+      "PPO requires a critic (value function) model, roughly doubling memory and compute",
+      "GRPO: sample G responses per prompt, compute rewards (e.g., correctness for math problems), subtract group mean as baseline",
+      "Advantage estimate: A_i = (r_i - mean(r)) / std(r) — normalized within the group",
+      "No separate critic model needed; gradient computed directly from the policy model",
+      "DeepSeek-R1: trained on math/code problems with binary verifiable rewards (correct/incorrect) using GRPO"
+    ],
+    "idealAnswerFollowups": [
+      "How do verifiable rewards differ from preference rewards and why are they better for reasoning?",
+      "What is the intuition for why sampling multiple responses per prompt works as a baseline estimator?"
+    ],
+    "tags": ["grpo", "deepseek", "rl", "reasoning", "ppo"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What are process reward models (PRM) vs outcome reward models (ORM) and when do you use each?",
+    "idealAnswerCore": "ORM assigns a single reward to the final answer (correct/incorrect); PRM assigns rewards to each intermediate reasoning step, enabling more fine-grained training signal for multi-step problems where the final answer may be correct despite wrong reasoning.",
+    "idealAnswerFraming": "The OpenAI Math-Shepherd and DeepMind Let's Verify Step-by-Step papers showed PRMs dramatically outperform ORMs for mathematical reasoning. For production, PRMs require step-level annotation which is expensive.",
+    "idealAnswerKeyPoints": [
+      "ORM: reward = 1 if final answer correct, 0 otherwise; simple but sparse signal for long reasoning chains",
+      "PRM: reward at each step; trains the model to improve intermediate reasoning quality, not just final answer",
+      "PRM training data: requires step-level human annotations or automated verification (e.g., model-generated process supervision)",
+      "ORM is sufficient for short tasks; PRM matters for complex multi-step problems (math olympiad, code generation with debugging)",
+      "Hybrid: train with ORM for efficiency, use PRM for best-of-N re-ranking at inference time"
+    ],
+    "idealAnswerFollowups": [
+      "How do you automatically generate process supervision data without human annotations?",
+      "How is PRM used for best-of-N selection vs policy training?"
+    ],
+    "tags": ["prm", "orm", "reward-model", "rl", "reasoning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is chain-of-thought distillation and how does it transfer reasoning to smaller models?",
+    "idealAnswerCore": "Chain-of-thought distillation fine-tunes a small student model on (question, CoT rationale, answer) triplets generated by a larger teacher model, teaching the student to produce step-by-step reasoning without the computational cost of the teacher.",
+    "idealAnswerFraming": "This is how LLaMA-3.1-8B-Instruct achieves near-GPT-4 reasoning on some benchmarks — it was trained on rationales generated by the larger 70B/405B model. The key is rationale quality filtering.",
+    "idealAnswerKeyPoints": [
+      "Teacher generates CoT traces: 'Let me think step by step... [detailed reasoning]... therefore the answer is X'",
+      "Filter traces by answer correctness — only include traces that lead to the correct final answer",
+      "Student is fine-tuned on the full trace including rationale, not just the final answer",
+      "Rationale format matters: include intermediate results, avoid ambiguous steps, use consistent notation",
+      "Orca (Microsoft) demonstrated that distilled CoT data can achieve near-GPT-4 performance with a 13B model"
+    ],
+    "idealAnswerFollowups": [
+      "What is 'explanation tuning' vs chain-of-thought distillation?",
+      "How do you filter poor-quality CoT traces before using them for fine-tuning?"
+    ],
+    "tags": ["cot-distillation", "knowledge-distillation", "reasoning", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is model merging (SLERP, DARE, TIES) and why would you use it?",
+    "idealAnswerCore": "Model merging combines weights from multiple fine-tuned models without retraining: SLERP interpolates in weight space; DARE randomly zeros redundant delta weights before merging; TIES resolves sign conflicts between models' weight updates.",
+    "idealAnswerFraming": "Model merging creates ensemble-like models at zero inference cost. Merged models often outperform either parent on held-out tasks, making it a powerful technique for combining specialized capabilities.",
+    "idealAnswerKeyPoints": [
+      "SLERP: spherical linear interpolation between two models' weight vectors — smooth interpolation that respects the geometry of weight space",
+      "DARE (Random Drop and Rescale): before merging, randomly zero p% of each model's delta weights (Δw = fine-tuned - base) and rescale remaining; reduces interference between models",
+      "TIES (Trim, Elect Sign, Disjoint Merge): trim small deltas, resolve sign conflicts by majority vote, merge only non-conflicting updates",
+      "Model soup: average checkpoints from the same model trained with different data seeds — improves robustness",
+      "Frankenmerging: layer-by-layer splicing from different models (different layers from different models) — creative but unpredictable"
+    ],
+    "idealAnswerFollowups": [
+      "How does DARE prevent catastrophic interference between merged models?",
+      "What is Mergekit and how do you use it for model merging?"
+    ],
+    "tags": ["model-merging", "slerp", "dare", "ties"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What are task vectors and how do they enable model arithmetic?",
+    "idealAnswerCore": "A task vector is the weight difference between a fine-tuned model and its base model (Δθ = θ_fine-tuned - θ_base); adding, subtracting, or scaling task vectors enables capabilities to be added, removed, or negated in a modular way.",
+    "idealAnswerFraming": "Ilharco et al. 2022 showed you can arithmetic on task vectors: add coding capability to a model while subtracting toxic behavior. This is analogous to word vector arithmetic but in model weight space.",
+    "idealAnswerKeyPoints": [
+      "Task vector: τ = θ_task - θ_pretrained; captures what was learned during fine-tuning",
+      "Addition: θ_new = θ_pretrained + λ × τ_task adds capability; λ controls strength",
+      "Subtraction: θ_new = θ_pretrained - λ × τ_bad_behavior removes unwanted behavior",
+      "Composition: θ_multi = θ_pretrained + τ_coding + τ_math adds multiple capabilities",
+      "Negation experiment: subtracted a 'hate speech' task vector from a fine-tuned model, reducing toxicity without affecting general capabilities"
+    ],
+    "idealAnswerFollowups": [
+      "What limits the composability of task vectors?",
+      "How does model arithmetic relate to LoRA delta merging?"
+    ],
+    "tags": ["task-vectors", "model-arithmetic", "merging", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you detect and prevent overfitting during LLM fine-tuning?",
+    "idealAnswerCore": "Monitor validation loss alongside training loss; overfitting shows as diverging curves (train loss decreasing while validation loss increases or plateaus). Mitigate with early stopping, dropout, weight decay, and data augmentation.",
+    "idealAnswerFraming": "LLM fine-tuning is particularly prone to overfitting on small datasets (<1K examples). Common signs: model memorizes training examples verbatim, validation BLEU/ROUGE continues dropping after training loss converges.",
+    "idealAnswerKeyPoints": [
+      "Early stopping: checkpoint every N steps, evaluate on validation set, stop when validation loss hasn't improved for K evaluations",
+      "Dataset size: <500 examples almost always overfit; 1K-10K is the sweet spot for LoRA fine-tuning",
+      "Regularization: LoRA already acts as regularization (low-rank constraint); add weight decay (0.01-0.1) for full fine-tuning",
+      "Dropout: add dropout to LoRA layers (lora_dropout=0.05-0.1) for smaller datasets",
+      "Signs of overfitting: evaluation perplexity increases, model copies training examples verbatim, performance on diverse prompts degrades"
+    ],
+    "idealAnswerFollowups": [
+      "How do you choose a validation split for fine-tuning on domain-specific data?",
+      "What is the role of train/eval loss ratio in detecting overfitting?"
+    ],
+    "tags": ["overfitting", "validation", "fine-tuning", "regularization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is label smoothing in fine-tuning and when should you use it?",
+    "idealAnswerCore": "Label smoothing replaces hard (0/1) targets with soft targets (ε/(V-1) for wrong tokens, 1-ε for correct token), preventing the model from becoming overconfident and improving calibration and generalization.",
+    "idealAnswerFraming": "Label smoothing with ε=0.1 reduces overconfidence, which is especially valuable for instruction fine-tuning where the model should express appropriate uncertainty rather than confidently outputting wrong answers.",
+    "idealAnswerKeyPoints": [
+      "Hard target: correct token = 1.0, all others = 0.0 — the model is penalized until it predicts 1.0 probability for the correct token",
+      "Soft target: correct token = 1-ε = 0.9, others = ε/(V-1) ≈ 0.0 per token — prevents max probability from saturating at 1",
+      "Benefits: better calibration (predicted probabilities more accurate), regularization effect, less catastrophic forgetting of pre-trained knowledge",
+      "Typical values: ε = 0.0 (no smoothing) to 0.1; higher values (0.2+) can hurt performance",
+      "Most useful when: fine-tuning dataset is small, model needs to maintain calibrated uncertainty, task requires expressing confidence"
+    ],
+    "idealAnswerFollowups": [
+      "How does label smoothing affect perplexity metrics?",
+      "What is the relationship between label smoothing and temperature calibration?"
+    ],
+    "tags": ["label-smoothing", "calibration", "fine-tuning", "regularization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you implement loss masking for chat format fine-tuning?",
+    "idealAnswerCore": "Loss masking sets the token labels to -100 (ignored in cross-entropy) for user and system turn tokens, computing loss only on assistant response tokens — teaching the model to generate good responses without learning to predict user messages.",
+    "idealAnswerFraming": "This is a critical implementation detail that many fine-tuning pipelines get wrong. Computing loss on user turns causes the model to implicitly predict what users will say, wasting gradient signal and sometimes degrading instruction-following.",
+    "idealAnswerKeyPoints": [
+      "Standard SFT: compute loss for all tokens in the sequence",
+      "Chat SFT: only compute loss for tokens within assistant turns; set all other tokens to label=-100",
+      "Implementation: tokenize the full conversation, then identify assistant turn boundaries using special tokens (e.g., <|eot_id|> for LLaMA-3) and mask all non-assistant tokens",
+      "Tool: HuggingFace DataCollatorForSeq2Seq with ignore_index=-100; trl.SFTTrainer with formatting_func handles this automatically",
+      "Verification: inspect labels tensor — should see -100 for system/user tokens, actual token IDs for assistant tokens"
+    ],
+    "idealAnswerFollowups": [
+      "What happens to model behavior if you accidentally include user turn tokens in the loss?",
+      "How do you implement loss masking for multi-tool-call responses?"
+    ],
+    "tags": ["loss-masking", "chat-format", "sft", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is long-context fine-tuning and what challenges does it introduce?",
+    "idealAnswerCore": "Long-context fine-tuning extends a model's ability to process and reason over longer sequences (32K-1M tokens) by training on long documents, but requires special memory management and careful data selection to avoid quality degradation on standard tasks.",
+    "idealAnswerFraming": "The challenge is computational: attention is O(n²), so a 128K-token example costs 100× more compute than a 4K-token example. Techniques like ring attention, gradient checkpointing, and mixed-length training are essential.",
+    "idealAnswerKeyPoints": [
+      "Compute cost: attention FLOPs scale as O(n²) — a 128K example requires ~1000× more attention compute than a 4K example",
+      "Memory: KV cache for one 128K example at FP16 can require 10-40 GB depending on model size",
+      "Techniques: ring attention (distribute sequence across GPUs), flash attention (IO-efficient tiling), activation checkpointing",
+      "Data: mix long examples with short examples to preserve short-context quality; dedicated long-context data (books, legal documents, code files)",
+      "Quality risk: 'lost in the middle' problem worsens with extreme context lengths; training specifically on long-range dependency tasks helps"
+    ],
+    "idealAnswerFollowups": [
+      "How do you evaluate long-context fine-tuning quality (NIAH — needle in a haystack)?",
+      "What is the impact on inference cost of a long-context fine-tuned model?"
+    ],
+    "tags": ["long-context", "fine-tuning", "memory", "sequence-length"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you fine-tune for structured output and function calling?",
+    "idealAnswerCore": "Fine-tuning for structured output teaches the model to reliably produce valid JSON matching a schema by training on (instruction, schema, structured_response) examples with schema enforcement, often combined with constrained decoding at inference time.",
+    "idealAnswerFraming": "Pure prompting for structured output fails 5-30% of the time for complex schemas. Fine-tuning can achieve >99% valid JSON with proper training data. Constrained decoding (outlines, guidance) guarantees validity but is separate.",
+    "idealAnswerKeyPoints": [
+      "Training data: diverse (instruction, JSON schema, valid JSON response) triples; include edge cases (empty arrays, nested objects, optional fields)",
+      "Function call format: training on OpenAI tool-call format or similar; model learns when to call tools and how to format arguments",
+      "Schema diversity: don't train on a single schema — train on many diverse schemas so the model generalizes to new schemas",
+      "Constrained decoding at inference: outlines/guidance/LMQL masks logits to only allow tokens valid for the current JSON parse state",
+      "Fine-tuning vs constrained decoding: fine-tuning is faster at inference; constrained decoding guarantees validity but adds latency"
+    ],
+    "idealAnswerFollowups": [
+      "What is constrained decoding (outlines) and when do you need it vs fine-tuning alone?",
+      "How do you handle schema changes after fine-tuning?"
+    ],
+    "tags": ["structured-output", "function-calling", "json", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What are continual learning techniques for preventing catastrophic forgetting in fine-tuned LLMs?",
+    "idealAnswerCore": "Continual learning prevents a fine-tuned model from forgetting pre-trained capabilities via techniques including Elastic Weight Consolidation (EWC), replay buffers, and regularization-based methods that slow weight changes in important parameters.",
+    "idealAnswerFraming": "Catastrophic forgetting is why a fine-tuned customer service bot may forget how to write code. In practice, EWC adds computational overhead; replay (mixing general data into fine-tuning) is simpler and often most effective.",
+    "idealAnswerKeyPoints": [
+      "Catastrophic forgetting: gradient updates for task B overwrite the weights learned for task A",
+      "EWC: estimates parameter importance via Fisher information matrix, adds L2 penalty that prevents important weights from changing",
+      "Replay/Experience Replay: mix a small fraction of pre-training or previous task data into the fine-tuning batch",
+      "Progressive Prompts: freeze old task adapters, add new task adapters — avoids forgetting entirely by not touching old weights",
+      "LoRA advantage: fine-tuning only delta weights (low-rank) intrinsically limits forgetting of base model capabilities"
+    ],
+    "idealAnswerFollowups": [
+      "What fraction of replay data is typically needed to prevent forgetting?",
+      "How does LoRA's low-rank constraint naturally reduce catastrophic forgetting?"
+    ],
+    "tags": ["catastrophic-forgetting", "continual-learning", "ewc", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is multi-GPU fine-tuning with DeepSpeed vs PyTorch FSDP and how do you choose?",
+    "idealAnswerCore": "DeepSpeed (ZeRO) and FSDP both shard model parameters, gradients, and optimizer states across GPUs; DeepSpeed offers more features (offloading to CPU/NVMe, mixed precision) while FSDP integrates natively into PyTorch with cleaner composability.",
+    "idealAnswerFraming": "The practical difference: FSDP is simpler to set up for pure PyTorch users; DeepSpeed ZeRO-3 is preferred when you need CPU offloading or are memory-constrained below FSDP's overhead requirements.",
+    "idealAnswerKeyPoints": [
+      "Both achieve ZeRO Stage 3 behavior: shard params, gradients, optimizer states across all GPUs",
+      "DeepSpeed: supports ZeRO-Infinity (NVMe offloading), mixed precision engine, custom kernels; complex config",
+      "FSDP: native PyTorch, integrates well with torch.compile, DDP-like API, simpler to debug",
+      "Performance: comparable throughput at similar configurations; DeepSpeed slightly faster at very large scale",
+      "HuggingFace accelerate library supports both via configuration — recommended abstraction"
+    ],
+    "idealAnswerFollowups": [
+      "When would you use DeepSpeed CPU offloading and what are the trade-offs?",
+      "How does torch.compile interact with FSDP?"
+    ],
+    "tags": ["deepspeed", "fsdp", "distributed-training", "multi-gpu"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is PPO (Proximal Policy Optimization) and why is it challenging to apply to LLMs?",
+    "idealAnswerCore": "PPO is an RL algorithm that updates policy parameters via clipped importance sampling, preventing large updates that destabilize training; for LLMs, it requires a reward model, value function, and the policy model simultaneously, making it memory-intensive and hyperparameter-sensitive.",
+    "idealAnswerFraming": "PPO is the original RLHF algorithm used by InstructGPT/ChatGPT. Its complexity and instability is why simpler alternatives (DPO, SimPO) have largely replaced it in practice.",
+    "idealAnswerKeyPoints": [
+      "Requires four models simultaneously: policy (fine-tuned LLM), reference policy (frozen copy), reward model, value function critic",
+      "Clipped objective: L_PPO = E[min(r(θ)A, clip(r(θ), 1-ε, 1+ε)A)] where r(θ) is importance weight, A is advantage",
+      "KL penalty against reference model prevents reward hacking (deviating too far from base behavior)",
+      "Instability issues: reward hacking, mode collapse, sensitivity to reward model quality, many hyperparameters",
+      "Memory: policy + reference + reward model + critic ≈ 4× base model memory; impractical without model parallelism"
+    ],
+    "idealAnswerFollowups": [
+      "What is reward hacking in RLHF and how do you detect it?",
+      "How does DPO avoid PPO's instability while achieving similar alignment results?"
+    ],
+    "tags": ["ppo", "rlhf", "rl", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you train a reward model for RLHF?",
+    "idealAnswerCore": "A reward model is a pre-trained LLM with its language modeling head replaced by a scalar regression head, fine-tuned on pairwise human preference data using a Bradley-Terry ranking loss that maximizes the score gap between preferred and dispreferred responses.",
+    "idealAnswerFraming": "Reward model quality is the bottleneck in RLHF — a flawed reward model leads to reward hacking. Interviewers want you to know both the training objective and common failure modes.",
+    "idealAnswerKeyPoints": [
+      "Architecture: LLM + linear layer from d_model → 1 scalar (reward value)",
+      "Training data: (prompt, preferred_response, dispreferred_response) triples from human annotators",
+      "Loss: L = -log σ(r(x, y_w) - r(x, y_l)) where y_w is preferred, y_l is dispreferred — maximizes score gap",
+      "Data quality: interrater agreement >70% is needed; ambiguous comparisons hurt reward model reliability",
+      "Failure modes: length bias (prefers longer responses), sycophancy bias (prefers flattering responses), reward hacking"
+    ],
+    "idealAnswerFollowups": [
+      "What is reward model overoptimization (reward hacking) and how do you prevent it?",
+      "How do you handle ties or cases of uncertain preference in reward model training?"
+    ],
+    "tags": ["reward-model", "rlhf", "preference-data", "training"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is online vs offline DPO and what are the trade-offs?",
+    "idealAnswerCore": "Offline DPO trains on a fixed pre-collected preference dataset; online DPO continuously generates new (chosen, rejected) pairs during training using the current policy, creating a better-calibrated training distribution that avoids overfitting to stale comparisons.",
+    "idealAnswerFraming": "Offline DPO is simpler to implement and sufficient for most production use cases. Online DPO is more sample-efficient and handles distribution shift better but requires infrastructure to generate and score responses during training.",
+    "idealAnswerKeyPoints": [
+      "Offline DPO: preference pairs collected once (offline); training distribution may not match the current policy's outputs",
+      "Online DPO: each training step samples the current policy → compares to reference or reward model → creates new preference pairs",
+      "Online methods address the distribution shift problem: as the policy improves, fixed offline pairs become out-of-distribution",
+      "Variants: Online DPO (Guo et al. 2024), RLVR (reward-as-verifier for math), Iterative DPO",
+      "Practical: for most industry use cases, offline DPO is sufficient; online DPO used in state-of-the-art reasoning models"
+    ],
+    "idealAnswerFollowups": [
+      "What is iterative DPO and how does it approximate online DPO efficiently?",
+      "How does distribution shift affect reward hacking in offline DPO?"
+    ],
+    "tags": ["dpo", "online-rl", "alignment", "preference-optimization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is constitutional AI (CAI) and how does it enable iterative self-improvement without human labelers?",
+    "idealAnswerCore": "Constitutional AI provides a set of principles (the 'constitution') and prompts the model to critique and revise its own outputs according to those principles, then trains on the revised outputs — bootstrapping alignment without human preference annotations for each example.",
+    "idealAnswerFraming": "CAI (Anthropic, 2022) is significant because it replaced most human labeling in the red-teaming pipeline with AI feedback, dramatically scaling the amount of training signal while reducing human annotator exposure to harmful content.",
+    "idealAnswerKeyPoints": [
+      "Constitution: a list of principles ('Be helpful, harmless, and honest'; 'Don't assist with weapons of mass destruction'; etc.)",
+      "SL-CAI: sample response → prompt model to critique per principle → prompt to revise → train on revised response (supervised)",
+      "RLAIF: use AI (the model itself) to judge pairwise preferences based on the constitution → train reward model on AI labels → RLHF",
+      "Eliminates need for human labelers to evaluate thousands of harmful outputs directly",
+      "Result: models trained with CAI tend to be both more helpful and more harmless than RLHF-only models"
+    ],
+    "idealAnswerFollowups": [
+      "What is RLAIF and how does it compare to human-feedback RLHF?",
+      "What are the limitations of using AI-generated feedback for alignment?"
+    ],
+    "tags": ["constitutional-ai", "rlaif", "alignment", "self-improvement"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is IA3 (Infused Adapter by Inhibiting and Amplifying Inner Activations) and how does it differ from LoRA?",
+    "idealAnswerCore": "IA3 rescales activations in attention (keys, values) and FFN using learned vectors, rather than adding low-rank weight matrices like LoRA — requiring only 3 vectors per transformer block and fewer parameters than LoRA.",
+    "idealAnswerFormating": "IA3 is extremely parameter-efficient (~0.01% of model parameters vs ~0.5% for LoRA r=16) and suited for few-shot and meta-learning scenarios. It underperforms LoRA on complex domain adaptation but excels at lightweight task specialization.",
+    "idealAnswerKeyPoints": [
+      "IA3 introduces learned scale vectors l_k, l_v for keys and values in attention, and l_ff for the intermediate FFN activation",
+      "Application: K' = l_k ⊙ K, V' = l_v ⊙ V, FFN' = (l_ff ⊙ FFN(x))",
+      "Only ~10K parameters for a 7B model vs ~80M for LoRA r=16 — 8000× more parameter efficient",
+      "Trained with few-shot examples per task in the T-Few paper; strong performance at 4 examples per class",
+      "Limitation: limited expressivity for large domain shifts; LoRA or full fine-tuning needed for complex adaptation"
+    ],
+    "idealAnswerFollowups": [
+      "When would you choose IA3 over LoRA?",
+      "How does IA3 relate to adapter layers (Houlsby adapters)?"
+    ],
+    "tags": ["ia3", "peft", "adapter", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How does batch size affect fine-tuning quality and what are the optimal ranges?",
+    "idealAnswerCore": "Batch size affects both optimization dynamics and model quality: larger batches require proportionally larger learning rates (linear scaling rule) but offer more stable gradient estimates; very small batches add noise but can improve generalization.",
+    "idealAnswerFraming": "For LoRA fine-tuning on a single A100, effective batch sizes of 16-128 (via gradient accumulation) are typical. The learning rate must be tuned jointly with batch size using the linear or sqrt scaling rule.",
+    "idealAnswerKeyPoints": [
+      "Linear scaling rule: if you double the batch size, double the learning rate (for SGD and Adam)",
+      "Warmup: larger batch sizes require proportionally more warmup steps",
+      "Noise schedule: small batches (1-4) add gradient noise that acts as implicit regularization but slows convergence",
+      "For instruction fine-tuning: effective batch size of 32-128 tokens is standard; too small (1-2) can cause instability",
+      "Token-based batching: batch by total tokens rather than examples (pack to max_length) for consistent gradient norms across variable-length datasets"
+    ],
+    "idealAnswerFollowups": [
+      "What is the linear scaling rule and when does it break down?",
+      "How do you implement dynamic token-based batching?"
+    ],
+    "tags": ["batch-size", "learning-rate", "fine-tuning", "training"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What are common failure modes in fine-tuning and how do you diagnose them?",
+    "idealAnswerCore": "Common failures include catastrophic forgetting (model loses pre-trained capabilities), mode collapse (generates repetitive text), format regression (ignores chat template), and overfitting (perfect train loss but poor generalization) — each with distinct diagnostic signatures.",
+    "idealAnswerFraming": "Production fine-tuning engineers must know these failure modes cold. Mention that an eval suite covering all capabilities (not just target task) is essential for catching regressions before deployment.",
+    "idealAnswerKeyPoints": [
+      "Catastrophic forgetting: fine-tuned model fails on tasks it handled before; diagnose with a general capability test suite (MMLU, HumanEval)",
+      "Mode collapse: model generates the same response for many different inputs; diagnose with diversity metrics (distinct-n-gram); fix with temperature annealing or data diversity",
+      "Format regression: model generates responses in wrong format (e.g., ignores </s> or produces markdown in non-markdown context); check chat template application",
+      "Overfitting: validation perplexity increases while training loss decreases; check with diverse held-out prompts",
+      "Gradient explosion: training loss spikes or becomes NaN; fix with gradient clipping or lower learning rate"
+    ],
+    "idealAnswerFollowups": [
+      "How do you build an automated eval suite to catch fine-tuning regressions?",
+      "What monitoring would you add to detect model quality issues post-deployment?"
+    ],
+    "tags": ["failure-modes", "debugging", "fine-tuning", "quality"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is data mixing and how do you determine optimal mixing ratios for multi-task fine-tuning?",
+    "idealAnswerCore": "Data mixing trains on multiple datasets simultaneously by sampling from each according to a mixing ratio; optimal ratios are found via grid search or proxy metrics measuring performance on all target tasks without catastrophic forgetting of others.",
+    "idealAnswerFraming": "The mixing ratio is one of the most impactful but under-studied hyperparameters. Too much of one domain degrades others; a well-tuned mix can make a single model competitive with multiple specialized models.",
+    "idealAnswerKeyPoints": [
+      "Temperature-based mixing: sample dataset d with probability proportional to |d|^(1/T); T=1 = proportional, T→∞ = uniform",
+      "High T (more uniform) prevents large datasets from overwhelming small ones — important when target task data is scarce",
+      "DoReMi (Domain Reweighting with Minimax Optimization): dynamically adjusts domain weights by identifying which domains the model trains poorly on",
+      "Evaluation: run the full eval suite on a held-out mix to find ratios that maximize aggregate performance",
+      "General data replay: always include 5-10% of general data to prevent forgetting pre-trained capabilities"
+    ],
+    "idealAnswerFollowups": [
+      "What is DoReMi and how does it automate data mixing?",
+      "How do you handle class imbalance within a single dataset in fine-tuning?"
+    ],
+    "tags": ["data-mixing", "multi-task", "fine-tuning", "domain-adaptation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you fine-tune LLMs for code generation and what data considerations are important?",
+    "idealAnswerCore": "Code fine-tuning requires high-quality code corpora with diverse programming languages, docstring-function pairs for instruction following, and fill-in-the-middle (FIM) format training for code completion — quality and syntax correctness filtering are critical.",
+    "idealAnswerFraming": "Code LLMs (StarCoder, CodeLLaMA, DeepSeek-Coder) use specific tricks: FIM format (predict masked middle of a file), multi-language coverage, and execution-based quality filtering (code that compiles/passes tests).",
+    "idealAnswerKeyPoints": [
+      "FIM (Fill-in-the-Middle): random masking of middle sections; model trained to predict masked part given prefix + suffix — essential for code completion",
+      "Instruction pairs: (docstring, function body) and (buggy code, fixed code) pairs for instruction following on code tasks",
+      "Quality filtering: syntax validation, execution success rate (unit tests pass), deduplication of code from GitHub",
+      "Language diversity: cover top 10+ languages; use sampling ratios proportional to downstream use case",
+      "Repository-level context: instead of file-level chunks, include cross-file context for project-level understanding"
+    ],
+    "idealAnswerFollowups": [
+      "What is the fill-in-the-middle (FIM) training format and why does it improve code completion?",
+      "How does DeepSeek-Coder handle repository-level context during training?"
+    ],
+    "tags": ["code-fine-tuning", "fim", "code-generation", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is KTO (Kahneman-Tversky Optimization) and when is it preferred over DPO?",
+    "idealAnswerCore": "KTO optimizes model behavior using individually labeled outputs (good/bad) rather than pairwise comparisons, inspired by Kahneman-Tversky prospect theory, making it valuable when paired preference data is unavailable but binary feedback exists.",
+    "idealAnswerFraming": "KTO is practical when you have implicit binary feedback (thumbs up/down, retention signals) rather than explicitly comparing two model outputs — common in production deployments where users rate responses, not comparisons.",
+    "idealAnswerKeyPoints": [
+      "DPO requires paired (preferred, dispreferred) responses for the same prompt",
+      "KTO requires only binary labels: each response is individually labeled as good (human-aligned) or bad",
+      "Loss: L_KTO = E[z(y)(λ_w - σ(r(x,y) - z(y))) + λ_u] where z(y) is 1 for good, -1 for bad",
+      "Practical: binary feedback is 3-5× easier to collect than pairwise comparisons at scale",
+      "Empirically matches DPO quality when paired data is available; better when only binary labels exist"
+    ],
+    "idealAnswerFollowups": [
+      "How does the Kahneman-Tversky utility function shape the KTO loss?",
+      "What is IPO (Identity Preference Optimization) and how does it differ from DPO and KTO?"
+    ],
+    "tags": ["kto", "preference-optimization", "alignment", "binary-feedback"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you fine-tune for domain adaptation in specialized fields like medicine or law?",
+    "idealAnswerCore": "Domain adaptation requires continued pre-training on domain-specific text to build vocabulary and knowledge, followed by supervised instruction fine-tuning on domain Q&A pairs and preference alignment using domain expert annotators.",
+    "idealAnswerFraming": "Two-phase approach: first, continued pre-training (CPT) on domain text to update model weights with domain terminology and reasoning patterns; second, instruction tuning on domain-specific tasks.",
+    "idealAnswerKeyPoints": [
+      "Phase 1 CPT: run language modeling on domain corpus (PubMed for medicine, EDGAR filings for law) — 1-5B domain tokens sufficient for vocabulary shift",
+      "Phase 2 SFT: fine-tune on expert-annotated (question, answer) pairs in domain-specific chat format",
+      "Phase 3 RLHF/DPO: align with domain-specific preferences — medical: prefer conservative recommendations; legal: prefer citing primary sources",
+      "Domain evaluation: use domain benchmarks (MedQA-USMLE for medicine, Bar exam for law) for quality tracking",
+      "Data challenges: PHI/PII in medical notes requires de-identification; legal documents may have copyright restrictions"
+    ],
+    "idealAnswerFollowups": [
+      "What is the difference between domain adaptation via CPT vs task-specific fine-tuning?",
+      "How do you handle confidential domain data that cannot leave the enterprise?"
+    ],
+    "tags": ["domain-adaptation", "medical", "legal", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you evaluate fine-tuning success beyond loss curves?",
+    "idealAnswerCore": "Evaluate fine-tuning using task-specific benchmarks, human preference evaluations, capability regression tests, and production proxy metrics — loss curves show convergence but not whether the model improved on the actual target task.",
+    "idealAnswerFraming": "Validation loss only tells you if the model is overfitting — it says nothing about whether the model is better at the target task. You need a comprehensive eval suite that tests both target task performance and pre-training capability retention.",
+    "idealAnswerKeyPoints": [
+      "Task-specific: domain benchmarks (HumanEval for code, GSM8K for math, MMLU for knowledge) or custom test sets",
+      "LLM-as-judge: use GPT-4 to compare fine-tuned vs base model responses on a curated prompt set",
+      "Capability regression: test on general benchmarks (MT-Bench, AlpacaEval) to ensure pre-trained skills weren't degraded",
+      "Human evaluation: preference A/B test between fine-tuned and baseline for final model selection",
+      "Production proxy: if possible, run shadow traffic or A/B test in production to measure real-world impact"
+    ],
+    "idealAnswerFollowups": [
+      "How do you set up an automated eval CI pipeline for fine-tuning?",
+      "What is MT-Bench and how does it evaluate multi-turn instruction following?"
+    ],
+    "tags": ["evaluation", "fine-tuning", "benchmarks", "quality"],
+    "source": "seed"
+  }
+]

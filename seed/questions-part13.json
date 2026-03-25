@@ -1,0 +1,602 @@
+[
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "What is late interaction and how does ColBERT differ from dense bi-encoder retrieval?",
+    "idealAnswerCore": "Late interaction (ColBERT) computes separate embeddings for every token in the query and document, then scores via MaxSim (maximum similarity between each query token and all document tokens) — it's more accurate than single-vector bi-encoders but requires more storage and is slower to rank.",
+    "idealAnswerFraming": "ColBERT sits between bi-encoders (fast but less accurate) and cross-encoders (accurate but slow) in the accuracy-latency tradeoff. Show you understand when its characteristics make it the right choice.",
+    "idealAnswerKeyPoints": [
+      "Bi-encoder limitation: compresses an entire document into one vector — loses fine-grained token-level information needed for precise relevance matching",
+      "ColBERT mechanism: encodes query and document into token-level embedding matrices; scores = sum over query tokens of max cosine similarity to any document token (MaxSim)",
+      "Accuracy advantage: token-level matching catches term-specific relevance that single-vector bi-encoders miss; performs comparably to cross-encoders on many benchmarks",
+      "Storage cost: stores N embeddings per document (N = document tokens) vs. one per document for bi-encoders; requires PLAID index (compressed token storage) for practical deployment",
+      "Use when: extremely high precision requirements; have storage budget for per-token embeddings; ColBERT-v2 + PLAID makes it practical for production; available via Ragatouille Python library"
+    ],
+    "idealAnswerFollowups": [
+      "When would you choose ColBERT over a cross-encoder reranker?",
+      "What's the storage cost comparison between ColBERT and a standard dense index for a 1M document corpus?"
+    ],
+    "tags": ["rag", "colbert", "retrieval", "late-interaction"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "What is document parsing and why does it matter for RAG quality?",
+    "idealAnswerCore": "Document parsing converts raw files (PDFs, HTML, Word docs) into clean, structured text for chunking and indexing — poor parsing (missed tables, garbled formatting, mixed headers/content) directly degrades retrieval quality because the model can't retrieve what it can't index accurately.",
+    "idealAnswerFraming": "Parsing quality is the unglamorous but often highest-leverage improvement in RAG pipelines — many teams obsess over retrieval algorithms while losing 20% of information to bad PDF parsing.",
+    "idealAnswerKeyPoints": [
+      "PDF challenges: multi-column layouts, scanned PDFs (require OCR), tables, figures with embedded text, footnotes, headers/footers mixed with content — naive text extraction scrambles reading order",
+      "Parsing strategies: PyMuPDF (fast, good for clean PDFs), Unstructured.io (handles diverse formats, extracts tables as HTML), Azure Document Intelligence (high quality, cloud-based), Marker (specialized for complex PDFs)",
+      "Table handling: tables parsed as raw text lose structure; best practice is to extract as HTML or markdown and keep structural information for the LLM to interpret",
+      "Image and figure extraction: important figures should be extracted and indexed separately (or with vision model description) — text-only parsing loses this content entirely",
+      "Quality evaluation: spot-check parsing output on representative sample of your document types; measure information loss by comparing parsed text to manual transcription"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle a corpus that includes scanned PDFs of varying quality?",
+      "What's the pipeline for extracting information from a PDF that's primarily structured as a table?"
+    ],
+    "tags": ["rag", "parsing", "pdf", "document-processing"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "What is the difference between dense and sparse retrieval? When should you use each?",
+    "idealAnswerCore": "Dense retrieval uses learned embeddings and cosine similarity to find semantically related documents; sparse retrieval (BM25) uses exact keyword matching with term frequency weighting. Dense handles paraphrasing and semantic similarity; sparse handles exact keyword matches and rare terms. Hybrid search combines both for best results.",
+    "idealAnswerFraming": "Neither dense nor sparse is universally better — they have complementary strengths. The empirically validated best practice for production RAG is hybrid search with re-ranking.",
+    "idealAnswerKeyPoints": [
+      "Dense retrieval strengths: handles synonyms and paraphrase ('car' and 'automobile'); understands semantic relationships; works well for conceptual questions; weak on rare names, codes, or exact matches",
+      "Sparse retrieval (BM25) strengths: exact keyword matching; great for proper nouns, technical terms, product codes; no need to train a model; fast and interpretable; weak on paraphrase and conceptual similarity",
+      "Failure modes: dense fails on 'What was the CPI in Q3 2023?' (exact number retrieval); sparse fails on 'What causes transformer attention to be slow?' (requires semantic understanding, not exact phrase matching)",
+      "Hybrid implementation: run both in parallel, normalize scores (RRF — Reciprocal Rank Fusion — works better than linear combination), merge ranked lists, then re-rank with a cross-encoder",
+      "Production default: start with hybrid (OpenSearch, Qdrant, Weaviate, and most modern vector DBs support it natively) unless specific analysis shows pure dense is sufficient"
+    ],
+    "idealAnswerFollowups": [
+      "How do you implement Reciprocal Rank Fusion when combining dense and sparse search results?",
+      "For a medical Q&A system where exact drug names and dosages matter, would you weight dense or sparse retrieval more heavily?"
+    ],
+    "tags": ["rag", "dense-retrieval", "sparse-retrieval", "hybrid-search"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "advanced",
+    "question": "What is FLARE (Forward-Looking Active REtrieval) and how does it improve RAG?",
+    "idealAnswerCore": "FLARE actively decides when to retrieve during generation — when the model is about to generate low-confidence tokens, it pauses, formulates a search query from its partial output, retrieves relevant context, and continues generation. This avoids over-retrieval and focuses retrieval on parts of the answer that actually require external knowledge.",
+    "idealAnswerFraming": "FLARE addresses a fundamental limitation of standard RAG: the system retrieves once based on the question, but may miss context needed for specific claims made during generation. FLARE turns retrieval into a dynamic, generation-time decision.",
+    "idealAnswerKeyPoints": [
+      "Standard RAG limitation: retrieves based on initial query, but long answers may require knowledge from multiple different documents — single upfront retrieval often misses some needed context",
+      "FLARE mechanism: during generation, monitor token probabilities; when probability drops below threshold (model is uncertain), treat incomplete output as an implicit search query and retrieve additional context",
+      "Retrieval trigger: uncertainty in generation (low token probability) signals the model needs more information — this is more targeted than retrieving everything upfront",
+      "Performance: FLARE outperforms standard RAG on long-form generation tasks requiring multi-hop reasoning or synthesis across multiple knowledge sources",
+      "Implementation complexity: requires access to token probabilities (not available with all APIs), adds latency per retrieval step, and requires careful threshold tuning — better suited for batch than real-time use"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement FLARE with a model API that doesn't expose token probabilities?",
+      "What types of queries benefit most from FLARE vs. standard RAG?"
+    ],
+    "tags": ["rag", "flare", "active-retrieval", "generation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "advanced",
+    "question": "How do you build a RAG system for multilingual documents?",
+    "idealAnswerCore": "Multilingual RAG requires embedding models trained on multilingual data (multilingual E5, mBERT, SONAR), language-aware chunking (respect language boundaries), and a strategy for cross-lingual retrieval (whether to translate queries/documents or use a unified multilingual embedding space).",
+    "idealAnswerFraming": "Multilingual RAG has three main design decisions: embedding model choice (multilingual vs. per-language), retrieval language (match query language to document language or use cross-lingual retrieval), and output language (translate vs. generate in query language).",
+    "idealAnswerKeyPoints": [
+      "Embedding model: multilingual E5-large or mE5-large covers 100+ languages in a shared embedding space; quality varies by language — high-resource languages (English, Chinese, French) much better than low-resource",
+      "Cross-lingual retrieval: a query in English can retrieve relevant French documents because multilingual models align semantic spaces across languages — useful but may miss language-specific nuances",
+      "Retrieval language strategy: option 1 — store documents in original language, retrieve cross-lingually; option 2 — translate all documents to English at ingestion time and retrieve in English; option 3 — maintain per-language indexes",
+      "Chunking considerations: language detection before chunking (don't split multilingual documents mid-sentence when languages change); maintain language metadata in chunks for filtering",
+      "Output generation: LLM should generate in the user's query language regardless of retrieved document language — instruction in system prompt plus including query language in the context"
+    ],
+    "idealAnswerFollowups": [
+      "How would you evaluate retrieval quality across 10 different languages in your system?",
+      "What's the quality gap between multilingual embeddings for English vs. a low-resource language like Swahili?"
+    ],
+    "tags": ["rag", "multilingual", "embeddings", "cross-lingual"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "What is the CRAG (Corrective RAG) approach and how does it improve retrieval reliability?",
+    "idealAnswerCore": "CRAG adds a retrieval quality evaluator that assesses whether retrieved documents are actually relevant to the query — if retrieval quality is poor, it triggers web search as a fallback, preventing the LLM from generating based on irrelevant context.",
+    "idealAnswerFraming": "Standard RAG blindly uses whatever is retrieved even when documents aren't relevant. CRAG adds quality control between retrieval and generation — it's a corrective mechanism that prevents garbage-in-garbage-out.",
+    "idealAnswerKeyPoints": [
+      "Retrieval evaluator: a lightweight model (or prompted LLM) scores retrieved documents as Correct/Incorrect/Ambiguous for the given query before passing to generation",
+      "Correct documents: passed directly to generation as in standard RAG",
+      "Incorrect documents: fallback to web search using the query to find better context; prevents generation based on irrelevant knowledge base content",
+      "Ambiguous documents: use a 'knowledge refinement' step to extract relevant sentences from the retrieved document rather than using the full chunk",
+      "When to use: knowledge bases with sparse or outdated coverage where some queries won't have good answers in the index; reduces confident hallucinations from irrelevant retrievals"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement the retrieval quality evaluator without adding significant latency to the pipeline?",
+      "What's the cost-quality tradeoff of CRAG vs. simply increasing retrieval recall with a larger k?"
+    ],
+    "tags": ["rag", "crag", "retrieval", "quality-control"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "How do you handle temporal information in RAG systems, such as querying for the most recent or historical information?",
+    "idealAnswerCore": "Temporal RAG requires timestamping all documents at ingestion, supporting time-range filtering in retrieval, decaying relevance scores for older documents when recency matters, and detecting when queries are time-sensitive to apply appropriate strategies.",
+    "idealAnswerFraming": "Temporal handling is frequently underspecified in RAG systems. A query about 'current regulations' and 'historical regulations in 2019' require different retrieval strategies from the same knowledge base.",
+    "idealAnswerKeyPoints": [
+      "Timestamping: store document creation and update dates as metadata; chunk-level timestamps enable filtering at retrieval time; critical for news, legal, regulatory, or financial data",
+      "Recency filtering: for queries with temporal signals ('latest', 'current', 'recent'), apply date filter in retrieval to limit results to last N days/months; implement query-time date parsing",
+      "Recency weighting: in relevance scoring, include a recency factor that down-weights older documents; tune the decay rate based on how quickly your domain's knowledge becomes stale",
+      "Historical queries: explicitly preserve older document versions rather than overwriting; enable point-in-time retrieval (give me the knowledge base as it existed on date X)",
+      "Temporal intent detection: classify whether a query is seeking current information (apply recency boost), historical information (filter to specific date range), or timeless information (no temporal weighting)"
+    ],
+    "idealAnswerFollowups": [
+      "How would you structure a RAG system that needs to serve both historical analysis queries and current events queries with the same knowledge base?",
+      "What's the challenge with maintaining 'current' information in a RAG system when the underlying world changes continuously?"
+    ],
+    "tags": ["rag", "temporal", "metadata-filtering", "recency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "What is query routing in RAG systems and when should you implement it?",
+    "idealAnswerCore": "Query routing directs queries to different retrieval backends or RAG pipelines based on query classification — routing SQL queries to a database, semantic questions to a vector index, current events to web search, and factual lookups to a structured knowledge graph.",
+    "idealAnswerFraming": "A single retrieval backend rarely handles all query types well. Query routing applies the right tool to each query type rather than forcing all queries through one pipeline.",
+    "idealAnswerKeyPoints": [
+      "Routing classifier: a fast, lightweight LLM or fine-tuned classifier categorizes the query before retrieval; categories: factual lookup, semantic search, structured data query, real-time information, or hybrid",
+      "Backend examples: vector DB for semantic search, SQL database for structured data ('How many orders were placed last month?'), web search for current events, knowledge graph for relationship queries",
+      "Confidence-based routing: route to the most confident backend first; fall back to others if confidence is low or retrieval returns poor results",
+      "Cost optimization: route simple pattern-match queries to deterministic systems (avoids LLM cost entirely); reserve expensive semantic search for complex questions",
+      "Implementation: DSPy Router pattern, LangChain RouterChain, or custom classification prompt; log routing decisions to evaluate classifier accuracy and adjust thresholds"
+    ],
+    "idealAnswerFollowups": [
+      "How do you evaluate whether your routing classifier is making the right decisions?",
+      "What's the latency overhead of adding a routing step to your RAG pipeline, and how do you minimize it?"
+    ],
+    "tags": ["rag", "routing", "query-classification", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "What is knowledge graph RAG (GraphRAG) and what types of queries benefit from it?",
+    "idealAnswerCore": "GraphRAG combines a knowledge graph (entities and their relationships) with vector retrieval — it excels at multi-hop queries requiring following relationships between entities (who manages whom, what connects X to Y) that flat document retrieval can't handle.",
+    "idealAnswerFraming": "GraphRAG solves the relationship reasoning gap in standard RAG — when the answer requires traversing multiple connections (A is related to B, B is related to C, therefore A is related to C), flat document retrieval misses this unless both connections happen to be in the same chunk.",
+    "idealAnswerKeyPoints": [
+      "When GraphRAG adds value: multi-hop questions ('What companies does the CEO of X have board seats on?'), relationship queries ('How are researchers A and B connected?'), lineage tracing ('What upstream data sources affect this model's predictions?')",
+      "Construction: extract entities and relationships from documents using LLM or NER; build graph database (Neo4j, Amazon Neptune); entities linked to source documents for hybrid retrieval",
+      "Query approach: LLM converts natural language query to graph traversal (Cypher for Neo4j), executes graph query to find relevant entity chains, fetches associated documents for context",
+      "Microsoft GraphRAG: community detection-based summarization creates hierarchical document summaries at entity cluster level; enables global summarization queries across entire corpora",
+      "Limitations: high construction cost (LLM extraction for every document), graph maintenance complexity, latency of graph traversal; only justified when relationship queries are a significant portion of use cases"
+    ],
+    "idealAnswerFollowups": [
+      "How do you extract high-quality entities and relationships from unstructured documents for a knowledge graph?",
+      "When would you use GraphRAG vs. simply adding more metadata to your standard vector retrieval?"
+    ],
+    "tags": ["rag", "graphrag", "knowledge-graph", "multi-hop"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "How do you evaluate the faithfulness of RAG-generated responses to their source documents?",
+    "idealAnswerCore": "Faithfulness measures whether the generated response only makes claims that are supported by the retrieved context — evaluated using NLI-based classifiers that check if each claim in the response can be entailed from the retrieved documents.",
+    "idealAnswerFraming": "Faithfulness is separate from accuracy — a faithful response only uses retrieved evidence (even if the retrieved evidence is wrong), while an unfaithful response adds information from model parametric knowledge not in the retrieved context.",
+    "idealAnswerKeyPoints": [
+      "RAGAS faithfulness metric: extract atomic claims from the response; for each claim, use NLI to check whether the retrieved context entails the claim; faithfulness = fraction of claims supported by context",
+      "LLM-as-judge for faithfulness: prompt an LLM with retrieved context + response to identify any claims not supported by the context; more robust than NLI for complex claims",
+      "Citation verification: for responses that include citations, verify each cited chunk actually supports the referenced claim; automated with NLI or embedding similarity",
+      "Hallucination taxonomy: intrinsic hallucinations (directly contradicts retrieved context), extrinsic hallucinations (adds information not in retrieved context) — extrinsic is more common and harder to detect",
+      "Improvement strategies: instruct model to only use information from provided context; use smaller context window to reduce temptation to use parametric knowledge; post-process to check all claims against retrieved docs"
+    ],
+    "idealAnswerFollowups": [
+      "How would you build a faithfulness monitoring system that runs on production RAG outputs at scale?",
+      "Is a faithfully-wrong answer better than an unfaithful-but-correct answer from a user trust perspective?"
+    ],
+    "tags": ["rag", "faithfulness", "evaluation", "hallucination"],
+    "source": "seed"
+  },
+  {
+    "domainId": "rag",
+    "difficulty": "intermediate",
+    "question": "What is document summarization in RAG and when should you summarize vs. chunk raw text?",
+    "idealAnswerCore": "Summarization in RAG pre-generates dense summaries of documents (or sections) and indexes them alongside or instead of raw chunks — it improves retrieval for abstractive queries by compressing essential information into a retrievable unit, but loses verbatim detail needed for extractive queries.",
+    "idealAnswerFraming": "The choice between summaries and raw chunks depends on query type. Abstractive questions ('What is the main argument of this paper?') benefit from summarized indexes; extractive questions ('What was the Q3 revenue?') need raw text.",
+    "idealAnswerKeyPoints": [
+      "Summary-based indexing: generate a summary of each document/section, store summary as the retrieval unit, but link to original for LLM generation — summary is easier to retrieve accurately than dense technical text",
+      "Multi-vector indexing (RAPTOR-style): create summaries at multiple granularities (document, section, paragraph) and index all levels; query retrieves the most relevant granularity",
+      "When summaries help: long documents where key points are spread across many pages; highly technical documents where key concepts are described in complex language; when users ask high-level questions",
+      "When raw chunks are better: exact quote retrieval; specific fact extraction; code examples; tables and structured data; anything where paraphrase loses precision",
+      "Hybrid: index both raw chunks AND summaries; route query to summary index for abstractive questions, raw chunk index for specific fact retrieval"
+    ],
+    "idealAnswerFollowups": [
+      "How do you generate high-quality summaries for very long technical documents that exceed the LLM's context window?",
+      "What's the indexing cost tradeoff between maintaining both summary and raw chunk indexes?"
+    ],
+    "tags": ["rag", "summarization", "chunking", "indexing"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is catastrophic forgetting in fine-tuning and how do you mitigate it?",
+    "idealAnswerCore": "Catastrophic forgetting occurs when fine-tuning on new task data causes the model to lose knowledge or capabilities from its pre-training — mitigated through regularization techniques (EWC, L2 penalty), LoRA-based fine-tuning (only updates small adapter weights), and replay methods (mixing pre-training data with new task data).",
+    "idealAnswerFraming": "Catastrophic forgetting is the most common failure mode in naïve fine-tuning. The best mitigation depends on how much you care about preserving general capability vs. optimizing for the new task.",
+    "idealAnswerKeyPoints": [
+      "Root cause: gradient updates that improve performance on new task data move parameters away from their pre-trained values that encoded general knowledge",
+      "LoRA mitigation: by only updating adapter weights (0.1-1% of parameters) and leaving the base model frozen, catastrophic forgetting is largely avoided — base model knowledge is fully preserved",
+      "Replay/mixing: include a fraction of general instruction-tuning data (e.g., OpenHermes, Alpaca) in the fine-tuning dataset — prevents the model from forgetting general conversational capabilities",
+      "Elastic Weight Consolidation (EWC): regularizes updates to important parameters (those crucial for previous tasks) by penalizing large changes — computationally expensive but principled",
+      "Evaluation: always evaluate on held-out general capability benchmarks (MMLU, GSM8K, coding tasks) after fine-tuning — a 10% drop on general benchmarks signals significant forgetting"
+    ],
+    "idealAnswerFollowups": [
+      "How do you determine which pre-trained capabilities are most important to preserve for your fine-tuned model?",
+      "When is catastrophic forgetting acceptable (i.e., when is it okay to sacrifice general capability for task-specific performance)?"
+    ],
+    "tags": ["fine-tuning", "catastrophic-forgetting", "lora", "regularization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is instruction tuning and how does it differ from task-specific fine-tuning?",
+    "idealAnswerCore": "Instruction tuning (also called instruction fine-tuning or IFT) trains models to follow natural language instructions across diverse tasks using a multi-task dataset of (instruction, response) pairs — it produces general-purpose assistants. Task-specific fine-tuning optimizes for one specific task (sentiment analysis, NER) at the cost of generalizability.",
+    "idealAnswerFraming": "The choice between instruction tuning and task-specific fine-tuning depends on your use case: general assistant → instruction tuning; specialized performance on one task → task-specific fine-tuning; both → instruction tuning first, then domain-specific.",
+    "idealAnswerKeyPoints": [
+      "Instruction tuning: trains on thousands of diverse (instruction, response) pairs covering many tasks (writing, coding, analysis, Q&A); produces a model that can follow novel instructions at inference time",
+      "Task-specific fine-tuning: trains on (input, output) pairs from a specific task distribution; optimizes metric for that task; model loses ability to generalize to other tasks",
+      "Dataset requirements: instruction tuning requires diverse, high-quality instruction datasets (OpenHermes, Alpaca, FLAN, ShareGPT); task-specific requires domain-labeled examples — typically much smaller datasets",
+      "When task-specific is better: when you need maximum performance on one specific task with consistent input/output format; when inference latency or cost requires a smaller model",
+      "When instruction tuning is better: when users ask diverse questions; when the task variety is unknown at training time; when model should generalize to new instruction types"
+    ],
+    "idealAnswerFollowups": [
+      "How do you construct a high-quality instruction tuning dataset for a domain-specific assistant?",
+      "What evaluation suite would you use to measure whether instruction tuning has improved general instruction following?"
+    ],
+    "tags": ["fine-tuning", "instruction-tuning", "sft", "methodology"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is data synthesis for fine-tuning and when is it better than real data?",
+    "idealAnswerCore": "Data synthesis generates training examples using a capable LLM (teacher model) to produce (instruction, response) pairs for fine-tuning a smaller model — it's useful when real data is scarce, expensive to label, or when specific capability combinations are hard to find in real data.",
+    "idealAnswerFraming": "Synthetic data has leveled the playing field for fine-tuning — teams without large real datasets can now achieve strong task performance by generating high-quality synthetic examples. The key is quality control.",
+    "idealAnswerKeyPoints": [
+      "Knowledge distillation via synthesis: use GPT-4/Claude to generate (instruction, response) pairs covering the target task; fine-tune a smaller model on this data — effectively distills the teacher's capabilities",
+      "When better than real data: low-resource tasks with few examples, safety adversarial examples (hard to collect organically), edge cases (need examples of rare but important scenarios), private domain (can't share real data externally for labeling)",
+      "Quality requirements: synthetic data must match the quality bar you want the fine-tuned model to hit; generating with GPT-4 and fine-tuning GPT-3.5 can match or exceed pure real-data fine-tuning",
+      "Filtering synthetic data: use quality classifiers, reward models, or human spot-checks to remove low-quality generated examples; garbage-in-garbage-out applies to synthetic data",
+      "Limitations: synthetic data amplifies teacher model biases; may not capture real-world distribution of user queries; can create models that perform well in distribution but fail on real user inputs"
+    ],
+    "idealAnswerFollowups": [
+      "How do you ensure synthetic fine-tuning data covers the long tail of edge cases without over-representing them?",
+      "What's the quality threshold at which synthetic data stops being useful for fine-tuning?"
+    ],
+    "tags": ["fine-tuning", "synthetic-data", "data-quality", "distillation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is ORPO (Odds Ratio Preference Optimization) and how does it compare to DPO?",
+    "idealAnswerCore": "ORPO (Odds Ratio Preference Optimization) combines supervised fine-tuning and alignment in a single training phase by adding an odds ratio penalty to the SFT loss — it eliminates the need for a separate reference model (required by DPO) and aligns the model while teaching it new tasks simultaneously.",
+    "idealAnswerFraming": "ORPO is a newer, more efficient alternative to the SFT → DPO two-phase pipeline. It's particularly useful when you want to teach a base model a new capability AND align it in one training run.",
+    "idealAnswerKeyPoints": [
+      "Standard pipeline (SFT → DPO): first fine-tune on positive examples (SFT), then align with preference pairs (DPO) — two separate training runs, requires a reference model in DPO phase",
+      "ORPO mechanism: adds an odds ratio penalty term to the SFT cross-entropy loss; the penalty rewards generating chosen responses with higher relative probability than rejected responses — no reference model needed",
+      "Advantages over DPO: single training phase (saves compute and complexity), no reference model (saves memory), appears to reduce sycophancy and improve style consistency in preliminary benchmarks",
+      "Dataset format: same as DPO — requires (prompt, chosen_response, rejected_response) triplets; can use the same preference datasets",
+      "Limitations: ORPO is newer with less empirical validation than DPO; may not outperform DPO in all settings; choose based on evaluation on your specific task"
+    ],
+    "idealAnswerFollowups": [
+      "How would you decide between ORPO and DPO for a specific alignment task?",
+      "What's the computational cost difference between the SFT+DPO pipeline and ORPO for the same dataset?"
+    ],
+    "tags": ["fine-tuning", "orpo", "dpo", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you curate a high-quality fine-tuning dataset? What criteria matter most?",
+    "idealAnswerCore": "High-quality fine-tuning datasets prioritize accuracy (responses are factually correct and follow instructions), diversity (broad coverage of the target distribution), appropriate response length (not too brief, not padded), and absence of harmful content — with quality typically prioritized over quantity.",
+    "idealAnswerFraming": "The most impactful insight from recent fine-tuning research (LIMA, Alpaca) is that quality matters far more than quantity — a small, curated dataset outperforms a large noisy one.",
+    "idealAnswerKeyPoints": [
+      "Quality over quantity: LIMA showed 1,000 carefully curated examples fine-tuning GPT-4-level capability; large noisy datasets (100K examples) often perform worse than small curated sets (1-5K)",
+      "Accuracy: every response must be factually correct and follow the instruction; incorrect examples are worse than no examples — they teach the model to be wrong",
+      "Diversity: cover the target distribution broadly; use diversity metrics (embedding clustering, n-gram diversity) to ensure no single topic or format dominates",
+      "Response quality: responses should be appropriately detailed (not too brief to be unhelpful, not padded with redundant information), formatted correctly for the output type",
+      "Deduplication: remove exact and near-duplicate examples — near-duplicate filtering using embedding similarity prevents overfitting to a narrow distribution"
+    ],
+    "idealAnswerFollowups": [
+      "How do you use reward models or LLM-as-judge to automatically filter fine-tuning data for quality?",
+      "What's the minimum dataset size needed to fine-tune for a specific task, and how do you determine it empirically?"
+    ],
+    "tags": ["fine-tuning", "data-quality", "dataset-curation", "methodology"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is model merging and how can it extend the utility of fine-tuned models?",
+    "idealAnswerCore": "Model merging combines parameters from multiple fine-tuned models into a single model — techniques like SLERP, TIES-merging, and DARE allow merging specialized models without any training, producing models that exhibit multiple capabilities simultaneously.",
+    "idealAnswerFraming": "Model merging is a powerful but underappreciated technique that enables combining specialized capabilities without additional training compute. It's actively used in the open-source community to create high-quality merged models.",
+    "idealAnswerKeyPoints": [
+      "SLERP (Spherical Linear intERPolation): interpolates between two models' weights in parameter space; simple and effective for merging two models with similar base; produces a blended model with intermediate capabilities",
+      "TIES-merging: resolves sign conflicts between fine-tuned models (when different models want to update the same weight in opposite directions) by taking the sign of the majority; more principled than simple averaging",
+      "DARE (Drop And REscale): randomly drops fine-tuned weights and rescales remaining weights; reduces interference between models when merging many models; can merge 5+ models without catastrophic interference",
+      "Use cases: combine a coding-specialized model with a chat-specialized model without retraining; A/B testing model capabilities; preserving multiple specializations in one model for efficient serving",
+      "Limitations: doesn't work for models with different architectures or base models; quality depends on how well fine-tuned models align in weight space; doesn't replace task-specific fine-tuning for maximum performance"
+    ],
+    "idealAnswerFollowups": [
+      "How would you decide the interpolation weight when merging two models with SLERP?",
+      "What's the performance difference between model merging and training a multi-task model from scratch?"
+    ],
+    "tags": ["fine-tuning", "model-merging", "slerp", "ties"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What are the key considerations for fine-tuning a model for a regulated industry (healthcare, finance, legal)?",
+    "idealAnswerCore": "Regulated industry fine-tuning requires: carefully licensed training data (no unauthorized use of copyrighted medical/legal/financial content), robust evaluation beyond standard benchmarks (domain expert validation), privacy protections (de-identify patient/client data), and documentation for regulatory audit.",
+    "idealAnswerFraming": "Fine-tuning for regulated industries has both technical requirements (domain accuracy) and compliance requirements (data governance, audit trails) that don't apply in general use cases. Show you understand both dimensions.",
+    "idealAnswerKeyPoints": [
+      "Training data licensing: medical texts (clinical notes, PubMed), legal texts (court filings, contracts), financial texts (SEC filings) have licensing and copyright constraints; establish clear data provenance and licensing records",
+      "Privacy: clinical notes and financial records contain PII and confidential information; de-identify before using in fine-tuning; implement differential privacy if the data is particularly sensitive",
+      "Domain expert evaluation: standard benchmarks (MMLU-Medical) are insufficient — have licensed practitioners (doctors, lawyers, CPAs) evaluate model outputs on representative cases; catch subtle errors that automated metrics miss",
+      "Hallucination risk amplification: in regulated domains, hallucinated information (wrong drug dosage, incorrect legal precedent, false financial data) can cause serious harm — require citations and structured uncertainty expression",
+      "Documentation for compliance: maintain records of training data sources, preprocessing steps, evaluation results, known limitations, and version history — required for regulatory audit in many jurisdictions"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle the case where your medical fine-tuning dataset contains outdated treatment guidelines?",
+      "What's the minimum documentation standard for a fine-tuned model used in a regulated financial application?"
+    ],
+    "tags": ["fine-tuning", "compliance", "healthcare", "regulated-industry"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is automatic prompt optimization and how do tools like DSPy work?",
+    "idealAnswerCore": "Automatic prompt optimization uses machine learning to discover better prompts rather than hand-crafting them — DSPy treats prompting as a programming paradigm where you declare the task and metric, then the optimizer (BootstrapFewShot, MIPRO, TextGrad) automatically finds prompts and few-shot examples that maximize the metric.",
+    "idealAnswerFraming": "Manual prompt engineering is brittle and doesn't scale. Automatic optimization is the engineering-disciplined approach: define the metric, let the optimizer find the best prompts for your data.",
+    "idealAnswerKeyPoints": [
+      "DSPy approach: write a program declaring the pipeline (signatures: input types → output types, modules: predict/chain-of-thought/react); the optimizer compiles this into optimized prompts + few-shot examples",
+      "Optimization algorithms: BootstrapFewShot (collect good demonstrations from training set and include as few-shot examples), MIPRO (generates candidate prompt instructions and evaluates them), TextGrad (gradient-based optimization using text feedback)",
+      "Compared to manual prompting: automatic optimization explores much larger prompt space than human intuition, finds task-specific phrasing that outperforms generic prompts, automatically selects the best few-shot examples",
+      "Requirements: labeled evaluation set (to measure the metric), a development set for the optimizer to explore on, sufficient examples (50-200 for BootstrapFewShot, more for MIPRO)",
+      "Limitation: requires more setup than manual prompting; optimization runs cost multiple LLM calls; optimized prompts may be verbose or counter-intuitive but work empirically"
+    ],
+    "idealAnswerFollowups": [
+      "How do you ensure that DSPy-optimized prompts generalize to production traffic distribution?",
+      "What's the difference between DSPy's BootstrapFewShot and MIPRO optimization strategies?"
+    ],
+    "tags": ["prompt-engineering", "dspy", "optimization", "automation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is negative prompting and when does it help improve LLM outputs?",
+    "idealAnswerCore": "Negative prompting explicitly tells the LLM what NOT to do — avoid certain words, formats, topics, or styles — complementing positive instructions and reducing the need for lengthy corrective iteration when the default model behavior conflicts with requirements.",
+    "idealAnswerFraming": "Negative prompting is underutilized in LLM applications. It's particularly useful when the model's default behavior is hard to override with positive instructions alone, or when certain failure modes are consistently problematic.",
+    "idealAnswerKeyPoints": [
+      "Common use cases: 'Do not start your response with I', 'Do not use bullet points', 'Do not include disclaimers', 'Do not reference competitor products', 'Do not give medical advice' — suppresses specific default behaviors",
+      "Format control: models have strong default formatting tendencies; negative prompts override these more reliably than positive instruction alone in some cases",
+      "Safety negative prompts: 'Do not generate personally identifiable information', 'Do not produce content about real people' — supplements safety training with explicit runtime constraints",
+      "Precision matters: specific negative instructions ('Do not use the phrase As an AI') work better than vague ones ('Avoid common AI phrases') — vague negative instructions may be ignored",
+      "Interaction with positive instructions: negative and positive instructions can conflict; when they do, models typically prioritize the more recently placed instruction — structure prompts to place critical constraints clearly"
+    ],
+    "idealAnswerFollowups": [
+      "How do you identify which default model behaviors need negative prompts for your specific use case?",
+      "What's the difference between using negative prompting vs. fine-tuning to remove an unwanted model behavior?"
+    ],
+    "tags": ["prompt-engineering", "negative-prompting", "format-control", "instruction-following"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is prompt versioning and how should you manage prompt changes in production?",
+    "idealAnswerCore": "Prompt versioning tracks changes to production prompts with the same discipline as code — using version control, evaluation gates before deployment, A/B testing for significant changes, and automated regression testing to prevent performance degradation.",
+    "idealAnswerFraming": "Prompts are code — changes to prompts can break production systems just as code changes can. Treat prompt changes with the same rigor as code changes, including testing and rollback capability.",
+    "idealAnswerKeyPoints": [
+      "Store prompts in version control: prompts belong in git alongside code; changes should go through code review; the deployed prompt version should be trackable from any prediction",
+      "Evaluation before deployment: every prompt change must be evaluated on a test set before deployment; define acceptance criteria (new version must not regress more than X% on key metrics)",
+      "Staging environment: test prompt changes on non-production traffic first; capture a sample of real user queries to test against",
+      "Rollback capability: keep previous prompt version deployable; automated rollback trigger if production metrics regress after prompt deployment",
+      "Prompt versioning systems: LangSmith, Langfuse, PromptLayer provide dedicated prompt versioning and management; alternatively, use a database table with version IDs and a deployment status field"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle prompt versioning when prompts contain sensitive business logic you don't want in public git history?",
+      "What's the process for running an A/B test between two versions of a production prompt?"
+    ],
+    "tags": ["prompt-engineering", "prompt-versioning", "mlops", "production"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "How do you use output constraints and structured formatting to improve LLM reliability?",
+    "idealAnswerCore": "Output constraints (JSON mode, grammar-constrained generation, response schemas) force LLMs to produce machine-parseable outputs in a specific format — dramatically improving downstream processing reliability at the cost of some flexibility in how the model expresses answers.",
+    "idealAnswerFraming": "For system integration, free-form text outputs are fragile — small format changes break downstream parsers. Structured outputs eliminate this entire class of failures.",
+    "idealAnswerKeyPoints": [
+      "JSON mode: most major model APIs support enforcing JSON output; eliminates parsing failures from mixed text+JSON or malformed JSON; critical for agents and tool pipelines",
+      "Structured output with schema (OpenAI, Anthropic): provide a response schema; the API guarantees the output conforms to the schema, not just that it's valid JSON",
+      "Grammar-constrained generation (Outlines, LMQL, Guidance): constrain token generation at the decoder level to only produce tokens that result in valid outputs for the grammar — works with local models",
+      "Tradeoffs: constrained outputs reduce flexibility; long-form reasoning quality may be slightly lower than unconstrained output; some models struggle with deeply nested schemas",
+      "When to use: any output that will be programmatically processed (data extraction, classification, structured information), tool call parameter generation, multi-step agent outputs"
+    ],
+    "idealAnswerFollowups": [
+      "How does grammar-constrained generation at the token level differ from asking the model to output JSON in the prompt?",
+      "When would you choose not to use structured output constraints even for a system integration?"
+    ],
+    "tags": ["prompt-engineering", "structured-output", "json", "reliability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is contextual prompt caching and how does it reduce cost and latency?",
+    "idealAnswerCore": "Prompt caching (Anthropic, OpenAI) allows models to precompute and cache the KV cache for a shared prefix (like a long system prompt or document corpus) — subsequent requests that share that prefix skip recomputing the prefix, reducing cost and latency proportional to the cached prefix length.",
+    "idealAnswerFraming": "For applications with long system prompts or document contexts shared across many requests, prompt caching is the most impactful cost and latency optimization available without changing the application logic.",
+    "idealAnswerKeyPoints": [
+      "How it works: the model computes and stores the KV cache for a specified 'cacheable' prefix; subsequent requests that start with the same prefix reuse the cached computation instead of reprocessing",
+      "Cost savings: Anthropic prompt caching charges ~10% of normal cost for cache reads vs. full input token price; OpenAI reduces cost by 50% for cached tokens; savings proportional to prefix length",
+      "Latency savings: cached prefix processing is much faster than fresh computation; first request (cache write) pays full latency; subsequent requests pay only for new tokens",
+      "Best candidates for caching: long system prompts (1K+ tokens), large document contexts used across many queries, few-shot examples, persistent conversational context",
+      "Prefix must be identical: caching only applies when the beginning of the prompt matches exactly — any prefix change invalidates the cache; structure prompts so the stable portion comes first, dynamic content comes last"
+    ],
+    "idealAnswerFollowups": [
+      "How would you restructure a prompt to maximize cache hit rate for a RAG application where the retrieved context changes per query?",
+      "What's the cache TTL for Anthropic and OpenAI prompt caching, and what does it mean for your application design?"
+    ],
+    "tags": ["prompt-engineering", "prompt-caching", "cost-optimization", "latency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is meta-prompting and how does it improve complex reasoning tasks?",
+    "idealAnswerCore": "Meta-prompting instructs the LLM to generate its own prompts, decompose tasks, or structure its own reasoning before answering — essentially having the model 'prompt itself' into a better reasoning posture before tackling the primary task.",
+    "idealAnswerFraming": "Meta-prompting leverages the insight that LLMs are better at evaluating and improving prompts than following instructions precisely on first pass — having the model take a step back and plan its approach often outperforms direct prompting.",
+    "idealAnswerKeyPoints": [
+      "Self-generated structure: 'Before answering, identify the key concepts in this problem and outline your approach' — the model creates scaffolding for itself that improves the final answer",
+      "Decomposition meta-prompt: 'Break this problem into subtasks, solve each, then synthesize' — turns complex single-step tasks into a planned multi-step process",
+      "Role assignment meta-prompting: 'What type of expert would best answer this question? Respond as that expert' — the model identifies the appropriate persona for the task rather than you hardcoding it",
+      "Prompt improvement meta-prompting: 'Here is my prompt: [prompt]. How could this prompt be improved to get better results for [task]?' — use LLM to critique and improve your own prompts",
+      "Limitations: adds extra LLM calls (cost and latency); the self-generated structure can sometimes be worse than a carefully crafted prompt; works best for genuinely complex open-ended tasks"
+    ],
+    "idealAnswerFollowups": [
+      "How do you evaluate whether meta-prompting improved results vs. just a better initial prompt?",
+      "When would meta-prompting be counterproductive for a specific task?"
+    ],
+    "tags": ["prompt-engineering", "meta-prompting", "reasoning", "decomposition"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is few-shot prompting? How do you select and order examples for maximum effectiveness?",
+    "idealAnswerCore": "Few-shot prompting provides example (input, output) pairs in the prompt to demonstrate the desired task format and response style — example selection (similar to the test input, high quality, diverse) and ordering (end with the most similar example) significantly affect performance.",
+    "idealAnswerFraming": "Few-shot selection is more nuanced than randomly picking examples from a dataset. Show you understand that example quality and relevance-to-test-input determine effectiveness.",
+    "idealAnswerKeyPoints": [
+      "Why few-shot works: examples calibrate the model to the expected output format, length, style, and vocabulary; reduce ambiguity about what 'good' looks like for this task",
+      "Example selection principles: similar to test input (semantic or structural similarity), high quality (correct and well-formed), diverse (cover different aspects of the task), representative of the real input distribution",
+      "Dynamic example selection: at inference time, retrieve the K most similar examples to the current input from a labeled example pool using embedding similarity — outperforms fixed few-shot for diverse inputs",
+      "Ordering effects: models show recency bias — put the most relevant example last (immediately before the test input); first example sets the general tone, last example has most influence on format",
+      "Label balance for classification: in classification tasks, ensure examples are balanced across classes — class-imbalanced few-shot examples bias the model toward the majority class"
+    ],
+    "idealAnswerFollowups": [
+      "How do you build a few-shot example pool for a new task where you don't yet have labeled data?",
+      "At what point do additional few-shot examples stop improving performance (diminishing returns)?"
+    ],
+    "tags": ["prompt-engineering", "few-shot", "in-context-learning", "example-selection"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is the role of persona and role prompting? When does it improve outputs?",
+    "idealAnswerCore": "Role prompting instructs the LLM to adopt a persona ('You are an expert cardiologist') or role ('You are a strict code reviewer') — it activates relevant knowledge and stylistic patterns, improving output quality for specialized tasks, though it doesn't guarantee expertise the model doesn't have.",
+    "idealAnswerFraming": "Role prompting works by activating a more specific slice of the model's knowledge and style preferences. It's a useful technique but has limits — the model can only role-play expertise it actually has in its training data.",
+    "idealAnswerKeyPoints": [
+      "When role prompting helps: activates more domain-specific vocabulary, reasoning patterns, and quality standards (a 'security expert' uses more precise security terminology than default); useful for specialized technical tasks",
+      "Domain expert personas: 'You are a board-certified dermatologist' improves medical Q&A quality; 'You are a senior Python engineer' improves code review quality; activates relevant training data",
+      "Persona for tone: 'You are a patient, empathetic customer support agent' shapes tone and approach to difficult user interactions",
+      "Limitations: role prompting cannot grant expertise the model doesn't have; a model with poor medical training knowledge won't become an expert cardiologist via role prompting alone",
+      "Antagonistic roles (red-teaming): roles can be used to get the model to critique or challenge output — 'You are a critical reviewer who finds flaws in arguments' is useful for adversarial review tasks"
+    ],
+    "idealAnswerFollowups": [
+      "How would you measure whether a role prompt actually improved the domain-specific quality of responses?",
+      "Is there a risk that persona prompting leads users to over-trust AI outputs as expert advice?"
+    ],
+    "tags": ["prompt-engineering", "role-prompting", "persona", "instruction-following"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "advanced",
+    "question": "What is prompt injection defense and how do you build injection-resistant applications?",
+    "idealAnswerCore": "Building injection-resistant LLM applications requires architectural defenses: separating instructions from data using structural markup, validating that outputs conform to expected schemas, using the minimal-capability principle (LLM can only take allowed actions), and monitoring for anomalous instruction patterns in inputs.",
+    "idealAnswerFraming": "No prompt engineering technique provides complete injection defense — it's fundamentally an architectural problem requiring defense in depth beyond just better prompts.",
+    "idealAnswerKeyPoints": [
+      "Structural separation: use clear XML-like delimiters to separate system instructions from user-provided content; explicitly tell the model in the system prompt that content between DATA tags is user data, not instructions",
+      "Output schema enforcement: if the LLM's output drives an action, validate it conforms to expected schema before execution — a JSON schema mismatch could indicate an injection that changed the output format",
+      "Minimal capability principle: the LLM should only be able to take actions the current user is authorized to perform; an agent that can only read email can't be injected into sending email on the attacker's behalf",
+      "Anomaly detection: run a secondary classifier on inputs to detect instruction-like content in data fields (sentences that look like system prompts rather than user queries); flag for manual review or block",
+      "Sandboxing critical actions: for actions with irreversible effects (delete, send, payment), require explicit human confirmation separate from the LLM-generated instruction — even if the LLM is injected, the human gate prevents execution"
+    ],
+    "idealAnswerFollowups": [
+      "Is it possible to build an LLM application that is provably injection-resistant? Why or why not?",
+      "How would your defense strategy differ between an application that reads from trusted internal documents vs. one that browses arbitrary web pages?"
+    ],
+    "tags": ["prompt-engineering", "prompt-injection", "security", "defense"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is the role of temperature and sampling parameters in prompt engineering?",
+    "idealAnswerCore": "Temperature controls the randomness of token sampling — lower temperature (0-0.5) produces more deterministic, factual outputs; higher temperature (0.7-1.5) produces more diverse, creative outputs. Sampling parameters (top-p, top-k) further shape the distribution of token selection.",
+    "idealAnswerFraming": "Temperature isn't just a quality dial — it's a trade-off between determinism and diversity that should be tuned based on the task. The right temperature for code generation is different from creative writing.",
+    "idealAnswerKeyPoints": [
+      "Temperature 0 (greedy): always selects the most probable token; maximally deterministic; best for factual Q&A, code generation, structured output extraction; but can produce repetitive text for longer generations",
+      "Temperature 1.0 (default): samples from the model's learned probability distribution; balances creativity and coherence; good starting point for conversational applications",
+      "High temperature (>1.0): amplifies probability differences; produces more surprising/creative outputs; may degrade coherence; use for brainstorming, creative writing, diverse output generation",
+      "Top-p (nucleus sampling): truncates the sampling distribution to the smallest set of tokens whose cumulative probability exceeds p; top-p=0.9 is common; interacts with temperature — both shouldn't be extreme simultaneously",
+      "Production recommendations: factual retrieval → temperature 0-0.2; instruction following → 0.5-0.7; creative content → 0.8-1.2; use temperature=0 for deterministic testing of prompt changes"
+    ],
+    "idealAnswerFollowups": [
+      "Why might using temperature=0 actually produce non-deterministic outputs in practice?",
+      "How do you tune temperature for a task where you need both factual accuracy and natural-sounding prose?"
+    ],
+    "tags": ["prompt-engineering", "temperature", "sampling", "decoding"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is the 'lost in the middle' problem and how does it affect prompt design for long-context models?",
+    "idealAnswerCore": "'Lost in the middle' refers to the empirically observed phenomenon where LLMs best recall information at the beginning and end of their context window, with information in the middle being less reliably recalled — requiring prompt designers to place critical information at positions where attention is strongest.",
+    "idealAnswerFraming": "Even with models that claim 100K+ token context, attention is not uniform across positions. 'Lost in the middle' has direct implications for how you structure RAG prompts and long-context retrieval.",
+    "idealAnswerKeyPoints": [
+      "Empirical finding (Liu et al. 2023): LLM performance on multi-document QA tasks is significantly lower when the relevant document is in the middle of a long context vs. at the beginning or end",
+      "Implications for RAG: don't put the most relevant retrieved chunk in the middle of a long context; place it at the beginning or end of the context section",
+      "Implications for instruction placement: critical instructions (output format, constraints) should be at the beginning or end of the prompt, not buried in the middle of long context",
+      "Model-specific variation: newer models (Claude, GPT-4 with late 2024+ training) show significantly reduced lost-in-the-middle effects through architectural improvements; evaluate your specific model",
+      "Mitigation strategies: reorder retrieved documents to place most relevant at beginning; include a brief summary of key points at the end of long contexts; use chunked reasoning (have the model read and summarize sections iteratively)"
+    ],
+    "idealAnswerFollowups": [
+      "How would you test whether lost-in-the-middle affects your specific RAG application?",
+      "Does this problem disappear with true long-context attention mechanisms, or does some form of it persist?"
+    ],
+    "tags": ["prompt-engineering", "long-context", "attention", "context-window"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "foundational",
+    "question": "What is the difference between a system prompt, user message, and assistant message in an LLM API?",
+    "idealAnswerCore": "The system prompt sets the assistant's overall behavior, persona, and instructions for the entire conversation; user messages contain what the user said; assistant messages contain the model's previous responses — together they form the conversation context that the model conditions on to generate the next response.",
+    "idealAnswerFraming": "Understanding the role of each message type is foundational to effective prompt engineering — misusing them leads to inconsistent behavior or security vulnerabilities.",
+    "idealAnswerKeyPoints": [
+      "System prompt: highest trust level; sets the assistant's identity, capabilities, constraints, and task context; processed before user input; in production, controlled by the operator (developer), not the user",
+      "User messages: the turn-by-turn input from the user; lower trust than system prompt; a user cannot override system prompt instructions through their user message (though jailbreaks attempt this)",
+      "Assistant messages: previous model responses in the conversation history; included to provide conversational context; can be prefilled (provided by developer, not actually generated by model) to guide model output style",
+      "Multi-turn context: the full conversation (system + alternating user/assistant messages) is included in each API call; the model conditions on the entire history to generate the next response",
+      "Security implication: treat the system prompt as the secure instruction layer; user-provided content should always be treated as potentially adversarial; don't allow user messages to override security-critical instructions"
+    ],
+    "idealAnswerFollowups": [
+      "How does the system prompt interact with model safety training? Which takes precedence?",
+      "When would you use assistant message prefilling, and what are the risks?"
+    ],
+    "tags": ["prompt-engineering", "system-prompt", "api", "conversation"],
+    "source": "seed"
+  }
+]

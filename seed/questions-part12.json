@@ -1,0 +1,819 @@
+[
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Tell me about a time you had to work with ambiguous or incomplete requirements for an AI feature. How did you handle it?",
+    "idealAnswerCore": "Ambiguous AI requirements require structured discovery: decompose unknowns, align on success metrics early, and use iterative prototyping to surface hidden assumptions before committing to a full build.",
+    "idealAnswerFraming": "Use STAR: Situation — describe the vague brief (e.g., 'make our search smarter with AI'); Task — your responsibility to scope it; Action — the specific steps you took to reduce ambiguity (stakeholder interviews, constraint mapping, spike work); Result — what clarity you achieved and how it accelerated delivery.",
+    "idealAnswerKeyPoints": [
+      "Identified which unknowns were blocking vs. non-blocking before asking clarifying questions",
+      "Ran a brief discovery sprint or spike to surface technical constraints early",
+      "Aligned stakeholders on measurable success criteria (e.g., precision@k, task completion rate) rather than vague goals",
+      "Documented assumptions explicitly and revisited them at each milestone"
+    ],
+    "idealAnswerFollowups": [
+      "How do you decide when you have enough clarity to start building versus when you need to keep discovering?",
+      "What happens when stakeholders themselves don't know what they want from an AI feature?"
+    ],
+    "tags": ["requirements", "ambiguity", "discovery", "scoping"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a situation where you had to push back on an unrealistic timeline for an AI project. What did you do and what was the outcome?",
+    "idealAnswerCore": "Pushing back on AI timelines requires replacing opinion with evidence — surfacing the specific uncertainties (data readiness, eval cycles, model iteration) that make the deadline unachievable and proposing a credible alternative plan.",
+    "idealAnswerFraming": "Structure with STAR: Situation — the aggressive deadline set by leadership or PM; Task — your responsibility to deliver quality without burning the team; Action — how you quantified the risk (breakdown of unknowns, historical velocity data, comparable projects) and proposed a phased delivery; Result — the revised plan that was accepted and what it protected.",
+    "idealAnswerKeyPoints": [
+      "Translated vague AI uncertainty into concrete timeline risks leadership could understand (e.g., 'each evaluation cycle takes 2 weeks minimum')",
+      "Proposed a phased scope rather than a binary yes/no — shipped an MVP by the deadline with reduced scope",
+      "Brought data to the conversation rather than relying solely on intuition",
+      "Maintained a collaborative tone, framing pushback as risk mitigation rather than defiance"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle it when leadership still insists on the original timeline after you've pushed back?",
+      "How do you estimate AI project timelines when there's significant model uncertainty?"
+    ],
+    "tags": ["timeline", "stakeholder-management", "negotiation", "planning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time your model underperformed against the accuracy or quality it was promised to deliver. How did you respond?",
+    "idealAnswerCore": "Model underperformance must be addressed through transparent communication, rapid root-cause analysis, and a credible remediation plan — not denial or over-promising.",
+    "idealAnswerFraming": "Use STAR: Situation — the gap between promised and actual model performance discovered in testing or production; Task — own the gap and prevent it from eroding stakeholder trust; Action — the diagnostic steps (error analysis, data audits, bias checks) and stakeholder communication; Result — what you learned, what you fixed, and how you reset expectations going forward.",
+    "idealAnswerKeyPoints": [
+      "Immediately communicated the gap proactively rather than waiting for stakeholders to discover it",
+      "Ran a structured error analysis to distinguish data quality issues from model architecture problems",
+      "Set realistic revised targets backed by evidence rather than a new optimistic promise",
+      "Implemented a monitoring baseline so future regressions would be caught earlier"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent the cycle of over-promising model accuracy from repeating?",
+      "At what point do you recommend canceling or pivoting an AI project when accuracy targets aren't achievable?"
+    ],
+    "tags": ["model-performance", "accountability", "communication", "evaluation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a time you disagreed with a senior engineer\u2019s technical approach on an AI or ML system. How did you handle the disagreement?",
+    "idealAnswerCore": "Healthy technical disagreement requires separating the idea from the person, grounding the debate in shared criteria (latency, cost, accuracy, maintainability), and being genuinely open to being wrong.",
+    "idealAnswerFraming": "STAR: Situation — the specific technical disagreement (e.g., fine-tuning vs. prompting strategy, architecture choice); Task — voice your concern without undermining collaboration; Action — how you structured your argument (experiments, benchmarks, written proposal) and invited dialogue; Result — what decision was made and what you learned regardless of whose approach won.",
+    "idealAnswerKeyPoints": [
+      "Framed the disagreement around shared goals rather than personal preference",
+      "Proposed a concrete experiment or proof-of-concept to let data resolve the dispute",
+      "Listened actively to understand the senior engineer\u2019s reasoning before counter-arguing",
+      "Accepted the outcome gracefully when overruled and continued contributing constructively"
+    ],
+    "idealAnswerFollowups": [
+      "How do you decide when a technical disagreement is worth escalating versus letting go?",
+      "What do you do when you\u2019re confident the senior engineer is making a mistake that will cause production issues?"
+    ],
+    "tags": ["technical-disagreement", "collaboration", "senior-engineers", "influence"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Tell me about a time you had to respond to a production LLM incident in the middle of the night. Walk me through what you did.",
+    "idealAnswerCore": "Effective production AI incident response requires rapid triage, clear command structure, and parallel workstreams — one team mitigating impact (rollback, kill switch, rate limiting) while another diagnoses root cause.",
+    "idealAnswerFraming": "STAR: Situation — the nature of the incident (hallucinations in critical output, model endpoint down, safety filter bypass); Task — incident commander or first responder; Action — the exact sequence: alert triage, stakeholder notification, mitigation vs. fix decision, postmortem kickoff; Result — time to resolution, what prevented recurrence, and process changes made.",
+    "idealAnswerKeyPoints": [
+      "Distinguished between mitigation (stopping the bleeding) and remediation (fixing root cause) immediately",
+      "Established a clear communication channel and update cadence so stakeholders weren\u2019t left guessing",
+      "Made the rollback vs. hotfix decision based on blast radius and confidence in the fix",
+      "Ran a blameless postmortem that produced actionable follow-ups, not just a timeline of events"
+    ],
+    "idealAnswerFollowups": [
+      "How do you build on-call runbooks for LLM systems that are harder to reason about than traditional software?",
+      "What monitoring and alerting do you put in place specifically for LLM production systems?"
+    ],
+    "tags": ["incident-response", "production", "llm", "on-call"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a time you had to communicate an LLM model rollback or downgrade to customers or users. How did you handle it?",
+    "idealAnswerCore": "Communicating a model rollback requires honesty about impact, clear language about what changed and why, and a timeline for resolution — avoiding technical jargon while acknowledging user disruption.",
+    "idealAnswerFraming": "STAR: Situation — the regression that triggered the rollback and the affected user base; Task — craft messaging that maintains trust while being accurate; Action — the communication strategy (channels, tone, timing, what to disclose and what to withhold), how you coordinated with support teams; Result — user response, trust preserved or repaired, and lessons for future change management.",
+    "idealAnswerKeyPoints": [
+      "Led with user impact first, not internal technical details",
+      "Gave a concrete timeline for restoration rather than vague reassurances",
+      "Coordinated messaging across support, product, and engineering to ensure consistency",
+      "Followed up after resolution with a summary of what changed and what was improved"
+    ],
+    "idealAnswerFollowups": [
+      "How do you decide how much technical detail to share with customers during a model incident?",
+      "How do you rebuild user trust after a significant AI quality regression?"
+    ],
+    "tags": ["communication", "rollback", "customer-facing", "change-management"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Tell me about a time you worked with a product manager who didn\u2019t fully understand AI limitations. How did you bridge that gap?",
+    "idealAnswerCore": "Bridging the AI knowledge gap with PMs requires patience, concrete analogies, and making the constraints visible early — before they get baked into requirements that are impossible to fulfill.",
+    "idealAnswerFraming": "STAR: Situation — specific misalignment (e.g., PM expected 99% accuracy, didn\u2019t understand hallucinations, wanted real-time retraining); Task — educate without being condescending and reach shared understanding; Action — the education approach (demos, analogies, lunch-and-learns, written explainers); Result — improved collaboration, better requirements, fewer surprises.",
+    "idealAnswerKeyPoints": [
+      "Used concrete examples and demos rather than abstract explanations of AI limitations",
+      "Created a shared vocabulary document the PM could reference independently",
+      "Invited the PM into evaluation reviews so they experienced model behavior firsthand",
+      "Shifted the PM\u2019s frame from \u2018the AI should always be right\u2019 to \u2018the AI should fail gracefully\u2019"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a PM who keeps pushing for capabilities you\u2019ve explained are not currently feasible?",
+      "What resources or frameworks do you use to onboard non-technical partners to AI thinking?"
+    ],
+    "tags": ["pm-collaboration", "education", "ai-limitations", "cross-functional"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Tell me about a time you mentored a junior engineer on machine learning or AI concepts. What was your approach?",
+    "idealAnswerCore": "Effective ML mentorship balances conceptual grounding with hands-on practice, meets the learner where they are, and progressively transfers ownership rather than creating dependency.",
+    "idealAnswerFraming": "STAR: Situation — the junior engineer\u2019s background and the gap they needed to close; Task — accelerate their growth without blocking your own work; Action — the mentorship structure (pairing sessions, concept explanations, code reviews, stretch assignments); Result — specific growth milestones the junior engineer achieved.",
+    "idealAnswerKeyPoints": [
+      "Assessed the junior engineer\u2019s existing mental models before trying to build new ones",
+      "Used the \u2018I do, we do, you do\u2019 progression to transfer ownership gradually",
+      "Connected abstract ML concepts to the specific codebase and problems they were working on",
+      "Created a safe environment for questions by normalizing confusion as part of learning"
+    ],
+    "idealAnswerFollowups": [
+      "How do you balance mentoring responsibilities with your own project deliverables?",
+      "How do you adapt your teaching style when a junior engineer isn\u2019t making progress?"
+    ],
+    "tags": ["mentoring", "junior-engineers", "teaching", "team-development"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a situation where you had to make a build-vs-buy decision for an LLM feature. How did you approach it?",
+    "idealAnswerCore": "Build-vs-buy for LLM features should be evaluated along axes of differentiation, total cost of ownership, time-to-market, and long-term control — with a strong bias toward buying commodities and building differentiators.",
+    "idealAnswerFraming": "STAR: Situation — the specific feature (summarization, embeddings, fine-tuned classifier) and business context; Task — make a defensible recommendation; Action — the evaluation framework you applied (cost analysis, vendor assessment, build complexity estimate, strategic fit); Result — the decision made, how it played out, and what you\u2019d change in hindsight.",
+    "idealAnswerKeyPoints": [
+      "Mapped the feature to the core vs. context vs. commodity classification to frame strategic value",
+      "Estimated true build cost including maintenance, not just initial development",
+      "Evaluated vendor lock-in risk and data privacy implications of third-party solutions",
+      "Validated the decision with a time-boxed proof-of-concept before committing"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle it when the build option looks better technically but the buy option is faster to market?",
+      "At what scale or usage level does a buy decision typically flip to a build decision for AI components?"
+    ],
+    "tags": ["build-vs-buy", "decision-making", "llm", "strategy"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you had to choose between competing LLM providers. How did you evaluate and make the decision?",
+    "idealAnswerCore": "Selecting an LLM provider requires systematic evaluation against your specific use-case requirements — task performance on your own data, latency, cost at scale, data handling, and roadmap alignment — not general benchmarks.",
+    "idealAnswerFraming": "STAR: Situation — the business need and the competing providers in consideration; Task — make a recommendation the team and leadership could stand behind; Action — the evaluation methodology (task-specific benchmarks, cost modeling, SLA review, security assessment, developer experience); Result — the provider selected and the criteria that swung the decision.",
+    "idealAnswerKeyPoints": [
+      "Ran evaluations on your own representative data rather than relying on public leaderboard scores",
+      "Modeled cost at projected production scale, not just development usage",
+      "Assessed data privacy terms and retention policies given your compliance requirements",
+      "Built abstraction layers to reduce future switching costs regardless of the final choice"
+    ],
+    "idealAnswerFollowups": [
+      "How do you structure a fair head-to-head evaluation when providers have very different strengths?",
+      "How do you manage the risk that the LLM provider you chose becomes uncompetitive in 12 months?"
+    ],
+    "tags": ["llm-providers", "vendor-evaluation", "decision-making", "cost-analysis"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a time you had to address significant technical debt in an AI or ML system. What was your strategy?",
+    "idealAnswerCore": "Managing AI technical debt requires making the invisible visible — quantifying its cost in reliability, velocity, and on-call burden — then negotiating dedicated capacity to pay it down alongside feature work.",
+    "idealAnswerFraming": "STAR: Situation — the specific debt (fragile pipelines, untested model code, undocumented preprocessing, hardcoded thresholds); Task — balance debt reduction against new feature pressure; Action — how you audited the debt, made the business case, and structured the paydown (tech debt sprints, boy-scout rule, refactor-as-you-go); Result — measurable improvement in system health and team velocity.",
+    "idealAnswerKeyPoints": [
+      "Created a concrete debt register with estimated cost per item rather than vague complaints",
+      "Tied debt to business outcomes leadership cared about (e.g., 30% of on-call time traced to legacy pipeline)",
+      "Negotiated a sustainable ratio of debt work to feature work (e.g., 20% capacity reserved)",
+      "Prevented new debt accumulation by adding definition-of-done criteria that addressed common debt sources"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prioritize which technical debt to address first in an AI system?",
+      "How do you prevent technical debt from re-accumulating after you\u2019ve paid it down?"
+    ],
+    "tags": ["technical-debt", "system-health", "engineering-culture", "refactoring"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you had to advocate for investment in evaluation infrastructure for an AI system. How did you make the case?",
+    "idealAnswerCore": "Evaluation infrastructure is invisible until it\u2019s missing — the case for investment must connect weak evals to specific business failures (regressions shipped, user complaints, slow iteration) and quantify the cost of the status quo.",
+    "idealAnswerFraming": "STAR: Situation — the gap in eval tooling and its consequences (regressions slipping through, slow release cycles, no ability to measure prompt changes); Task — convince leadership or product to prioritize eval work over features; Action — the business case you built (incidents traced to eval gaps, time wasted in manual review, competitive benchmarking); Result — budget or sprint capacity secured and what the improved eval infrastructure enabled.",
+    "idealAnswerKeyPoints": [
+      "Documented specific incidents where poor evaluation directly caused user-facing quality regressions",
+      "Quantified the manual effort currently spent on evaluation that automation could replace",
+      "Framed eval infrastructure as a velocity multiplier, not overhead — enabling faster, safer iteration",
+      "Showed a concrete roadmap: what the infrastructure would look like and what it would unlock"
+    ],
+    "idealAnswerFollowups": [
+      "What does a mature LLM evaluation infrastructure look like in your experience?",
+      "How do you balance automated evals with human evaluation for subjective quality dimensions?"
+    ],
+    "tags": ["evaluation", "advocacy", "infrastructure", "quality"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Describe a situation where you had to say no to a feature request because it posed safety or ethical risks. How did you handle it?",
+    "idealAnswerCore": "Saying no to a risky AI feature requires a principled framework, not just a gut feeling — articulate the specific harm vectors, propose safer alternatives, and escalate through proper channels if the pressure persists.",
+    "idealAnswerFraming": "STAR: Situation — the requested feature and the safety concern you identified (e.g., generating targeted persuasive content, removing safety filters, identifying individuals from behavioral data); Task — protect the product and company without becoming a blocker; Action — how you communicated the risk, what alternatives you proposed, and how you navigated pushback; Result — the outcome and what it established for future risk conversations.",
+    "idealAnswerKeyPoints": [
+      "Named the specific harm vectors concretely rather than invoking vague ethics concerns",
+      "Proposed at least one safer alternative that partially met the business need",
+      "Documented the refusal and reasoning to create institutional memory",
+      "Escalated through a defined review process rather than unilaterally blocking indefinitely"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle it when leadership overrules your safety concern and proceeds with the feature anyway?",
+      "How do you build organizational processes so safety reviews happen proactively rather than reactively?"
+    ],
+    "tags": ["safety", "ethics", "feature-refusal", "risk-management"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you had to balance research exploration against the pressure to ship a product. How did you manage that tension?",
+    "idealAnswerCore": "The research-vs-ship tension is managed by time-boxing exploration with clear decision gates: define what the spike must answer, set a hard deadline, and commit to shipping the best-known approach when time expires.",
+    "idealAnswerFraming": "STAR: Situation — the project where both exploration (trying novel approaches) and delivery pressure coexisted; Task — make progress on both without sacrificing either; Action — the framework you used (time-boxed spikes, parallel workstreams, staged delivery); Result — what shipped and what research yielded, and how you negotiated the balance with stakeholders.",
+    "idealAnswerKeyPoints": [
+      "Set explicit research time-boxes with pre-agreed criteria for what \u2018good enough to ship\u2019 looked like",
+      "Separated the research track from the production track to avoid research debt leaking into shipped code",
+      "Communicated research progress in terms of risk reduction, not just technical findings",
+      "Shipped incrementally so exploration didn\u2019t block user value delivery"
+    ],
+    "idealAnswerFollowups": [
+      "How do you decide which AI problems warrant significant research investment versus just applying proven techniques?",
+      "How do you keep a research-oriented team motivated when product pressure demands shipping less novel solutions?"
+    ],
+    "tags": ["research", "shipping", "balance", "exploration"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Describe a cross-functional AI project you led. What were the biggest challenges and how did you address them?",
+    "idealAnswerCore": "Leading cross-functional AI projects requires establishing shared ownership of outcomes, not just handoffs — aligning data engineers, model developers, product, legal, and ops on a single north-star metric and decision-making process.",
+    "idealAnswerFraming": "STAR: Situation — the project scope, the teams involved, and why cross-functional alignment was difficult; Task — drive delivery without direct authority over all contributors; Action — the coordination structures you put in place (RACI, joint planning sessions, shared dashboards, escalation paths); Result — what shipped and what you\u2019d do differently.",
+    "idealAnswerKeyPoints": [
+      "Established a single shared north-star metric all teams agreed to optimize for",
+      "Created a lightweight RACI to prevent ambiguity about who decided vs. who was consulted",
+      "Ran regular cross-team syncs that were structured around blockers, not status updates",
+      "Made dependencies explicit and tracked them publicly so delays were visible early"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle it when two teams on a cross-functional project have conflicting priorities?",
+      "What\u2019s the most common failure mode you\u2019ve seen in cross-functional AI projects?"
+    ],
+    "tags": ["leadership", "cross-functional", "project-management", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you had to navigate conflicting priorities from multiple stakeholders on an AI project. What did you do?",
+    "idealAnswerCore": "Conflicting stakeholder priorities must be resolved at the level of underlying goals, not competing requests — surface the shared business objective that all parties care about and use it to sequence or deprioritize competing asks.",
+    "idealAnswerFraming": "STAR: Situation — the competing stakeholders and their conflicting asks (e.g., legal wanting safety guardrails vs. product wanting unrestricted output, accuracy vs. latency tradeoff demanded by different teams); Task — resolve without losing either stakeholder\u2019s trust; Action — how you structured the conversation (joint meeting, written tradeoff analysis, escalation to a common manager); Result — the resolution and the relationship health afterward.",
+    "idealAnswerKeyPoints": [
+      "Brought conflicting stakeholders into the same room rather than triangulating separately",
+      "Translated competing requests into explicit tradeoffs with quantified implications",
+      "Anchored the decision on shared business goals rather than departmental preferences",
+      "Documented the resolution and the reasoning so it couldn\u2019t be relitigated repeatedly"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a stakeholder who agrees in the meeting but then continues to push their original agenda afterward?",
+      "When should you escalate a stakeholder conflict versus resolving it yourself?"
+    ],
+    "tags": ["stakeholder-management", "prioritization", "conflict-resolution", "negotiation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Describe a time you discovered a data privacy concern in the middle of an AI project. How did you handle it?",
+    "idealAnswerCore": "A mid-project data privacy discovery requires immediate escalation to legal and privacy teams, a rapid impact assessment, and transparent communication — not quiet remediation that bypasses the proper process.",
+    "idealAnswerFraming": "STAR: Situation — the specific concern (PII in training data, user data used without consent, cross-border data transfer violation); Task — act responsibly without creating panic or unnecessarily derailing the project; Action — the escalation path, impact assessment, stakeholder communication, and remediation steps; Result — what was fixed, what was paused, and what process change prevented recurrence.",
+    "idealAnswerKeyPoints": [
+      "Escalated to legal and privacy counsel immediately rather than attempting to self-remediate quietly",
+      "Scoped the blast radius: what data was affected, how many users, what downstream systems",
+      "Paused the affected pipeline or model training while the investigation was underway",
+      "Drove a process change (PIA/DPIA at project kickoff, data inventory requirements) to catch issues earlier"
+    ],
+    "idealAnswerFollowups": [
+      "How do you build privacy considerations into AI project planning from the start?",
+      "What\u2019s the difference between a privacy concern that requires immediate halting versus one that can be addressed in the next sprint?"
+    ],
+    "tags": ["data-privacy", "compliance", "escalation", "responsible-ai"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time when benchmark results looked strong but user satisfaction with the AI feature was low. How did you reconcile the gap?",
+    "idealAnswerCore": "Benchmark-user satisfaction gaps reveal that your eval metrics don\u2019t capture what users actually value — the fix is qualitative research to understand the real user need, then redesigning evals around it.",
+    "idealAnswerFraming": "STAR: Situation — the specific metric that looked good vs. the user signal that indicated disappointment (CSAT, NPS, task completion, user sessions); Task — diagnose and close the gap; Action — the qualitative research conducted (user interviews, session recordings, error analysis on user-reported failures), and how you redesigned the evaluation; Result — new eval that correlated with satisfaction and the product improvement it drove.",
+    "idealAnswerKeyPoints": [
+      "Treated the gap as an eval design problem, not a user perception problem",
+      "Conducted qualitative research (interviews, session analysis) to understand what \u2018good\u2019 meant to users",
+      "Redesigned the benchmark to include dimensions users cared about: tone, formatting, actionability, not just factual accuracy",
+      "Added user satisfaction signals (thumbs up/down, repeat usage) as leading indicators alongside automated evals"
+    ],
+    "idealAnswerFollowups": [
+      "How do you design an evaluation suite that stays correlated with user satisfaction as your product evolves?",
+      "When benchmark and user satisfaction conflict, which should take precedence and why?"
+    ],
+    "tags": ["evaluation", "user-satisfaction", "benchmarks", "product-quality"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Describe a time an AI feature launch failed or significantly underdelivered. How did you recover?",
+    "idealAnswerCore": "Recovering from a failed AI launch requires owning the failure publicly, diagnosing root cause rigorously, and demonstrating a credible path forward — while protecting the team\u2019s morale and learning culture.",
+    "idealAnswerFraming": "STAR: Situation — what was launched, what failure looked like (user drop-off, production issues, missed business metrics), and the stakes; Task — stabilize, learn, and restore confidence; Action — the immediate mitigation, the postmortem process, the stakeholder communication, and the revised plan; Result — what was recovered, what was abandoned, and what changed in how the team builds.",
+    "idealAnswerKeyPoints": [
+      "Took accountability publicly without deflecting blame to the model, the data, or external factors",
+      "Ran a structured postmortem that distinguished between execution failures and assumption failures",
+      "Communicated a revised plan with credible milestones rather than vague reassurances",
+      "Extracted durable process changes so the same failure mode couldn\u2019t recur"
+    ],
+    "idealAnswerFollowups": [
+      "How do you protect a team\u2019s willingness to take ambitious risks after a high-profile failure?",
+      "How do you know when to pivot vs. persevere after a failed AI launch?"
+    ],
+    "tags": ["failure-recovery", "launch", "accountability", "postmortem"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Tell me about a time you had to convince leadership to invest in model quality or evaluation rigor over shipping speed. What was your argument?",
+    "idealAnswerCore": "The case for quality over speed must be framed in terms leadership understands: long-term trust erosion, support costs, regulatory risk, and competitive differentiation — not engineering perfectionism.",
+    "idealAnswerFraming": "STAR: Situation — the specific quality-vs-speed tradeoff being debated and the pressure to ship; Task — make a compelling case for slowing down to maintain quality; Action — the business case you built (user trust data, cost of quality incidents, competitor examples, regulatory exposure); Result — the decision made and what the investment in quality protected.",
+    "idealAnswerKeyPoints": [
+      "Quantified the cost of poor quality in concrete terms: support tickets, churn signals, reputational incidents",
+      "Framed quality investment as risk mitigation, not engineering preference",
+      "Used analogies from domains leadership trusted (medical device validation, financial model auditing) to make the stakes concrete",
+      "Proposed a minimum quality bar below which you\u2019d recommend not shipping, with clear criteria"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent quality standards from becoming an indefinite blocker on shipping?",
+      "How do you measure the ROI of model quality improvements to justify continued investment?"
+    ],
+    "tags": ["quality", "leadership-influence", "advocacy", "strategy"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Tell me about your experience working with annotators or a data labeling team. What did you learn about making that collaboration effective?",
+    "idealAnswerCore": "Effective annotator collaboration requires treating labelers as domain partners, not task executors — investing in clear guidelines, annotation tooling, quality measurement, and feedback loops that improve label quality over time.",
+    "idealAnswerFraming": "STAR: Situation — the labeling project and the annotator setup (in-house, vendor, crowdsourced); Task — get high-quality annotations at scale; Action — the specific practices you implemented (guideline design, annotator training, inter-annotator agreement measurement, feedback loops, edge case handling); Result — label quality achieved and its downstream impact on model performance.",
+    "idealAnswerKeyPoints": [
+      "Invested in annotation guideline design upfront, including ambiguous case rules and worked examples",
+      "Measured inter-annotator agreement systematically and used disagreements to improve guidelines",
+      "Created a feedback channel for annotators to flag confusing instructions or edge cases",
+      "Audited a sample of labels regularly to catch annotation drift over time"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle disagreement between annotators on subjective labels (e.g., sentiment, toxicity)?",
+      "At what label quality level do you decide you need to recollect data rather than train on what you have?"
+    ],
+    "tags": ["data-labeling", "annotation", "data-quality", "collaboration"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Describe a time you actively worked to build a culture of responsible AI within your team or organization. What did you do?",
+    "idealAnswerCore": "Building responsible AI culture requires embedding practices into the development workflow — not relying on ethical aspirations alone — through model cards, impact assessments, red-teaming, and making safety a first-class engineering criterion.",
+    "idealAnswerFraming": "STAR: Situation — the cultural gap (safety concerns dismissed, no bias testing, ethics discussions siloed); Task — shift the team\u2019s default behavior, not just their stated values; Action — the specific interventions (red-teaming practices, bias review checkpoints, responsible AI review in the launch process, community of practice); Result — measurable change in team behavior and artifacts produced.",
+    "idealAnswerKeyPoints": [
+      "Made responsible AI practices concrete and workflow-integrated rather than a separate committee",
+      "Created psychological safety for engineers to raise concerns without being seen as blockers",
+      "Established structured red-teaming and bias testing as part of definition-of-done",
+      "Championed model cards and impact assessments as living documents, not compliance theater"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle cultural resistance from engineers who see responsible AI practices as slowing them down?",
+      "What\u2019s the difference between responsible AI theater and practices that actually reduce harm?"
+    ],
+    "tags": ["responsible-ai", "culture", "engineering-practices", "leadership"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Tell me about a time you received complaints from users that your model was producing biased outputs. How did you respond?",
+    "idealAnswerCore": "User bias complaints must be taken seriously as both a product quality failure and a potential harm — the response requires acknowledgment, rapid diagnosis, transparent communication, and a remediation roadmap.",
+    "idealAnswerFraming": "STAR: Situation — the nature of the complaints (demographic bias in outputs, disparate error rates, harmful stereotypes); Task — investigate, respond, and remediate without dismissing or over-promising; Action — the bias audit you ran, how you communicated with affected users, and the technical and policy changes you implemented; Result — what changed in the product and in the team\u2019s processes.",
+    "idealAnswerKeyPoints": [
+      "Treated user bias reports as high-priority signals rather than edge cases or noise",
+      "Ran a structured bias audit segmenting error rates and output patterns across relevant demographic dimensions",
+      "Communicated transparently with affected users about what was found and what was being done",
+      "Implemented ongoing bias monitoring so future regressions would surface proactively"
+    ],
+    "idealAnswerFollowups": [
+      "How do you define and measure fairness for a generative AI system where output quality is subjective?",
+      "How do you prevent bias from being reintroduced through model updates or prompt changes?"
+    ],
+    "tags": ["bias", "fairness", "user-complaints", "responsible-ai"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a time you had to own and recover from a mistake you made in an AI deployment. What happened and what did you do?",
+    "idealAnswerCore": "Owning a mistake in AI deployment means taking responsibility without excuses, fixing the immediate harm quickly, being transparent with those affected, and converting the failure into durable process improvement.",
+    "idealAnswerFraming": "STAR: Situation — the specific mistake (wrong model promoted, safety filter misconfigured, biased training data used, PII leak); Task — take ownership rather than deflect; Action — immediate mitigation steps, stakeholder communication, postmortem, and process changes; Result — trust repaired and what prevented recurrence.",
+    "idealAnswerKeyPoints": [
+      "Communicated the mistake to stakeholders proactively rather than waiting to be asked",
+      "Led with what was being done to fix it, not just with apology",
+      "Ran a root-cause analysis that went beyond the proximate cause to find the systemic gap",
+      "Proposed and drove the process change that closed the gap, making it personal accountability"
+    ],
+    "idealAnswerFollowups": [
+      "How do you maintain psychological safety for the team when owning a public mistake?",
+      "How do you distinguish between mistakes that should be escalated widely versus handled quietly?"
+    ],
+    "tags": ["accountability", "mistakes", "postmortem", "trust"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you had to estimate effort for an LLM project with high uncertainty. How did you approach it?",
+    "idealAnswerCore": "Estimating high-uncertainty LLM projects requires range-based estimation with explicit assumptions, staged commitments, and regular re-estimation as unknowns resolve — not false precision that erodes credibility.",
+    "idealAnswerFraming": "STAR: Situation — the project with major unknowns (data availability unclear, no precedent for the task, unknown model performance on the domain); Task — give leadership a workable estimate without lying; Action — the estimation approach (cone of uncertainty, three-point estimates, assumption enumeration, spike-to-inform strategy); Result — how the estimate held up and how you managed expectation-setting.",
+    "idealAnswerKeyPoints": [
+      "Gave range estimates with explicit confidence levels rather than point estimates",
+      "Enumerated the top assumptions driving variance so stakeholders understood what could change the estimate",
+      "Proposed a short spike or discovery phase to reduce uncertainty before committing to a full estimate",
+      "Set a re-estimation cadence so the estimate was updated as unknowns resolved"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle leadership who insist on a single-number estimate when you\u2019re highly uncertain?",
+      "What\u2019s your experience with estimation accuracy improving as LLM projects mature?"
+    ],
+    "tags": ["estimation", "uncertainty", "planning", "project-management"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a time you had to present technical AI results to a board, executive team, or major investor. How did you prepare and what did you learn?",
+    "idealAnswerCore": "Executive AI presentations must translate technical results into business impact — leading with what changed for the business, using benchmarks only as evidence, and anticipating the questions executives actually care about (risk, cost, competitive position).",
+    "idealAnswerFraming": "STAR: Situation — the audience, the stakes, and what technical results you needed to convey; Task — inform and potentially influence a major decision; Action — how you prepared (narrative structure, business-first framing, rehearsal, anticipating questions, simplifying visuals); Result — the decision or outcome that followed and what you\u2019d do differently.",
+    "idealAnswerKeyPoints": [
+      "Led with business outcome first, backed by technical evidence — never the reverse",
+      "Anticipated the executive\u2019s top three questions (risk, cost, timeline) and prepared crisp answers",
+      "Used one clear metric per claim rather than presenting a table of model benchmarks",
+      "Practiced with a non-technical proxy audience before the real presentation to find jargon blind spots"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a hostile question from an executive who doubts the AI results you\u2019re presenting?",
+      "How do you communicate model uncertainty or caveats to an executive audience without undermining confidence?"
+    ],
+    "tags": ["executive-communication", "presentations", "stakeholder-management", "influence"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Tell me about a time you had to learn a new ML framework, AI tool, or language under significant time pressure. How did you approach it?",
+    "idealAnswerCore": "Rapid technical learning under time pressure requires ruthless prioritization of the 20% of knowledge that enables 80% of the task, combined with building small working systems immediately rather than reading comprehensively.",
+    "idealAnswerFraming": "STAR: Situation — the tool or framework and why you needed it quickly; Task — become productive enough to contribute, fast; Action — the learning strategy you used (tutorial-to-task ratio, pair programming, targeted documentation, working example-first approach); Result — how quickly you became productive and what you produced.",
+    "idealAnswerKeyPoints": [
+      "Identified the minimum viable knowledge needed for the immediate task and focused there first",
+      "Built a working proof-of-concept immediately rather than reading documentation end-to-end",
+      "Used pair programming or office hours with someone already expert to shortcut trial-and-error",
+      "Documented what you learned as you went to consolidate knowledge and help others"
+    ],
+    "idealAnswerFollowups": [
+      "How do you balance depth of learning with the pragmatic need to ship something quickly?",
+      "How do you identify gaps in your understanding before they cause problems in production?"
+    ],
+    "tags": ["learning", "adaptability", "time-pressure", "skill-development"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe your experience transitioning from classical machine learning to working with large language models. What was the biggest mindset shift?",
+    "idealAnswerCore": "The classical ML to LLM mindset shift is from optimization-over-parameters to specification-through-language — from iterating features and architectures to iterating prompts, evaluation criteria, and retrieval design.",
+    "idealAnswerFraming": "STAR: Situation — your classical ML background and the context in which you started working with LLMs; Task — become effective in a fundamentally different paradigm; Action — the specific adjustments you made to your mental models, workflow, and evaluation approach; Result — what you became capable of and what you still find challenging.",
+    "idealAnswerKeyPoints": [
+      "Shifted from feature engineering to prompt engineering as the primary lever for quality improvement",
+      "Reoriented evaluation from quantitative metrics to human preference and task-based benchmarks",
+      "Adapted to emergent behavior and failure modes that don\u2019t follow classical bias-variance tradeoffs",
+      "Learned to treat the LLM as a reasoning component in a larger system rather than the entire solution"
+    ],
+    "idealAnswerFollowups": [
+      "In what situations do you still prefer classical ML approaches over LLMs?",
+      "What classical ML intuitions transferred well to LLM work and which ones led you astray?"
+    ],
+    "tags": ["classical-ml", "llms", "career-transition", "mindset"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Tell me about a time you had to decide whether to use RAG versus fine-tuning to solve a specific business problem. What was your reasoning?",
+    "idealAnswerCore": "RAG vs. fine-tuning is a retrieval vs. parametric knowledge tradeoff — RAG wins when knowledge is dynamic, large, or traceable; fine-tuning wins when style, format, or specialized reasoning must be deeply internalized.",
+    "idealAnswerFraming": "STAR: Situation — the business problem and the specific requirements (knowledge freshness, latency, cost, traceability, output style); Task — make a defensible architectural decision; Action — the evaluation framework you applied and the experiments or analysis you ran; Result — the decision made, its tradeoffs, and how it performed in production.",
+    "idealAnswerKeyPoints": [
+      "Mapped knowledge type (factual/dynamic vs. stylistic/reasoning) to the appropriate approach",
+      "Evaluated RAG retrieval quality as a first-class concern, not an afterthought",
+      "Considered combined approaches: RAG for knowledge retrieval with fine-tuning for output style",
+      "Prototyped both approaches on representative examples before committing to either"
+    ],
+    "idealAnswerFollowups": [
+      "How do you evaluate whether your RAG retrieval is actually returning the right context?",
+      "When does fine-tuning backfire and make a model less generalizable?"
+    ],
+    "tags": ["rag", "fine-tuning", "architecture", "decision-making"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a situation where you had to weigh the trade-offs between open-source and proprietary LLM models for a production use case.",
+    "idealAnswerCore": "Open-source vs. proprietary LLM selection turns on data control, customizability, infrastructure cost, performance gap, and long-term vendor dependency — with the right answer being use-case and organization-specific.",
+    "idealAnswerFraming": "STAR: Situation — the production use case and the models under consideration; Task — make a decision the team and legal/security could support; Action — the evaluation criteria (performance on your task, total infrastructure cost, data residency, fine-tuning capability, community support, SLA); Result — what was chosen, why, and how it held up.",
+    "idealAnswerKeyPoints": [
+      "Assessed data privacy and sovereignty requirements as a potential hard constraint favoring open-source",
+      "Honestly benchmarked open-source model quality gap vs. proprietary on your specific task, not on general leaderboards",
+      "Modeled the true cost of self-hosting (compute, ops, on-call) versus the API cost of proprietary solutions at scale",
+      "Evaluated community health, update frequency, and license terms for long-term viability"
+    ],
+    "idealAnswerFollowups": [
+      "How do you manage the operational burden of running your own open-source model in production?",
+      "When does the quality gap between open-source and frontier proprietary models become acceptable?"
+    ],
+    "tags": ["open-source", "proprietary-models", "vendor-evaluation", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Tell me about a time you recognized that your team or product had significant lock-in risk with an LLM provider. What did you do about it?",
+    "idealAnswerCore": "LLM provider lock-in risk is mitigated through abstraction layers, provider-agnostic evaluation, and progressive diversification — not panic-driven rewrites, and not ignoring the risk until it becomes urgent.",
+    "idealAnswerFraming": "STAR: Situation — the lock-in signals (provider-specific features deeply embedded, no easy switching path, pricing leverage); Task — reduce risk without disrupting the product; Action — the mitigation strategy (abstraction layer design, evaluation framework made provider-agnostic, secondary provider piloted); Result — reduced switching cost and what that enabled.",
+    "idealAnswerKeyPoints": [
+      "Audited which product behaviors depended on provider-specific capabilities and quantified the switching cost",
+      "Introduced an LLM abstraction interface layer to isolate provider-specific code",
+      "Ran a parallel evaluation on an alternative provider to validate feasibility and close the performance gap",
+      "Documented provider-specific assumptions in the codebase to make them visible and addressable"
+    ],
+    "idealAnswerFollowups": [
+      "How do you balance building good provider abstractions with the cost of premature generalization?",
+      "At what point does provider specialization become a competitive advantage rather than a lock-in risk?"
+    ],
+    "tags": ["vendor-lock-in", "architecture", "risk-management", "llm-providers"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Describe a time when you identified a safety concern in an AI system and had to decide whether and how to escalate it. What did you do?",
+    "idealAnswerCore": "Safety concern escalation requires swift action, clear documentation of the concern, and routing through defined channels — erring on the side of over-communication when user harm is plausible rather than trying to resolve it quietly.",
+    "idealAnswerFraming": "STAR: Situation — the safety concern you identified (harmful output category, jailbreak vulnerability, dangerous use case being enabled); Task — escalate appropriately without causing unnecessary alarm or burying a real risk; Action — the escalation path, how you documented the concern, who you involved, and the timeline; Result — what action was taken and what you learned about safety processes.",
+    "idealAnswerKeyPoints": [
+      "Documented the concern concretely with reproduction steps before escalating",
+      "Assessed severity and urgency to determine the appropriate escalation speed and channel",
+      "Escalated upward even when uncertain, because the cost of under-escalating a real risk exceeds over-escalating a false alarm",
+      "Tracked the concern to resolution rather than treating escalation as the end of your responsibility"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle it when your escalated safety concern is dismissed or deprioritized by leadership?",
+      "What makes a good safety escalation process in an AI organization?"
+    ],
+    "tags": ["safety", "escalation", "responsible-ai", "process"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you had to manage scope creep in an AI development project. What caused it and how did you address it?",
+    "idealAnswerCore": "AI scope creep is particularly dangerous because each addition compounds model complexity, evaluation burden, and data requirements — the fix is a written scope baseline, change control process, and willingness to say no with data.",
+    "idealAnswerFraming": "STAR: Situation — how the project grew beyond its original scope (new use cases added mid-build, requirement changes after model training started, stakeholder additions); Task — contain scope without damaging stakeholder relationships; Action — how you diagnosed the creep, re-baselined the scope, and implemented change control going forward; Result — what was delivered and how the team\u2019s process improved.",
+    "idealAnswerKeyPoints": [
+      "Maintained a written scope baseline that made additions explicitly visible rather than absorbed quietly",
+      "Quantified the cost of each scope addition in terms of timeline, compute, and evaluation burden",
+      "Separated the original commitment from the new requests and got explicit sign-off to change the plan",
+      "Introduced a lightweight change request process so future scope additions were deliberate, not accidental"
+    ],
+    "idealAnswerFollowups": [
+      "How do you distinguish healthy scope evolution from problematic scope creep in an AI project?",
+      "How do you maintain stakeholder goodwill when you\u2019re pushing back on their additions?"
+    ],
+    "tags": ["scope-creep", "project-management", "boundaries", "planning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe your approach to continuous evaluation of an AI system in production. Give me a specific example of how you\u2019ve implemented it.",
+    "idealAnswerCore": "Continuous evaluation in production requires layered signals — automated regression tests, user feedback instrumentation, human eval spot-checks, and model health monitors — all connected to a workflow that triggers action when quality drops.",
+    "idealAnswerFraming": "STAR: Situation — the AI system in production and the evaluation gaps that existed; Task — build an evaluation loop that catches regressions before users do; Action — the specific implementation (eval dataset management, automated test runs on each deployment, user signal collection, periodic human eval cadence, alerting thresholds); Result — regressions caught, incidents prevented, and quality trajectory improved.",
+    "idealAnswerKeyPoints": [
+      "Maintained a versioned golden eval dataset with continuous expansion from production failures",
+      "Automated eval runs on every model or prompt change as part of the CI/CD pipeline",
+      "Instrumented user signals (thumbs down, abandonment, reformulation) as real-time quality proxies",
+      "Ran periodic human eval audits to validate that automated evals were still tracking real quality"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle eval dataset staleness as your product and user base evolve?",
+      "How do you set alert thresholds for automated evals without generating too many false positives?"
+    ],
+    "tags": ["evaluation", "monitoring", "production", "continuous-improvement"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Tell me about a time you collaborated closely with data engineers on a pipeline design for an AI system. What did you learn about making that partnership effective?",
+    "idealAnswerCore": "ML-data engineering partnerships succeed when ML engineers treat data contracts as first-class requirements, involve data engineers in feature design, and create feedback loops so pipeline issues surface before they affect model quality.",
+    "idealAnswerFraming": "STAR: Situation — the pipeline design challenge and the data engineering collaboration context; Task — build a reliable data flow that met the ML system\u2019s needs; Action — the practices that made the collaboration work (schema contracts, data quality SLAs, shared ownership of data tests, regular joint reviews); Result — what you built and what you\u2019d do differently.",
+    "idealAnswerKeyPoints": [
+      "Defined explicit data contracts (schema, type, freshness, completeness requirements) as the collaboration interface",
+      "Involved data engineers in feature design discussions before implementation, not after",
+      "Co-owned data quality tests rather than treating validation as the data engineer\u2019s sole responsibility",
+      "Created observability on the data pipeline so ML engineers could diagnose model regressions back to their data root cause"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a disagreement with a data engineer about what transformations belong in the pipeline versus the model?",
+      "What monitoring do you put in place at the boundary between data pipelines and ML systems?"
+    ],
+    "tags": ["data-engineering", "collaboration", "pipelines", "data-quality"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Describe a time you had to set realistic expectations with customers or users about what an AI product could and couldn\u2019t do. How did you approach it?",
+    "idealAnswerCore": "Setting realistic AI expectations with customers requires proactive communication of limitations before they cause disappointment, concrete examples of failure modes, and a clear map of what the product is optimized for.",
+    "idealAnswerFraming": "STAR: Situation — the gap between customer expectations and actual product capability (e.g., they expected full automation, the product required human review; they expected perfect accuracy, you could offer 85%); Task — align expectations without losing the customer; Action — the communication approach (onboarding framing, documentation, demos of failure modes, success case definition); Result — customer satisfaction and reduced escalations.",
+    "idealAnswerKeyPoints": [
+      "Led onboarding with what the AI was not designed for, not just what it was good at",
+      "Used concrete examples and live demos of failure modes rather than abstract disclaimers",
+      "Defined success metrics collaboratively with the customer so they knew what \u2018working\u2019 looked like",
+      "Built expectation-setting into sales and pre-sales materials to prevent the gap from forming initially"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a customer who remains convinced the AI should be able to do something it genuinely cannot?",
+      "How do you update customer expectations when the product improves significantly after initial onboarding?"
+    ],
+    "tags": ["customer-communication", "expectation-setting", "ai-limitations", "customer-success"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Describe your career growth from a machine learning engineer to a technical lead or AI lead role. What were the key transitions?",
+    "idealAnswerCore": "The ML engineer to AI lead transition requires developing three new muscles: influence without authority, system-level thinking beyond individual models, and translating technical direction into organizational action.",
+    "idealAnswerFraming": "Use a structured narrative: describe your starting point, the first moment you were pulled into a leadership role, the skill gaps you identified, the deliberate investments you made to close them, and the evidence that you\u2019d successfully made the transition. Anchor with specific projects or decisions.",
+    "idealAnswerKeyPoints": [
+      "Identified when individual IC contribution stopped being the highest-leverage use of your time",
+      "Invested deliberately in skills that don\u2019t develop naturally from coding: facilitation, written communication, roadmap thinking",
+      "Sought out opportunities to lead cross-functional work before having the formal title",
+      "Found mentors and sponsors who had made similar transitions and could provide honest feedback"
+    ],
+    "idealAnswerFollowups": [
+      "What do you miss most about being a hands-on ML engineer?",
+      "What\u2019s the hardest part of staying technically credible while spending more time on leadership responsibilities?"
+    ],
+    "tags": ["career-growth", "leadership", "technical-lead", "transition"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "What excites you most about the current state of AI and how it influences the way you approach your work?",
+    "idealAnswerCore": "Articulating genuine excitement about AI\u2019s current state signals authentic engagement with the field and gives interviewers insight into how you stay current and what problems you\u2019re drawn to.",
+    "idealAnswerFraming": "Structure your answer around three elements: a specific capability or trend that genuinely excites you (not generic hype), why it matters practically for real applications, and a concrete example of how it has already influenced your work or thinking. Avoid listing everything — depth on one or two things beats shallow coverage of many.",
+    "idealAnswerKeyPoints": [
+      "Named a specific capability (e.g., long-context reasoning, multimodal integration, tool use) rather than vague enthusiasm for \u2018AI in general\u2019",
+      "Connected your excitement to a tangible user or business problem it unlocks",
+      "Described how the excitement translated into concrete action: an experiment, a project pivot, a paper you read and implemented",
+      "Acknowledged the accompanying challenges or risks without letting skepticism override genuine enthusiasm"
+    ],
+    "idealAnswerFollowups": [
+      "What aspect of the current AI landscape are you most skeptical or cautious about?",
+      "How do you stay current with AI developments without spending all your time reading papers?"
+    ],
+    "tags": ["motivation", "ai-landscape", "curiosity", "career"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you influenced the AI strategy of your team or company. What was the impact?",
+    "idealAnswerCore": "Influencing AI strategy at scale requires building conviction through evidence, identifying the right moment in the decision cycle to inject ideas, and building allies across functions before pitching upward.",
+    "idealAnswerFraming": "STAR: Situation — the strategic gap or opportunity you identified; Task — shift the team or company\u2019s direction without formal authority; Action — how you built the case (research, prototypes, coalition building, timing the conversation), and how you presented it; Result — the strategy change adopted and its measurable impact.",
+    "idealAnswerKeyPoints": [
+      "Built a concrete evidence base (prototype, benchmark, market analysis) before pitching rather than relying on argument alone",
+      "Identified and recruited allies across functions who had complementary incentives to support the change",
+      "Timed the pitch to align with a business decision or planning cycle where strategy was actively being set",
+      "Defined clear success metrics for the strategy so impact could be demonstrated retrospectively"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle it when your strategic proposal is rejected despite a strong case?",
+      "How do you distinguish between an AI strategy worth fighting for versus one to let go?"
+    ],
+    "tags": ["strategy", "influence", "leadership", "ai-direction"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you had to handle a team member who was over-indexing on AI hype \u2014 proposing solutions that were technically exciting but not appropriate for the problem. How did you approach it?",
+    "idealAnswerCore": "Over-indexing on AI hype is best corrected through intellectual respect, not dismissal \u2014 channel the enthusiasm toward rigorous problem definition and prototype evidence rather than confronting the person\u2019s judgment directly.",
+    "idealAnswerFraming": "STAR: Situation — the specific proposal and how it was mismatched to the problem; Task — redirect without demotivating a potentially valuable team member; Action — how you engaged (one-on-one conversation, framing questions that surfaced the mismatch, proposing a quick experiment to test the idea); Result — the outcome for the project and for the team member\u2019s development.",
+    "idealAnswerKeyPoints": [
+      "Engaged with the idea seriously before questioning the fit, to avoid appearing dismissive",
+      "Used problem-definition questions (\u2018What user behavior does this change?\u2019) to expose the mismatch without confrontation",
+      "Proposed a small experiment to test the hypothesis quickly rather than debating in the abstract",
+      "Recognized and channeled the underlying curiosity productively toward appropriate future problems"
+    ],
+    "idealAnswerFollowups": [
+      "How do you create a team culture where ambitious technical ideas are encouraged but also rigorously evaluated?",
+      "At what point does AI enthusiasm become a performance concern rather than a coaching opportunity?"
+    ],
+    "tags": ["team-dynamics", "hype", "coaching", "technical-judgment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "advanced",
+    "question": "Describe a time you had to work closely with legal or compliance teams to get an AI feature approved. What was that process like and what did you learn?",
+    "idealAnswerCore": "Legal and compliance collaboration on AI features works best when engineers engage early, speak in terms of risk rather than technical architecture, and treat compliance requirements as design constraints rather than late-stage gates.",
+    "idealAnswerFraming": "STAR: Situation — the AI feature and the legal/compliance concern (IP, data privacy, regulated output, financial or medical advice, discriminatory output risk); Task — get the feature approved without gutting its value; Action — how you structured the collaboration (early engagement, risk framing, mitigation proposals, iterative review); Result — what was approved, what changed, and what you\u2019d do differently.",
+    "idealAnswerKeyPoints": [
+      "Brought legal into the project at design phase rather than after implementation, dramatically reducing rework",
+      "Translated technical architecture into risk language (what data is retained, what decisions the model makes, what outputs are surfaced)",
+      "Proposed specific mitigations for each risk flagged rather than waiting for legal to prescribe solutions",
+      "Built an ongoing relationship with the legal team so future AI features started with shared context rather than from scratch"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a legal requirement that would make the AI feature technically infeasible?",
+      "What should AI teams understand about how legal and compliance teams assess AI risk?"
+    ],
+    "tags": ["legal", "compliance", "collaboration", "responsible-ai"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "foundational",
+    "question": "Describe your approach to documentation for AI systems. What do you document, how, and for whom?",
+    "idealAnswerCore": "AI system documentation must cover more than code: model cards, data lineage, prompt versioning, evaluation results, known failure modes, and operational runbooks are all first-class documentation artifacts.",
+    "idealAnswerFraming": "Frame your answer around audience segmentation: what do operators need (runbooks, monitoring guides), what do future ML engineers need (architecture decisions, training data provenance, experiment history), what do users or downstream teams need (model cards, capability statements, known limitations). Give specific examples of documentation you\u2019ve written and what made it effective.",
+    "idealAnswerKeyPoints": [
+      "Maintained model cards capturing training data, evaluation results, known limitations, and intended use",
+      "Versioned prompts and tracked their performance history alongside model versions",
+      "Wrote operational runbooks for common failure scenarios that on-call engineers without deep ML context could follow",
+      "Treated documentation as a living artifact updated with every significant change, not written once and forgotten"
+    ],
+    "idealAnswerFollowups": [
+      "How do you keep documentation accurate as models and prompts evolve rapidly?",
+      "What documentation do you wish existed when you inherited an AI system someone else built?"
+    ],
+    "tags": ["documentation", "model-cards", "engineering-practices", "knowledge-management"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about an AI project you\u2019d approach completely differently if you could do it again. What would you change and why?",
+    "idealAnswerCore": "Honest retrospective reflection on an AI project demonstrates learning agility and depth of experience — the best answers identify a non-obvious systemic change, not just \u2018I would have planned better\u2019.",
+    "idealAnswerFraming": "Structure this as a forward-looking retrospective: briefly describe the project and what it produced, then spend the majority of your answer on what specifically you\u2019d change (evaluation design, team composition, data strategy, communication approach, tooling choices), why you\u2019d change it, and what you\u2019d expect that change to produce. Be concrete and self-aware without being self-flagellating.",
+    "idealAnswerKeyPoints": [
+      "Identified a root-cause change rather than a symptom-level fix (\u2018we should have built evaluation infrastructure before models, not after\u2019)",
+      "Demonstrated that the learning actually changed your practice on subsequent projects",
+      "Acknowledged the constraints that led to the original decision rather than pretending it was simply a mistake",
+      "Connected the retrospective insight to a principle you now apply generically, not just to that specific case"
+    ],
+    "idealAnswerFollowups": [
+      "How do you create space for retrospective reflection when teams are always under pressure to move on to the next project?",
+      "What\u2019s the difference between a productive retrospective and one that becomes blame-seeking?"
+    ],
+    "tags": ["retrospective", "learning", "growth", "self-awareness"],
+    "source": "seed"
+  }
+]

@@ -1,0 +1,1084 @@
+[
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is Byte-Pair Encoding (BPE) and how does it build a tokenizer vocabulary?",
+    "idealAnswerCore": "BPE is a subword tokenization algorithm that starts with individual characters and iteratively merges the most frequent adjacent pair of tokens until reaching a target vocabulary size.",
+    "idealAnswerFraming": "Explain the iterative merge process, emphasizing that BPE lets models handle rare words via subword decomposition while keeping common words as single tokens.",
+    "idealAnswerKeyPoints": [
+      "Initialize vocabulary with individual characters (and a special end-of-word marker)",
+      "Count all adjacent token pairs in the training corpus and merge the most frequent pair into a new token",
+      "Repeat merges until the vocabulary reaches the target size (e.g., 50,000)",
+      "At inference, apply the same merge rules in order to tokenize new text",
+      "BPE balances vocabulary coverage (fewer OOV tokens) with sequence length (fewer tokens per sentence)"
+    ],
+    "idealAnswerFollowups": [
+      "How does byte-level BPE differ from character-level BPE?",
+      "What are the trade-offs of a larger vs smaller vocabulary?"
+    ],
+    "tags": ["tokenization", "bpe", "vocabulary", "subword"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is byte-level BPE and why did GPT-2 and GPT-4 adopt it over character-level BPE?",
+    "idealAnswerCore": "Byte-level BPE treats raw UTF-8 bytes (0–255) as the base vocabulary instead of characters, guaranteeing lossless tokenization of any Unicode text without requiring a character-level fallback.",
+    "idealAnswerFraming": "Emphasize the zero-unknown-token guarantee: any input can be encoded, which eliminates the need for an <UNK> token and simplifies handling of multilingual content, code, and emojis.",
+    "idealAnswerKeyPoints": [
+      "Character-level BPE may still encounter unknown characters for rare Unicode codepoints",
+      "Byte-level BPE starts from 256 byte values, so every possible input can be tokenized",
+      "Eliminates <UNK> tokens entirely — the model always sees valid tokens",
+      "Slightly less efficient for ASCII-only text (some characters split into bytes) but far more robust for multilingual/code content",
+      "GPT-2 uses a byte-level BPE with a 50,257-token vocabulary; GPT-4/cl100k uses a similar approach at 100,277 tokens"
+    ],
+    "idealAnswerFollowups": [
+      "How does a larger vocabulary size affect embedding table memory?",
+      "How does SentencePiece differ from BPE?"
+    ],
+    "tags": ["tokenization", "bpe", "byte-level", "unicode"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "How does WordPiece tokenization differ from BPE?",
+    "idealAnswerCore": "WordPiece also builds a subword vocabulary through merges, but chooses the merge that maximizes the likelihood of the training data rather than the raw frequency of the pair.",
+    "idealAnswerFraming": "Distinguish the merge criterion: BPE uses raw co-occurrence frequency, WordPiece uses a language-model likelihood score. This makes WordPiece more principled but slower to train.",
+    "idealAnswerKeyPoints": [
+      "BPE merges the pair with highest raw frequency; WordPiece merges the pair that increases corpus likelihood the most (score = freq(AB) / freq(A)*freq(B))",
+      "WordPiece prefixes non-initial subwords with '##' (e.g., '##ing') to indicate they continue a word",
+      "Used by BERT family models; BPE used by GPT family",
+      "WordPiece vocabulary is built offline and fixed; inference uses greedy longest-match tokenization",
+      "SentencePiece (used by LLaMA, T5) treats text as a raw stream (no pre-tokenization by whitespace) and can implement both BPE and Unigram LM variants"
+    ],
+    "idealAnswerFollowups": [
+      "What is Unigram LM tokenization and how does SentencePiece use it?",
+      "Why does BERT use [MASK], [CLS], [SEP] special tokens?"
+    ],
+    "tags": ["tokenization", "wordpiece", "bert", "subword"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What are the trade-offs of choosing a larger vs smaller tokenizer vocabulary?",
+    "idealAnswerCore": "A larger vocabulary reduces sequence length and improves token fertility (tokens per word), but increases embedding table memory and softmax computation cost.",
+    "idealAnswerFraming": "Frame this as a memory vs efficiency trade-off, noting that modern large models trend toward larger vocabularies (100K+) because GPU memory is easier to scale than long sequences.",
+    "idealAnswerKeyPoints": [
+      "Larger vocab → shorter sequences → lower attention cost (O(n²)), faster training throughput",
+      "Larger vocab → bigger embedding matrix (vocab_size × d_model), higher softmax cost over all logits",
+      "Smaller vocab → longer sequences → more tokens to generate, slower inference",
+      "Fertility (tokens per word) is a quality metric: fertility near 1 means efficient coverage for a language",
+      "Non-English languages suffer with English-optimized vocabularies (high fertility), motivating multilingual-specific tokenizers"
+    ],
+    "idealAnswerFollowups": [
+      "How does vocabulary size affect generation speed?",
+      "How do multilingual models handle vocabulary allocation across languages?"
+    ],
+    "tags": ["tokenization", "vocabulary", "efficiency", "sequence-length"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "How does context window size affect GPU memory requirements during inference?",
+    "idealAnswerCore": "The KV cache for a context of length N requires memory proportional to N × num_layers × num_heads × head_dim × 2 (for K and V), so memory grows linearly with sequence length.",
+    "idealAnswerFraming": "Walk through the KV cache formula concretely — interviewers at AI companies expect you to estimate memory for a real model (e.g., 70B model at 128K context can require 100+ GB of KV cache alone).",
+    "idealAnswerKeyPoints": [
+      "KV cache per token = 2 × num_layers × num_kv_heads × head_dim × bytes_per_element",
+      "For LLaMA-3 70B (80 layers, 8 KV heads, 128 head_dim, FP16): ~2×80×8×128×2 = 327 KB per token",
+      "At 128K context: 327KB × 128K ≈ 42 GB just for KV cache — exceeding a single A100",
+      "Techniques: quantized KV cache (INT8/INT4), sliding window, MLA (multi-head latent attention in DeepSeek)",
+      "Activation memory during prefill also scales with sequence length but is not retained after prefill"
+    ],
+    "idealAnswerFollowups": [
+      "What is paged attention and how does it manage KV cache memory?",
+      "How does grouped-query attention reduce KV cache size?"
+    ],
+    "tags": ["kv-cache", "memory", "context-length", "inference"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is RMSNorm and why do modern LLMs prefer it over LayerNorm?",
+    "idealAnswerCore": "RMSNorm normalizes activations by their root-mean-square rather than mean and variance, eliminating the mean-centering step and the learned bias, which is computationally cheaper with comparable quality.",
+    "idealAnswerFraming": "In production interviews, highlight the practical benefit: RMSNorm is 10-20% faster than LayerNorm on modern hardware because it avoids computing the mean, and experiments show negligible quality difference.",
+    "idealAnswerKeyPoints": [
+      "LayerNorm: normalize by (x - mean) / std, then apply learned scale γ and bias β",
+      "RMSNorm: normalize by x / RMS(x) where RMS(x) = sqrt(mean(x²)), then apply learned scale γ only — no bias",
+      "Fewer parameters (no β) and cheaper computation (no mean subtraction)",
+      "Used in LLaMA, Mistral, Gemma, PaLM, and most modern LLMs",
+      "Pre-norm (apply norm before the attention/FFN sublayer) is more stable than post-norm for deep models"
+    ],
+    "idealAnswerFollowups": [
+      "What is the difference between pre-norm and post-norm transformer architectures?",
+      "How does training stability change with pre-norm vs post-norm?"
+    ],
+    "tags": ["normalization", "rmsnorm", "layernorm", "training-stability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is the SwiGLU activation function and why has it replaced GELU in most modern LLMs?",
+    "idealAnswerCore": "SwiGLU is a gated linear unit that computes element-wise product of two linear projections, one passed through a Swish (SiLU) activation, which empirically outperforms GELU on language modeling while using two-thirds the parameters for the same hidden dimension.",
+    "idealAnswerFraming": "Interviewers look for understanding that SwiGLU changes the FFN from two matrices (up + down) to three (up, gate, down), requiring an adjustment to keep total parameter count constant.",
+    "idealAnswerKeyPoints": [
+      "Standard FFN: FFN(x) = W_down(GELU(W_up(x))), two weight matrices",
+      "SwiGLU FFN: FFN(x) = W_down(SiLU(W_gate(x)) ⊙ W_up(x)), three weight matrices",
+      "To maintain parameter count, hidden_dim is set to 2/3 × 4d (≈ 2.67d) instead of 4d",
+      "Noam Shazeer's 2020 paper showed consistent perplexity improvements across model sizes",
+      "Used in PaLM, LLaMA, Mistral, Gemma — essentially all production LLMs post-2022"
+    ],
+    "idealAnswerFollowups": [
+      "What other GLU variants exist (GeGLU, ReGLU)?",
+      "How does SwiGLU affect training compute vs standard FFN?"
+    ],
+    "tags": ["activation-function", "swiglu", "ffn", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What are the Chinchilla scaling laws and how do they change compute-optimal LLM training?",
+    "idealAnswerCore": "The Chinchilla paper (Hoffmann et al., 2022) showed that for a given compute budget, optimal training uses roughly equal scaling of model parameters and training tokens — approximately 20 tokens per parameter — contradicting earlier practice of large models trained on insufficient data.",
+    "idealAnswerFraming": "Position this as a paradigm shift: GPT-3 (175B params, 300B tokens) was undertrained by Chinchilla standards. The implication is that many 'large' models are actually compute-suboptimal.",
+    "idealAnswerKeyPoints": [
+      "Optimal compute allocation: N_opt ∝ C^0.5 and D_opt ∝ C^0.5, implying N and D should scale equally with compute budget",
+      "Practical rule: train with ~20 tokens per parameter (Chinchilla-70B was trained on 1.4T tokens)",
+      "GPT-3 (175B, 300B tokens) had far fewer tokens than optimal — it was massively undertrained",
+      "This shifted the field toward smaller, better-trained models (LLaMA, Mistral) over raw parameter scaling",
+      "Caveat: Chinchilla assumes single-epoch training; for inference-heavy deployments, you should train longer (LLaMA used 2T tokens for a 7B model)"
+    ],
+    "idealAnswerFollowups": [
+      "How do inference costs factor into the optimal model size decision?",
+      "What are the LLaMA scaling choices and how do they differ from Chinchilla?"
+    ],
+    "tags": ["scaling-laws", "chinchilla", "compute", "training"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What are emergent abilities in LLMs and what is the debate around them?",
+    "idealAnswerCore": "Emergent abilities are capabilities that appear suddenly at a certain model scale (measured in FLOPs or parameters) and were absent in smaller models, but a 2023 paper argued they may be artifacts of nonlinear evaluation metrics rather than true discontinuities.",
+    "idealAnswerFraming": "Show nuance: the original Wei et al. 2022 paper documented sharp capability transitions; Schaeffer et al. 2023 showed that switching to smooth metrics (like token probability) makes the same transitions look gradual — interviewers want you to know both perspectives.",
+    "idealAnswerKeyPoints": [
+      "Wei et al. 2022 identified tasks (arithmetic, multi-step reasoning, chain-of-thought) that seemed to appear suddenly above ~10^23 training FLOPs",
+      "Proposed explanation: critical mass of memorization and composition enables new generalization",
+      "Schaeffer et al. 2023 showed that 'emergence' often disappears when using continuous metrics instead of binary pass/fail",
+      "Practical implication: it is hard to predict which capabilities a model will have before training it",
+      "Recent interpretability work (Anthropic circuits) suggests emergent features like induction heads appear at specific training steps"
+    ],
+    "idealAnswerFollowups": [
+      "What is an induction head and how does it relate to in-context learning?",
+      "How does the debate about emergent abilities affect how we evaluate scaling?"
+    ],
+    "tags": ["emergent-abilities", "scaling", "evaluation", "capabilities"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is RoPE (Rotary Position Embedding) and what advantages does it offer over absolute positional encoding?",
+    "idealAnswerCore": "RoPE encodes position by rotating query and key vectors in pairs using rotation matrices parameterized by position, so the dot product of Q and K naturally captures the relative position difference between tokens.",
+    "idealAnswerFraming": "Emphasize that RoPE combines absolute and relative encoding benefits: tokens know their absolute position during encoding, but attention scores naturally reflect relative position, enabling better extrapolation.",
+    "idealAnswerKeyPoints": [
+      "Absolute positional encoding (sinusoidal or learned) adds position info to embeddings, but attention scores don't directly capture distance",
+      "RoPE applies a rotation to Q and K vectors: Q_m = R_m Q, K_n = R_n K, so Q_m · K_n = Q · (R_m^T R_n) K = Q · R_{m-n} K",
+      "The dot product depends only on relative position (m - n), enabling better length generalization",
+      "RoPE is applied head-by-head to pairs of dimensions, not requiring extra parameters",
+      "Used in LLaMA, Mistral, Gemma, Qwen, DeepSeek — the de facto standard for modern LLMs"
+    ],
+    "idealAnswerFollowups": [
+      "How does YaRN extend RoPE for longer context windows?",
+      "What is ALiBi and how does it differ from RoPE?"
+    ],
+    "tags": ["rope", "positional-encoding", "attention", "relative-position"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is ALiBi (Attention with Linear Biases) and how does it handle long contexts?",
+    "idealAnswerCore": "ALiBi adds a fixed linear penalty to attention logits based on the distance between query and key positions, discouraging attention to distant tokens, and enables extrapolation beyond the training context length.",
+    "idealAnswerFraming": "ALiBi was the first position encoding to show clean extrapolation: a model trained with 1K context could run inference at 2K context with minimal perplexity degradation, unlike sinusoidal or learned encodings.",
+    "idealAnswerKeyPoints": [
+      "For each head h, add a scalar bias: score(q_i, k_j) = q_i · k_j - m_h × |i - j|, where m_h is a head-specific slope",
+      "Slopes are fixed (not learned): 1/2^(8/n) for n heads, creating a geometric sequence",
+      "No extra parameters — purely a modification to attention logits",
+      "Enables length extrapolation because the bias pattern is defined for any distance",
+      "Used in BLOOM, MPT; somewhat replaced by RoPE + YaRN in newer models"
+    ],
+    "idealAnswerFollowups": [
+      "Why do RoPE models require YaRN for context extension while ALiBi models extrapolate naturally?",
+      "What are the trade-offs between ALiBi and RoPE for context generalization?"
+    ],
+    "tags": ["alibi", "positional-encoding", "context-length", "attention"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "How does YaRN extend context length for RoPE-based models?",
+    "idealAnswerCore": "YaRN (Yet Another RoPE extensioN) applies NTK-aware interpolation with differentiated scaling across frequency bands — high-frequency dimensions are interpolated while low-frequency dimensions are extrapolated — combined with a temperature correction to attention entropy.",
+    "idealAnswerFraming": "Interviewers at AI companies expect knowledge of the practical recipe: YaRN can extend a 4K-context model to 128K+ with only a few hundred steps of fine-tuning, which is why it's widely used in production.",
+    "idealAnswerKeyPoints": [
+      "Naive linear interpolation of RoPE positions degrades high-frequency information, hurting local attention patterns",
+      "YaRN uses NTK-by-parts: low-frequency dimensions extrapolate (unchanged), mid/high-frequency dimensions interpolate",
+      "The scale factor s = L_new / L_train; a correction factor (0.1 ln s + 1) is applied to attention logits to restore entropy",
+      "Fine-tuning for ~1000 steps on long-context data with YaRN is sufficient to achieve strong performance",
+      "Used in Mistral v0.1 → v0.3 context extension, DeepSeek, and many open-source fine-tuned variants"
+    ],
+    "idealAnswerFollowups": [
+      "What is the NTK (Neural Tangent Kernel) interpolation approach and how does it differ from linear interpolation?",
+      "How does LongRoPE extend context even further?"
+    ],
+    "tags": ["yarn", "rope", "context-extension", "long-context"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is the difference between Multi-Head Attention (MHA), Multi-Query Attention (MQA), and Grouped-Query Attention (GQA)?",
+    "idealAnswerCore": "MHA uses separate K and V projections per head; MQA shares a single K and V across all heads; GQA groups heads to share K and V within each group, balancing MHA quality and MQA inference speed.",
+    "idealAnswerFraming": "Frame this as an inference optimization: MQA reduces KV cache size by num_heads×, dramatically improving throughput at the cost of some quality. GQA (used in LLaMA-3, Mistral) is the pragmatic middle ground.",
+    "idealAnswerKeyPoints": [
+      "MHA: num_heads separate Q, K, V projections — highest quality, largest KV cache",
+      "MQA: single shared K, V projection; each head has its own Q — KV cache reduced num_heads× but quality degrades",
+      "GQA: G groups, each with one K, V; heads within a group share them — KV cache reduced num_heads/G×",
+      "LLaMA-3 uses GQA with 8 KV heads vs 32 query heads (G=4), reducing KV cache 4×",
+      "GQA requires converting MHA checkpoints via mean-pooling of K, V heads within each group"
+    ],
+    "idealAnswerFollowups": [
+      "How does MQA affect model quality vs MHA in practice?",
+      "What is multi-head latent attention (MLA) used in DeepSeek?"
+    ],
+    "tags": ["gqa", "mqa", "attention", "kv-cache", "inference"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is sliding window attention (SWA) and why does Mistral use it?",
+    "idealAnswerCore": "Sliding window attention restricts each token to attend only to the W most recent tokens in each layer, reducing attention complexity from O(n²) to O(n·W) while allowing information to flow across the full context via stacking multiple layers.",
+    "idealAnswerFraming": "Highlight the key insight: information from distant positions propagates through layers. After k layers with window W, a token has effective receptive field of k × W tokens.",
+    "idealAnswerKeyPoints": [
+      "Standard attention: every token attends to all previous tokens — O(n²) complexity",
+      "SWA: each token attends to at most W preceding tokens per layer — O(n·W) complexity",
+      "Effective attention span = num_layers × W (e.g., 32 layers × 4096 window = 131K effective span)",
+      "Mistral 7B uses W=4096 with 32 layers for a 128K effective span with 4K actual window",
+      "Rolling buffer KV cache: only the last W tokens' KV are stored, making memory O(W) not O(n)"
+    ],
+    "idealAnswerFollowups": [
+      "What are the limitations of sliding window attention for tasks requiring precise long-range retrieval?",
+      "How does Mistral combine SWA with flash attention for efficiency?"
+    ],
+    "tags": ["sliding-window", "attention", "mistral", "efficiency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is the difference between data parallelism, model parallelism, and tensor parallelism for training LLMs?",
+    "idealAnswerCore": "Data parallelism replicates the model across GPUs with different data batches; model parallelism splits sequential model layers across GPUs; tensor parallelism splits individual tensor operations (e.g., matrix multiplications) across GPUs.",
+    "idealAnswerFraming": "In production, all three are used together: data parallelism across nodes, tensor parallelism within a node (fast NVLink), and pipeline parallelism between nodes (slower interconnect).",
+    "idealAnswerKeyPoints": [
+      "Data parallelism: each GPU holds a full model copy, processes a different micro-batch, gradients are averaged (AllReduce)",
+      "Pipeline parallelism: sequential model segments on different GPUs — layer 1-10 on GPU0, 11-20 on GPU1; requires micro-batching to hide bubble time",
+      "Tensor parallelism: each matrix multiplication is split across GPUs column/row-wise; requires all-gather/reduce-scatter per layer; needs fast NVLink",
+      "Typical large-scale recipe: DP × PP × TP (e.g., GPT-3 used 8-way TP, 8-way PP, many-way DP)",
+      "FSDP/ZeRO shards optimizer state, gradients, and parameters to reduce per-GPU memory"
+    ],
+    "idealAnswerFollowups": [
+      "What is ZeRO and how does it differ from standard data parallelism?",
+      "What is pipeline bubble time and how do micro-batches reduce it?"
+    ],
+    "tags": ["parallelism", "data-parallel", "tensor-parallel", "training"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "How does tensor parallelism split transformer operations across GPUs?",
+    "idealAnswerCore": "In the attention block, Q, K, V projection weight matrices are column-partitioned across GPUs; in the FFN, the first linear is column-partitioned and the second is row-partitioned, so each GPU computes part of the output that can be summed via AllReduce.",
+    "idealAnswerFraming": "Interviewers from AI infra roles will ask you to sketch the communication pattern. Key insight: one AllReduce per attention block and one per FFN — the communication cost is proportional to batch × seq × d_model, not model size.",
+    "idealAnswerKeyPoints": [
+      "Attention Q, K, V matrices partitioned column-wise: each GPU computes a subset of heads independently",
+      "After attention, the output projection is row-partitioned; AllReduce merges GPU results before residual add",
+      "FFN first linear (up-proj) is column-partitioned; second linear (down-proj) is row-partitioned; AllReduce before residual",
+      "One AllReduce per transformer block = 2 AllReduces per layer (attention + FFN)",
+      "Effective only with high-bandwidth interconnect (NVLink ≥ 600 GB/s); not practical across PCIe or slow networks"
+    ],
+    "idealAnswerFollowups": [
+      "What is sequence parallelism and how does it extend tensor parallelism?",
+      "How does Megatron-LM implement tensor parallelism?"
+    ],
+    "tags": ["tensor-parallelism", "training", "distributed", "megatron"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What are ZeRO optimizer stages and how do they reduce memory in distributed training?",
+    "idealAnswerCore": "ZeRO (Zero Redundancy Optimizer) partitions optimizer state, gradients, and model parameters across data-parallel ranks, eliminating the redundant copies stored in standard DDP and achieving near-linear memory reduction with the number of GPUs.",
+    "idealAnswerFraming": "Walk through the three stages: each stage adds more sharding for more savings, but also more inter-GPU communication. Stage 3 essentially gives you model parallelism via data parallelism.",
+    "idealAnswerKeyPoints": [
+      "Standard DDP: each GPU stores full optimizer states (Adam: 12 bytes/param for fp32 params, momentum, variance), gradients, parameters — ~16 bytes/param total",
+      "ZeRO Stage 1: shard optimizer states across ranks — reduces optimizer memory by num_gpus×",
+      "ZeRO Stage 2: additionally shard gradients — reduces gradient memory by num_gpus×",
+      "ZeRO Stage 3: additionally shard model parameters — reduces parameter memory by num_gpus×; requires gather before each forward/backward",
+      "Communication overhead: Stage 1/2 same as DDP; Stage 3 adds extra all-gather for parameters (1.5× DDP communication)"
+    ],
+    "idealAnswerFollowups": [
+      "What is ZeRO-Infinity and how does it extend ZeRO Stage 3 to NVMe storage?",
+      "How does PyTorch FSDP compare to DeepSpeed ZeRO Stage 3?"
+    ],
+    "tags": ["zero", "deepspeed", "training", "memory-optimization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is activation checkpointing (gradient checkpointing) and when should you use it?",
+    "idealAnswerCore": "Activation checkpointing discards intermediate activations during the forward pass and recomputes them during the backward pass, trading extra compute (one additional forward pass) for a dramatic reduction in activation memory.",
+    "idealAnswerFraming": "The trade-off is 33% more compute (for the extra recomputation) vs ~90% reduction in activation memory for large sequences. Indispensable for long-context or large-batch training.",
+    "idealAnswerKeyPoints": [
+      "During training, activations at every layer must be stored for gradient computation — memory cost scales with batch × seq × layers × d_model",
+      "With checkpointing, only activations at 'checkpoint' boundaries (e.g., every transformer block) are saved",
+      "During backward, the segment between checkpoints is recomputed from the nearest saved activation",
+      "Memory: O(sqrt(n_layers)) with optimal checkpoint spacing vs O(n_layers) without",
+      "Compute overhead: roughly 33% more forward compute; acceptable when memory is the bottleneck"
+    ],
+    "idealAnswerFollowups": [
+      "How does selective activation checkpointing differ from full checkpointing?",
+      "When would you NOT use activation checkpointing?"
+    ],
+    "tags": ["gradient-checkpointing", "memory", "training", "efficiency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What are the differences between FP32, FP16, BF16, and FP8 for LLM training and inference?",
+    "idealAnswerCore": "BF16 has the same exponent range as FP32 but fewer mantissa bits; FP16 has more mantissa bits but a much smaller exponent range, causing gradient underflow. BF16 is now the standard for training; FP8 is emerging for further efficiency.",
+    "idealAnswerFraming": "Emphasize the practical failure mode of FP16: it overflows or underflows gradients during training, requiring loss scaling workarounds. BF16 avoids this entirely, making it the default on Ampere+ GPUs.",
+    "idealAnswerKeyPoints": [
+      "FP32: 8-bit exponent, 23-bit mantissa, range ±3.4×10^38 — stable but 2× memory of BF16",
+      "FP16: 5-bit exponent, 10-bit mantissa, range ±65504 — gradients easily overflow; requires loss scaling",
+      "BF16: 8-bit exponent (same as FP32), 7-bit mantissa — same dynamic range as FP32, no overflow issues",
+      "FP8 (E4M3, E5M2): two formats for weights/activations vs gradients; used in H100 transformer engine for ~2× throughput over BF16",
+      "Typical training: BF16 parameters + FP32 optimizer state (mixed precision); inference: INT8 or INT4 quantization"
+    ],
+    "idealAnswerFollowups": [
+      "What is loss scaling and why was it needed for FP16 training?",
+      "How does the H100 transformer engine use FP8?"
+    ],
+    "tags": ["precision", "bf16", "fp16", "fp8", "training"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is continuous batching (iteration-level scheduling) in LLM inference and why is it important?",
+    "idealAnswerCore": "Continuous batching processes multiple requests by adding new requests to the batch as existing requests finish individual decode steps, rather than waiting for all requests in a batch to complete before starting new ones.",
+    "idealAnswerFraming": "Contrast with static batching where GPU sits idle waiting for the slowest sequence. Continuous batching can increase GPU utilization from 20–30% to 70–90% in practice.",
+    "idealAnswerKeyPoints": [
+      "Static batching: batch all requests together, wait for the longest to finish — short requests waste GPU time",
+      "Continuous batching: at each decode step, check if any sequence finished and insert a new request into the available slot",
+      "Iteration-level scheduling (Orca paper) enables this by treating each forward pass as an independent scheduling decision",
+      "Dramatically improves throughput for heterogeneous request lengths (typical in production)",
+      "Implemented in vLLM, TGI, TensorRT-LLM — now the default for production serving"
+    ],
+    "idealAnswerFollowups": [
+      "How does paged attention enable efficient memory management for continuous batching?",
+      "What is chunked prefill and how does it further improve batching?"
+    ],
+    "tags": ["continuous-batching", "inference", "serving", "throughput"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "How does PagedAttention work and what problem does it solve?",
+    "idealAnswerCore": "PagedAttention manages KV cache using fixed-size pages (analogous to OS virtual memory) rather than contiguous buffers, allowing KV cache to be allocated on-demand and shared across requests, eliminating fragmentation and enabling much higher batch sizes.",
+    "idealAnswerFraming": "The key insight from the vLLM paper: traditional KV cache allocates the maximum sequence length upfront per request, wasting 60-80% of memory. PagedAttention reduces waste to <4%.",
+    "idealAnswerKeyPoints": [
+      "Traditional approach: allocate contiguous KV cache of max_seq_len per request — most memory wasted for shorter sequences",
+      "PagedAttention: divide KV cache into fixed blocks (e.g., 16 tokens per block); allocate only as needed",
+      "A page table maps logical token positions to physical KV cache blocks — the same as OS paging",
+      "KV cache sharing: multiple sequences (e.g., parallel sampling, prefix caching) can share physical blocks with copy-on-write",
+      "Results: vLLM achieves 2-4× higher throughput than HuggingFace TGI on comparable hardware"
+    ],
+    "idealAnswerFollowups": [
+      "How does prefix caching (radix attention) build on PagedAttention?",
+      "What is the eviction policy for PagedAttention when memory is full?"
+    ],
+    "tags": ["paged-attention", "vllm", "kv-cache", "inference"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What are the trade-offs between beam search and sampling-based decoding?",
+    "idealAnswerCore": "Beam search maximizes sequence probability by keeping the top-k hypotheses at each step, producing high-likelihood but often repetitive or generic text; sampling introduces randomness for diversity but can produce incoherent outputs.",
+    "idealAnswerFraming": "In production, pure beam search is rarely used for chat models — it produces safe but boring text. Sampling with temperature + top-p is the default for conversational AI.",
+    "idealAnswerKeyPoints": [
+      "Beam search: keep B beams at each step, expand each, prune to top-B — deterministic and reproducible",
+      "Beam search tends to produce repetitive n-grams and penalizes rare but valid tokens",
+      "Temperature sampling: divide logits by T before softmax; T<1 sharpens distribution (more focused), T>1 flattens (more random)",
+      "Top-p (nucleus) sampling: sample from the smallest set of tokens whose cumulative probability ≥ p, adapting vocabulary per token",
+      "Production default: temperature=0.7, top-p=0.9, no beam search — balances diversity and coherence"
+    ],
+    "idealAnswerFollowups": [
+      "What is top-k sampling and how does it differ from top-p?",
+      "When would you use beam search over sampling in production?"
+    ],
+    "tags": ["decoding", "beam-search", "sampling", "generation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What is contrastive decoding and how does it improve LLM output quality?",
+    "idealAnswerCore": "Contrastive decoding subtracts the log-probabilities of a smaller, weaker model from those of the target model at each step, amplifying tokens that the large model assigns much higher probability than the small model — filtering out generic, low-quality completions.",
+    "idealAnswerFraming": "Frame as a way to get the benefits of greedy decoding (low perplexity) while avoiding generic text: tokens that both models agree on are penalized, pushing the large model toward its distinctive strengths.",
+    "idealAnswerKeyPoints": [
+      "Proposed by Li et al. 2022: CD(x) = log p_large(x) - log p_small(x)",
+      "Intuition: the small model captures common language patterns; subtracting it forces the large model to use its unique knowledge",
+      "Adaptive plausibility constraint: only tokens where p_large > α × max(p_large) are candidates, preventing nonsense",
+      "Improved factuality and specificity over standard sampling in open-ended generation tasks",
+      "Extended to CD-style methods: VCD (visual contrastive decoding for multimodal), DoLa (contrasting early vs late layers)"
+    ],
+    "idealAnswerFollowups": [
+      "What is DoLa and how does it use layer-wise contrastive decoding?",
+      "How does contrastive decoding relate to classifier-free guidance in diffusion models?"
+    ],
+    "tags": ["contrastive-decoding", "decoding", "generation", "quality"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "How does speculative decoding work at the algorithmic level?",
+    "idealAnswerCore": "A small draft model generates K tokens speculatively; the large target model verifies all K tokens in a single parallel forward pass and accepts a prefix of them based on a rejection sampling criterion that preserves the target model's exact distribution.",
+    "idealAnswerFraming": "Emphasize the key insight: verification is cheaper than generation because the large model can process all K tokens in parallel (unlike autoregressive decoding). The acceptance probability determines how many tokens are accepted per step.",
+    "idealAnswerKeyPoints": [
+      "Draft model generates k tokens: x_{t+1}, ..., x_{t+k} autoregressively",
+      "Target model runs one forward pass over all k+1 tokens (original + k drafts) to get p(x|prefix) for each",
+      "Accept token x_i with probability min(1, p_target(x_i) / p_draft(x_i)) — rejection sampling",
+      "If rejected at position i, sample a corrected token from an adjusted distribution; discard tokens i+1...k",
+      "Expected speedup: 2-3× for well-matched draft/target pairs (e.g., 7B draft for 70B target)"
+    ],
+    "idealAnswerFollowups": [
+      "What makes a good draft model for speculative decoding?",
+      "What is self-speculative decoding (EAGLE) and how does it avoid a separate draft model?"
+    ],
+    "tags": ["speculative-decoding", "inference", "throughput", "draft-model"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is pre-training data deduplication and why is it critical for LLM quality?",
+    "idealAnswerCore": "Deduplication removes near-duplicate documents from training corpora to prevent models from memorizing repeated content, improve generalization, and avoid artificially inflating benchmark performance through data contamination.",
+    "idealAnswerFraming": "Interviewers care about the practical side: web-crawled data (CommonCrawl) has ~30-50% near-duplicate content. Without dedup, models memorize n-grams verbatim and test sets are often contaminated.",
+    "idealAnswerKeyPoints": [
+      "Exact deduplication: hash full documents or paragraphs (MD5/SHA) and remove exact matches",
+      "Near-deduplication: MinHash + LSH to find documents with high Jaccard similarity (>0.8) efficiently at scale",
+      "Suffix array deduplication: finds all repeated n-grams of length ≥ k and removes containing documents",
+      "Lee et al. 2021 showed dedup improves perplexity and reduces memorization even without changing model size",
+      "Data contamination: if test set examples appear in training data, benchmark scores are inflated; dedup also catches this"
+    ],
+    "idealAnswerFollowups": [
+      "How do you detect training data contamination after the fact?",
+      "What is the difference between document-level and paragraph-level deduplication?"
+    ],
+    "tags": ["deduplication", "pre-training", "data-quality", "contamination"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is perplexity as a language model metric, and what are its limitations?",
+    "idealAnswerCore": "Perplexity is the exponentiated average negative log-likelihood per token — it measures how well a model predicts a held-out text, with lower perplexity meaning better prediction, but it correlates poorly with downstream task performance.",
+    "idealAnswerFraming": "Interviewers want you to know both the formula and the critique: perplexity on Wikipedia says nothing about whether the model is helpful for code generation or multi-step reasoning.",
+    "idealAnswerKeyPoints": [
+      "PPL = exp(-1/N × Σ log P(x_t | x_{<t})) — geometric mean of per-token inverse probabilities",
+      "A model with PPL=10 is surprised by each token as if choosing uniformly from 10 options",
+      "Perplexity is tokenizer-dependent: different tokenizers produce different PPL for the same model",
+      "Correlates with fluency but not factual accuracy, instruction-following, or safety",
+      "High perplexity on a domain = model uncertainty; often used to detect distribution shift in serving"
+    ],
+    "idealAnswerFollowups": [
+      "How is perplexity used to detect data contamination?",
+      "What benchmarks complement perplexity for evaluating LLMs?"
+    ],
+    "tags": ["perplexity", "evaluation", "metrics", "language-modeling"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is weight tying in transformer language models and what does it save?",
+    "idealAnswerCore": "Weight tying shares the embedding matrix (input token → vector) with the output projection matrix (vector → logit over vocabulary), reducing parameters by vocab_size × d_model (often 30-50M parameters for typical models).",
+    "idealAnswerFraming": "This is a practical engineering choice used in GPT-2, T5, and many smaller models. Interviewers want you to note that for very large vocabularies (100K+) or very large d_model, this sharing saves significant memory.",
+    "idealAnswerKeyPoints": [
+      "Input embedding: E ∈ R^{V×d} maps token IDs to d-dimensional vectors",
+      "Output logit projection: L = E^T h where h is the final hidden state — weight tied with E",
+      "Saves V × d parameters (e.g., 50K × 1024 = 51M params for GPT-2 medium)",
+      "Intuition: tokens with similar meanings should have similar embeddings; tied weights enforce this symmetry",
+      "Some models (LLaMA, large-scale models) untie them for quality at the cost of memory"
+    ],
+    "idealAnswerFollowups": [
+      "Why might you choose to untie embeddings and output projections?",
+      "What is the lm_head vs embed_tokens distinction in HuggingFace models?"
+    ],
+    "tags": ["weight-tying", "embeddings", "parameters", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is the difference between pre-norm and post-norm transformer architectures?",
+    "idealAnswerCore": "Pre-norm applies LayerNorm before the attention/FFN sublayer (residual branch is clean), while post-norm applies it after adding the residual — pre-norm is more stable for deep models and has become the standard.",
+    "idealAnswerFraming": "Post-norm (original 'Attention Is All You Need' paper) requires careful learning rate warmup to avoid instability; pre-norm (GPT-2 onward) can train at higher learning rates without warmup and is numerically more stable.",
+    "idealAnswerKeyPoints": [
+      "Post-norm (original): x_{l+1} = LayerNorm(x_l + Sublayer(x_l)) — gradients must pass through LayerNorm on every path",
+      "Pre-norm: x_{l+1} = x_l + Sublayer(LayerNorm(x_l)) — gradients flow cleanly through residual connections",
+      "Pre-norm allows gradients to bypass normalization, preventing vanishing gradients in deep networks",
+      "Pre-norm models can use higher learning rates and less warmup",
+      "Most modern LLMs (GPT-2+, LLaMA, Mistral) use pre-norm with RMSNorm"
+    ],
+    "idealAnswerFollowups": [
+      "What is DeepNorm (Microsoft) and how does it stabilize very deep post-norm models?",
+      "Why might post-norm models theoretically have better expressiveness?"
+    ],
+    "tags": ["pre-norm", "post-norm", "layernorm", "training-stability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is causal masking in decoder-only transformers and how does it differ from bidirectional attention?",
+    "idealAnswerCore": "Causal masking prevents each token from attending to future tokens by setting those attention scores to -infinity before softmax, making generation autoregressive; bidirectional attention (BERT-style) allows full context access but cannot generate tokens.",
+    "idealAnswerFraming": "This is a foundational question but interviewers want you to explain *why* the mask is needed — without it, the model could 'cheat' during training by looking at the answer tokens it's trying to predict.",
+    "idealAnswerKeyPoints": [
+      "During training, all tokens are processed in parallel — the causal mask prevents token t from seeing tokens t+1...N",
+      "Implementation: add a mask matrix M where M[i,j] = 0 if j ≤ i else -∞, added to attention logits before softmax",
+      "Decoder-only (GPT): causal mask, trained with language modeling objective (next-token prediction)",
+      "Encoder-only (BERT): no causal mask, full bidirectional attention, trained with masked language modeling",
+      "Encoder-decoder (T5): encoder uses bidirectional attention; decoder uses causal mask + cross-attention to encoder output"
+    ],
+    "idealAnswerFollowups": [
+      "What is prefix language modeling and how does it combine bidirectional + causal attention?",
+      "How does cross-attention work in an encoder-decoder model?"
+    ],
+    "tags": ["causal-mask", "attention", "decoder", "training"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What are the main differences between encoder-only, decoder-only, and encoder-decoder architectures?",
+    "idealAnswerCore": "Encoder-only models (BERT) build rich bidirectional representations for classification/embedding tasks; decoder-only models (GPT) generate text autoregressively; encoder-decoder models (T5, BART) use an encoder to process input and a decoder to generate output.",
+    "idealAnswerFraming": "Interviewers want you to map architecture to use case: encoder-only for embeddings/classification, decoder-only for generation and instruction-following, encoder-decoder for translation/summarization.",
+    "idealAnswerKeyPoints": [
+      "Encoder-only: full bidirectional attention, outputs contextual embeddings; best for retrieval, NER, classification",
+      "Decoder-only: causal attention, generates tokens left-to-right; scales best with compute, dominates modern LLMs",
+      "Encoder-decoder: encoder processes source with bidirectional attention; decoder generates target with causal attention + cross-attention",
+      "Modern trend: decoder-only dominates because it generalizes well to both understanding and generation tasks with sufficient scale",
+      "RAG typically uses encoder-only for embeddings and decoder-only for generation"
+    ],
+    "idealAnswerFollowups": [
+      "Why have encoder-decoder architectures (T5, BART) not kept pace with decoder-only models at scale?",
+      "What tasks still favor encoder-only models over decoder-only?"
+    ],
+    "tags": ["architecture", "encoder", "decoder", "bert", "gpt"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What are chat templates and special tokens (BOS, EOS, system) in modern LLMs?",
+    "idealAnswerCore": "Chat templates structure multi-turn conversations as formatted strings with special tokens that delimit roles (system, user, assistant) and conversation boundaries, ensuring the model receives input in the exact format it was fine-tuned on.",
+    "idealAnswerFraming": "Emphasize that using the wrong chat template degrades model performance significantly — a model fine-tuned with Llama-3 chat format will respond poorly if given ChatML format.",
+    "idealAnswerKeyPoints": [
+      "BOS (beginning-of-sequence): signals the start of a new document to the model",
+      "EOS (end-of-sequence): signals the model should stop generating (typically <|eot_id|> in Llama-3)",
+      "System prompt delimiters: <|system|>, [INST], or role-based JSON-like structures depending on the model",
+      "HuggingFace tokenizer includes apply_chat_template() method that formats messages correctly",
+      "Mixing chat templates causes out-of-distribution inputs — always check the model's tokenizer config"
+    ],
+    "idealAnswerFollowups": [
+      "What is the ChatML format and which models use it?",
+      "How do you add a custom special token to an existing tokenizer?"
+    ],
+    "tags": ["chat-template", "special-tokens", "fine-tuning", "inference"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "How does instruction tuning change the behavior of a base language model?",
+    "idealAnswerCore": "Instruction tuning fine-tunes a pre-trained base model on (instruction, response) pairs using supervised learning, teaching it to follow natural language instructions rather than simply completing text.",
+    "idealAnswerFraming": "The key insight is that base models predict the next token — they'll continue a prompt rather than answer it. Instruction tuning aligns the model's generation behavior with human intent.",
+    "idealAnswerKeyPoints": [
+      "Base model: trained to complete sequences — given 'What is the capital of France?', it may output 'What is the capital of Germany? What is...'",
+      "Instruction-tuned model: responds to the question directly — 'The capital of France is Paris.'",
+      "Training data: instruction-response pairs, often formatted as chat turns with system prompts",
+      "Quality matters more than quantity: FLAN showed diverse task coverage with 100M examples outperforms massive but narrow datasets",
+      "Safety alignment (RLHF, DPO) is typically applied after instruction tuning to further align responses"
+    ],
+    "idealAnswerFollowups": [
+      "What is FLAN and how did it demonstrate the importance of task diversity?",
+      "What is the difference between instruction tuning and RLHF?"
+    ],
+    "tags": ["instruction-tuning", "fine-tuning", "alignment", "sft"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What are State Space Models (SSMs) like Mamba and how do they differ from transformers?",
+    "idealAnswerCore": "SSMs like Mamba model sequences using linear recurrence with a selective state space that compresses past context into a fixed-size state, giving O(n) inference time vs O(n²) for transformers, but potentially losing fine-grained information from distant past.",
+    "idealAnswerFraming": "Interviewers at companies exploring alternatives to transformers want you to know the trade-off: Mamba is faster at long sequences and has O(n) memory, but struggles with tasks requiring precise recall of distant tokens.",
+    "idealAnswerKeyPoints": [
+      "SSMs: h_t = A·h_{t-1} + B·x_t (recurrent state update), y_t = C·h_t (output) — fixed-size hidden state h",
+      "Mamba (selective SSM): A, B, C matrices are input-dependent, allowing the model to selectively compress or preserve information",
+      "O(n) inference memory (fixed state size) vs O(n) KV cache growth in transformers",
+      "Hardware-efficient parallel scan during training makes Mamba competitive with flash attention in training speed",
+      "Weakness: fixed-size state must represent unbounded context — fails on needle-in-haystack retrieval from distant past; hybrid Mamba+attention (Jamba) addresses this"
+    ],
+    "idealAnswerFollowups": [
+      "What is the parallel scan algorithm used in Mamba training?",
+      "What is Jamba (Mamba + attention hybrid) and why combine the two?"
+    ],
+    "tags": ["ssm", "mamba", "recurrent", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What is ring attention and why is it needed for very long sequences?",
+    "idealAnswerCore": "Ring attention distributes the attention computation across multiple GPUs in a ring topology, where each GPU holds a different segment of the sequence and passes K, V matrices around the ring, enabling context lengths that exceed single-GPU memory.",
+    "idealAnswerFraming": "Frame this as the solution to the 'million-token context' problem: a single A100 can only hold ~50K tokens in KV cache; ring attention lets you scale to 1M+ tokens by distributing across many GPUs.",
+    "idealAnswerKeyPoints": [
+      "Each GPU holds a shard of Q, K, V for its sequence segment",
+      "In a ring of N GPUs, each GPU sends its K, V shard to the next GPU while computing local attention",
+      "After N-1 steps, every GPU has attended to all K, V shards from all GPUs",
+      "Total compute remains O(n²/N²) per GPU; communication is O(seq × d_model × N) — manageable",
+      "Flash attention is applied locally on each GPU per ring step, keeping memory efficient"
+    ],
+    "idealAnswerFollowups": [
+      "How does ring attention combine with sequence parallelism?",
+      "What latency overhead does ring attention introduce compared to single-GPU attention?"
+    ],
+    "tags": ["ring-attention", "long-context", "distributed", "attention"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is gradient clipping in LLM training and why is it essential?",
+    "idealAnswerCore": "Gradient clipping rescales the gradient vector when its global norm exceeds a threshold (typically 1.0), preventing gradient explosions that would destabilize training with large learning rates or on extreme data.",
+    "idealAnswerFraming": "In practice, unclipped gradients during LLM training cause immediate training instability ('loss spikes'). Clipping to norm 1.0 is a nearly universal hyperparameter for modern LLM training.",
+    "idealAnswerKeyPoints": [
+      "Global gradient norm: ||g|| = sqrt(Σ_i g_i²) across all parameters",
+      "If ||g|| > clip_value: g ← g × (clip_value / ||g||)",
+      "Does not change gradient direction, only magnitude — preserves the optimization signal",
+      "Typical clip_value = 1.0 for Adam; 0.1 for SGD with large learning rates",
+      "Loss spikes often accompanied by gradient norm spikes — monitoring gradient norm is standard practice"
+    ],
+    "idealAnswerFollowups": [
+      "What causes loss spikes during LLM pre-training?",
+      "What is gradient norm monitoring and how do you recover from loss spikes?"
+    ],
+    "tags": ["gradient-clipping", "training", "stability", "optimization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What learning rate schedules are used for LLM pre-training and why?",
+    "idealAnswerCore": "LLM training typically uses linear warmup followed by cosine decay: warmup prevents early instability from large gradients, while cosine decay smoothly reduces the LR near the training budget to improve final loss.",
+    "idealAnswerFraming": "Connect to Chinchilla: the learning rate schedule is part of the training recipe. Warmup duration (1000-2000 steps) and final LR (10% of peak) are well-established heuristics.",
+    "idealAnswerKeyPoints": [
+      "Warmup: LR increases linearly from 0 to LR_max over the first N_warmup steps (typically 1000-2000)",
+      "Warmup stabilizes early training when parameters are randomly initialized and gradients are noisy",
+      "Cosine decay: after warmup, LR follows LR(t) = LR_min + 0.5(LR_max - LR_min)(1 + cos(π × t/T_total))",
+      "Final LR is typically 10% of peak (e.g., peak 3e-4, final 3e-5)",
+      "WSD (Warmup-Stable-Decay) schedule: keep LR stable for most of training, then decay sharply — used by Mistral and MiniCPM"
+    ],
+    "idealAnswerFollowups": [
+      "What is the WSD (Warmup-Stable-Decay) schedule and what are its advantages?",
+      "How do you choose the peak learning rate for a given model size?"
+    ],
+    "tags": ["learning-rate", "cosine-decay", "warmup", "training"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What causes loss spikes during LLM pre-training and how are they handled?",
+    "idealAnswerCore": "Loss spikes are sudden increases in training loss (5-50× normal) caused by gradient explosions triggered by bad data batches, numerical instability, or learning rate too high, and are typically handled by rolling back to a checkpoint and skipping the offending data.",
+    "idealAnswerFraming": "This is a production training question: how do you handle a spike at step 50K in a 2-week training run? The answer involves checkpointing strategy, data pipeline inspection, and spike detection monitoring.",
+    "idealAnswerKeyPoints": [
+      "Common causes: extremely long/weird documents in training data, numerical overflow in attention, bad data batch with very high cross-entropy",
+      "Detection: monitor loss and gradient norm continuously; spike defined as loss > 3× moving average",
+      "Recovery: roll back to last checkpoint, identify and skip the offending data batch, resume with slightly lower LR",
+      "Prevention: gradient clipping (norm 1.0), data quality filtering, checkpoint every 1000 steps",
+      "PaLM paper documented explicit spike recovery with rollbacks; Meta's OPT paper also discusses this"
+    ],
+    "idealAnswerFollowups": [
+      "How do you design a checkpoint strategy for a 2-week LLM pre-training run?",
+      "What data quality filters help prevent bad batches from causing spikes?"
+    ],
+    "tags": ["loss-spikes", "training-stability", "pre-training", "debugging"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is sequence packing during LLM training and why does it improve efficiency?",
+    "idealAnswerCore": "Sequence packing concatenates multiple short training examples into a single sequence of the maximum length, separated by EOS tokens, eliminating padding tokens that waste compute on masked attention.",
+    "idealAnswerFraming": "Without packing, if your average example is 512 tokens but your context is 4096, 87% of each batch is padding. Packing achieves near-100% token efficiency.",
+    "idealAnswerKeyPoints": [
+      "Padding waste: short examples are padded to max_len; padded positions contribute zero signal but consume compute",
+      "Packing: concatenate doc_1 + EOS + doc_2 + EOS + ... until max_len is reached",
+      "For fine-tuning chat data: loss is computed only on assistant response tokens (user and system tokens masked)",
+      "Attention masking: care must be taken not to let tokens from doc_2 attend to doc_1 across the EOS boundary",
+      "Packing can 3-5× throughput for datasets with short examples (code snippets, short Q&A)"
+    ],
+    "idealAnswerFollowups": [
+      "How do you implement document boundary attention masking during packing?",
+      "What are the trade-offs of bin-packing vs greedy packing?"
+    ],
+    "tags": ["sequence-packing", "training", "efficiency", "throughput"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What improvements did Flash Attention 2 make over Flash Attention 1?",
+    "idealAnswerCore": "Flash Attention 2 improved GPU utilization by reducing non-matmul FLOPs (removing unnecessary rescaling), parallelizing across the sequence length dimension, and optimizing work partitioning between warps within a thread block.",
+    "idealAnswerFraming": "Flash Attention 2 achieves 50-73% of the theoretical FP16/BF16 peak throughput on A100 vs ~35% for Flash Attention 1. For an ML engineer, knowing what changed helps you reason about when it matters.",
+    "idealAnswerKeyPoints": [
+      "FA1: rescaled softmax at each tile boundary, adding extra non-matmul ops; FA2: reduces rescaling operations to matmul-dominated computation",
+      "FA2: parallelizes across sequence length in addition to batch/head dimensions — better GPU occupancy for long sequences",
+      "FA2: better work partitioning among warps: query-centric outer loop (FA2) vs key/value-centric (FA1)",
+      "FA2 is 2× faster than FA1 on A100 in practice",
+      "FA3 (H100): uses asynchronous execution and FP8 for further gains on the new hardware"
+    ],
+    "idealAnswerFollowups": [
+      "What is the tiling strategy in Flash Attention and why does it reduce HBM memory access?",
+      "When would you use Flash Attention vs standard PyTorch SDPA?"
+    ],
+    "tags": ["flash-attention", "attention", "efficiency", "gpu"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is the 'lost in the middle' phenomenon in long-context LLMs?",
+    "idealAnswerCore": "Models perform significantly worse when relevant information is placed in the middle of a long context vs at the beginning or end, because attention is biased toward recency (end) and primacy (beginning) due to positional encoding and training data distribution.",
+    "idealAnswerFraming": "Liu et al. 2023 demonstrated this empirically across multiple models. The practical implication for RAG: put the most important retrieved context at the beginning or end of the prompt, not the middle.",
+    "idealAnswerKeyPoints": [
+      "Performance on retrieval tasks (multi-doc QA) is U-shaped: best when relevant doc is first or last in context",
+      "Even 100K-context models show this pattern — it's not purely a context length limitation",
+      "Likely causes: positional encoding biases, training data where key info is typically at start/end, attention dropout of mid-sequence tokens",
+      "Mitigation: reranking retrieved documents by importance before inserting, or placing high-value content at prompt boundaries",
+      "RAG implication: don't assume all N retrieved chunks contribute equally — position matters"
+    ],
+    "idealAnswerFollowups": [
+      "How does 'lost in the middle' affect multi-document RAG designs?",
+      "What training techniques might reduce this positional bias?"
+    ],
+    "tags": ["long-context", "attention", "rag", "retrieval", "context-window"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is the prefill vs decode phase distinction in LLM inference?",
+    "idealAnswerCore": "Prefill processes the entire input prompt in parallel (compute-bound, high GPU utilization); decode generates one token at a time autoregressively (memory-bandwidth-bound, low GPU utilization), making these two phases have fundamentally different bottlenecks.",
+    "idealAnswerFraming": "This distinction drives system design decisions: prefill and decode have different optimal batch sizes, hardware requirements, and can be disaggregated onto separate machines in production systems.",
+    "idealAnswerKeyPoints": [
+      "Prefill: all input tokens processed in one forward pass — uses full GPU compute, produces KV cache for the prompt",
+      "Decode: one token generated per forward pass — must load all model weights from HBM each step; memory-bandwidth-bound",
+      "Arithmetic intensity: prefill = (2 × params × batch × seq) / (2 × params × batch) = seq — high; decode = seq = 1 — very low",
+      "Optimal batch size differs: prefill benefits from large batches; decode benefits from many concurrent sequences",
+      "Prefill-decode disaggregation (Splitwise, mooncake): run prefill on compute-heavy GPUs, decode on memory-bandwidth-heavy GPUs"
+    ],
+    "idealAnswerFollowups": [
+      "What is TTFT (time to first token) and TBT (time between tokens) and why do they matter?",
+      "How does chunked prefill help manage GPU utilization across prefill and decode?"
+    ],
+    "tags": ["prefill", "decode", "inference", "latency", "throughput"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What is the softmax bottleneck problem in language models?",
+    "idealAnswerCore": "The softmax bottleneck occurs when the rank of the product of the embedding matrix and output matrix is limited by the hidden dimension d, preventing the model from representing arbitrary next-token probability distributions over a large vocabulary.",
+    "idealAnswerFraming": "Yang et al. 2018 showed that for V tokens and d hidden dimensions, the model can only represent distributions from an (at most) d-dimensional subspace — fundamentally limiting expressiveness when V >> d.",
+    "idealAnswerKeyPoints": [
+      "Next-token logits = W_output × h where W_output ∈ R^{V×d} and h ∈ R^d",
+      "The distribution matrix log P ∈ R^{N×V} (N contexts) has rank ≤ d if we tie embeddings — severely restricts what distributions are reachable",
+      "Workarounds: Mixture of Softmaxes (MoS) — weighted combination of k softmaxes; untied large output matrix",
+      "Modern LLMs with d=8192 and V=128K have rank at most 8192 — still a restriction but less severe",
+      "Relevant in practice for models with small hidden dims (efficiency models) or very large vocabularies"
+    ],
+    "idealAnswerFollowups": [
+      "What is Mixture of Softmaxes and how does it solve the bottleneck?",
+      "How does the softmax bottleneck relate to the choice of vocabulary size?"
+    ],
+    "tags": ["softmax-bottleneck", "vocabulary", "expressiveness", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "How does a Mixture of Experts (MoE) model route tokens to experts?",
+    "idealAnswerCore": "A learned router (typically a linear layer + softmax) assigns each token a probability over experts; the top-K experts (usually K=2) are selected, and the token is processed by those experts with outputs weighted by the router probabilities.",
+    "idealAnswerFraming": "The routing mechanism is where most MoE engineering complexity lives — expert collapse (all tokens routed to one expert) and load imbalance must be actively prevented with auxiliary losses.",
+    "idealAnswerKeyPoints": [
+      "Router: g(x) = softmax(W_r x) ∈ R^{num_experts}; top-K selection keeps K highest weights",
+      "Output: y = Σ_{i in top-K} g_i × FFN_i(x), where weights are renormalized after top-K selection",
+      "Load balancing loss: auxiliary loss penalizing deviation from uniform expert utilization",
+      "Expert capacity: max tokens per expert per batch; tokens routed to full experts are dropped (capacity factor ~1.25)",
+      "Mixtral 8×7B: 8 experts, 2 active per token — 47B total params but only 13B active params per token"
+    ],
+    "idealAnswerFollowups": [
+      "What is expert collapse and how is it prevented?",
+      "What is DeepSeek's shared expert routing strategy?"
+    ],
+    "tags": ["moe", "routing", "mixture-of-experts", "sparse"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is pipeline parallelism and what is the 'pipeline bubble' problem?",
+    "idealAnswerCore": "Pipeline parallelism splits model layers across GPUs sequentially; pipeline bubbles are idle GPU time at the start and end of a micro-batch pipeline where some GPUs have no work to do, reducing efficiency.",
+    "idealAnswerFraming": "The bubble fraction = (p-1)/m where p = pipeline stages and m = micro-batches. You need enough micro-batches to amortize the bubble: typically 4-8× more micro-batches than pipeline stages.",
+    "idealAnswerKeyPoints": [
+      "Pipeline parallelism: GPU0 has layers 1-4, GPU1 has layers 5-8, etc.; GPUs process sequentially, passing activations between stages",
+      "Naive pipeline: only one GPU active at a time — terrible utilization",
+      "Micro-batching (GPipe): split mini-batch into M micro-batches; GPU1 processes micro-batch 2 while GPU2 processes micro-batch 1",
+      "Bubble fraction = (p-1) / (m + p - 1) ≈ (p-1)/m for large m — need m >> p",
+      "1F1B schedule (used in Megatron-LM): interleaves forward and backward passes for same bubble fraction but lower activation memory"
+    ],
+    "idealAnswerFollowups": [
+      "What is the 1F1B (one-forward-one-backward) scheduling strategy?",
+      "How does virtual pipeline parallelism (Megatron) reduce bubble fraction?"
+    ],
+    "tags": ["pipeline-parallelism", "training", "distributed", "efficiency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is the difference between an encoder-only model (BERT) and a decoder-only model (GPT) for embedding generation?",
+    "idealAnswerCore": "BERT-style encoders produce richer embeddings for retrieval tasks because bidirectional attention sees full context; decoder-only models can also produce embeddings but their causal mask means each token only attends to previous tokens.",
+    "idealAnswerFraming": "Interviewers ask this in RAG contexts: why use a separate embedding model (BERT-based) rather than the same LLM for retrieval? The answer is efficiency, task specialization, and representation quality.",
+    "idealAnswerKeyPoints": [
+      "BERT embeddings: every token attends to all others — rich contextual representation; pooling the [CLS] token gives a document embedding",
+      "Decoder-only embeddings: each token only sees prior tokens; last-token pooling is common but gives asymmetric representations",
+      "Specialized embedding models (E5, BGE, GTE) are fine-tuned on contrastive learning objectives (MNRL, SimCSE) for retrieval",
+      "Decoder-only models can be fine-tuned for embedding (E5-Mistral, GTE-Qwen) and achieve SOTA on MTEB — but are slower",
+      "Production choice: use a specialized embedding model (B-scale) for retrieval + larger LLM for generation"
+    ],
+    "idealAnswerFollowups": [
+      "What is the MTEB benchmark and what does it measure?",
+      "How is contrastive learning used to train embedding models?"
+    ],
+    "tags": ["embeddings", "bert", "gpt", "retrieval", "rag"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is FSDP (Fully Sharded Data Parallel) and how does it differ from DDP?",
+    "idealAnswerCore": "FSDP shards model parameters, gradients, and optimizer states across all data-parallel ranks (like ZeRO Stage 3), gathering each layer's parameters just-in-time for forward/backward computation and re-sharding immediately after.",
+    "idealAnswerFraming": "DDP replicates the full model on each GPU and is simple but memory-inefficient; FSDP enables training models that exceed a single GPU's memory by sharding everything, at the cost of more all-gathers.",
+    "idealAnswerKeyPoints": [
+      "DDP: each GPU holds a full model copy; gradients synchronized via AllReduce after backward",
+      "FSDP: each GPU holds 1/N of each layer's parameters; before computing a layer, all-gather to reconstruct full weights; discard after computation",
+      "Memory per GPU: ~model_size / N + activation memory — scales linearly with GPU count",
+      "Communication: one all-gather before forward (parameters), one all-gather before backward (parameters), one reduce-scatter for gradients",
+      "PyTorch FSDP2 (PyTorch 2.x) improved implementation: DTensor-based, cleaner composability with TP"
+    ],
+    "idealAnswerFollowups": [
+      "How do you choose between FSDP and DeepSpeed ZeRO Stage 3?",
+      "What is the communication overhead of FSDP compared to DDP?"
+    ],
+    "tags": ["fsdp", "parallelism", "training", "memory"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is hallucination at the model architecture level and how does it differ from hallucination caused by missing knowledge?",
+    "idealAnswerCore": "Architecture-level hallucination stems from the model's training objective (next-token prediction with softmax) not penalizing confident wrong answers, while knowledge-gap hallucination occurs when the model lacks information and generates plausible-sounding but false content.",
+    "idealAnswerFraming": "Separate the two causes — they require different fixes. Knowledge-gap hallucination → RAG or fine-tuning. Architecture-level hallucination → calibration, RLHF with factuality feedback, or uncertainty estimation.",
+    "idealAnswerKeyPoints": [
+      "Architecture cause: the LM objective optimizes for token prediction accuracy, not factual accuracy; the model is not penalized for stating falsehoods confidently",
+      "Exposure bias: during training, the model sees ground-truth context; at inference, it conditions on its own (possibly wrong) previous tokens",
+      "Softmax distribution is always sum-1: the model always assigns probability to something, even when 'I don't know' is the right answer",
+      "Knowledge-gap hallucination: the model has no internal representation of a fact and generates plausibly structured output instead",
+      "Fixes: RLHF with factuality rewards, calibration fine-tuning (teach model to say 'I don't know'), RAG to provide external knowledge"
+    ],
+    "idealAnswerFollowups": [
+      "How do self-consistency and chain-of-thought help reduce hallucination?",
+      "What is calibration in LLMs and how do you measure it?"
+    ],
+    "tags": ["hallucination", "architecture", "factuality", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "How do you estimate the total GPU memory required to serve an LLM for inference?",
+    "idealAnswerCore": "Total inference memory = model weights memory + KV cache memory + activation memory, where model weights dominate for small batches and KV cache dominates for long contexts or large batch sizes.",
+    "idealAnswerFraming": "Interviewers at AI infra companies want you to do back-of-envelope math. For a 70B model in BF16: 70B × 2 bytes = 140 GB just for weights — doesn't fit on a single A100 (80 GB).",
+    "idealAnswerKeyPoints": [
+      "Weight memory: num_params × bytes_per_param (BF16=2, INT8=1, INT4=0.5)",
+      "KV cache memory: 2 × num_layers × num_kv_heads × head_dim × max_seq_len × batch_size × bytes_per_element",
+      "Activation memory during decode: small — roughly one layer's intermediate activations at a time",
+      "Example: LLaMA-3 70B in BF16 = ~140 GB weights; need 2× A100 80GB minimum for weights alone",
+      "Rule of thumb: ~2 GB per billion params in BF16; ~1 GB/B in INT8; ~0.5 GB/B in INT4"
+    ],
+    "idealAnswerFollowups": [
+      "How much memory does a LLaMA-3 70B model need at 4-bit quantization?",
+      "How do you estimate the throughput (tokens/sec) for a given hardware setup?"
+    ],
+    "tags": ["memory", "inference", "gpu", "hardware-planning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is RWKV and how does it achieve linear attention complexity?",
+    "idealAnswerCore": "RWKV is a hybrid architecture that reformulates attention as a linear recurrence using element-wise operations instead of the full dot-product attention matrix, achieving O(n) inference time and O(1) memory per step while being parallelizable during training.",
+    "idealAnswerFraming": "RWKV solves the transformer's O(n²) inference problem by rewriting the attention update as a weighted sum that can be computed iteratively, like an RNN, but trained in parallel like a transformer.",
+    "idealAnswerKeyPoints": [
+      "RWKV attention: WKV_t = Σ_{i≤t} exp(-(t-i-1)w + k_i) · v_i / Σ exp(-(t-i-1)w + k_i)",
+      "This is a weighted sum with exponentially decaying weights (w is a learned decay vector) — equivalent to a linear RNN",
+      "Training: computed in parallel with a parallelizable prefix scan",
+      "Inference: O(1) memory (just maintain the running numerator and denominator state vectors)",
+      "Trade-off: linear attention loses the ability to precisely attend to specific distant tokens; works well in practice for language modeling but weaker on associative recall tasks"
+    ],
+    "idealAnswerFollowups": [
+      "How does RWKV v5/v6 improve over earlier versions?",
+      "What tasks expose the weakness of linear attention vs full softmax attention?"
+    ],
+    "tags": ["rwkv", "linear-attention", "recurrent", "efficiency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is the typical model architecture for modern open-source LLMs (LLaMA-3 family)?",
+    "idealAnswerCore": "Modern open-source LLMs like LLaMA-3 use a decoder-only transformer with RoPE positional encoding, RMSNorm (pre-norm), SwiGLU FFN, grouped-query attention, and no bias terms — optimized for training stability and inference efficiency.",
+    "idealAnswerFraming": "Know the canonical component choices so you can compare any new model to the baseline. Interviews often ask 'what makes LLaMA different from GPT-2?' — the answer is in these architectural details.",
+    "idealAnswerKeyPoints": [
+      "Decoder-only transformer with causal masking",
+      "Pre-norm with RMSNorm (not post-norm LayerNorm like original transformer)",
+      "SwiGLU FFN with hidden_dim ≈ 8/3 × d_model",
+      "RoPE positional encoding (no learned absolute positions)",
+      "Grouped-query attention (GQA) with fewer KV heads than Q heads",
+      "No bias terms in attention projections or FFN — reduces parameters with minimal quality impact"
+    ],
+    "idealAnswerFollowups": [
+      "How does LLaMA-3's architecture differ from LLaMA-2?",
+      "What other models deviate from this canonical design?"
+    ],
+    "tags": ["llama", "architecture", "decoder", "transformer"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "What is the difference between TTFT (Time to First Token) and TPOT (Time Per Output Token) in LLM serving?",
+    "idealAnswerCore": "TTFT measures the latency from request submission to the first generated token (dominated by prefill); TPOT measures the time between successive generated tokens (dominated by decode speed and memory bandwidth).",
+    "idealAnswerFraming": "In production, TTFT and TPOT have different optimization strategies and matter differently for UX: high TTFT feels like a slow app; high TPOT makes streaming text feel choppy.",
+    "idealAnswerKeyPoints": [
+      "TTFT = time for prefill phase + queue wait time; dominated by prompt length and server load",
+      "TPOT = time per decode step; dominated by memory bandwidth (loading model weights each step)",
+      "For interactive chat: TTFT < 500ms and TPOT < 50ms (20 tok/s) are typical targets",
+      "Optimizing TTFT: speculative decoding, chunked prefill, efficient KV cache allocation",
+      "Optimizing TPOT: larger batch sizes (amortize weight loads), quantization (smaller weights → faster loads), speculative decoding",
+      "TTFT × 1 + TPOT × (output_tokens - 1) = total latency"
+    ],
+    "idealAnswerFollowups": [
+      "How does chunked prefill balance TTFT and throughput?",
+      "What hardware characteristics most affect TPOT?"
+    ],
+    "tags": ["latency", "ttft", "inference", "serving", "performance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What is the arithmetic intensity of LLM inference and why does it determine whether inference is compute or memory-bandwidth bound?",
+    "idealAnswerCore": "Arithmetic intensity is the ratio of FLOPs to memory bytes accessed; for LLM decode, it equals batch_size — small batch sizes make decode memory-bandwidth bound, while large batches (or prefill) are compute bound.",
+    "idealAnswerFraming": "This is a classic systems question for ML infra roles. A100 has ~2 PFLOPs compute vs 2 TB/s memory bandwidth — ratio 1000 FLOPs/byte. If your workload has intensity < 1000, you're bandwidth-bound.",
+    "idealAnswerKeyPoints": [
+      "Arithmetic intensity = FLOPs / bytes read from memory",
+      "For a single matmul (batch=1): FLOPs = 2 × m × n × k; bytes = (m×k + k×n) × dtype; intensity = 2k/(k/m + k/n) ≈ batch_size for square matrices",
+      "Decode batch_size=1: intensity ≈ 1 FLOP/byte — 1000× below A100's peak ratio → memory bandwidth bound",
+      "Prefill batch_size×seq_len=1000: intensity ≈ 1000 → compute bound",
+      "Implication: to saturate GPU compute during decode, need batch_size ≈ 1000+ simultaneous sequences"
+    ],
+    "idealAnswerFollowups": [
+      "What batch size is needed to achieve 50% compute utilization for decode on A100?",
+      "How does quantization improve arithmetic intensity for decode?"
+    ],
+    "tags": ["arithmetic-intensity", "inference", "hardware", "memory-bandwidth"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "foundational",
+    "question": "What is the role of residual connections in transformers and why are they essential for deep networks?",
+    "idealAnswerCore": "Residual connections add the input of each sublayer directly to its output (x → x + Sublayer(x)), creating gradient highways that allow gradients to flow directly to early layers without vanishing, enabling training of very deep networks.",
+    "idealAnswerFraming": "Without residuals, gradient vanishing limits transformer depth to ~10-15 layers. With residuals, models scale to 100+ layers. The residual also acts as an ensemble of shallow networks.",
+    "idealAnswerKeyPoints": [
+      "Each transformer block: h = x + Attention(Norm(x)), h = h + FFN(Norm(h))",
+      "Gradient through residual path: ∂L/∂x = ∂L/∂h × (1 + ∂Sublayer/∂x) — the '1' ensures gradient flows even if Sublayer has small gradients",
+      "Residuals enable depth scaling: models with hundreds of layers (GPT-3: 96 layers) are only possible with residuals",
+      "Residuals create an implicit ensemble: the model can be interpreted as sum of exponentially many shallow paths",
+      "The residual stream is the central abstraction in mechanistic interpretability — each component reads from and writes to this shared stream"
+    ],
+    "idealAnswerFollowups": [
+      "What is the residual stream interpretation in mechanistic interpretability?",
+      "Why do gradients still vanish in very deep transformers despite residuals?"
+    ],
+    "tags": ["residual-connections", "gradients", "architecture", "depth"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "intermediate",
+    "question": "How does quantization-aware training (QAT) differ from post-training quantization (PTQ)?",
+    "idealAnswerCore": "QAT simulates quantization effects during training by applying fake quantization operations in the forward pass so the model learns to be robust to quantization, while PTQ quantizes a trained model without further training, which is faster but less accurate.",
+    "idealAnswerFraming": "PTQ is the default for most production deployments (GPTQ, AWQ, bitsandbytes); QAT is used when PTQ quality is insufficient, usually for aggressive quantization to INT4 or INT3.",
+    "idealAnswerKeyPoints": [
+      "PTQ: quantize weights (and optionally activations) after training; no gradient updates; methods: GPTQ (layer-wise optimal quantization), AWQ (activation-aware), bitsandbytes NF4",
+      "QAT: insert STE (Straight-Through Estimator) fake-quant nodes during forward pass; backward pass uses full-precision gradients",
+      "QAT preserves more accuracy at INT4 and below at the cost of additional training compute",
+      "GPTQ: minimizes layer-wise reconstruction error using Hessian information — good PTQ quality",
+      "AWQ: protects the most important weights (high activation magnitude) from aggressive quantization"
+    ],
+    "idealAnswerFollowups": [
+      "What is GPTQ and how does it use second-order information?",
+      "What is the NF4 (NormalFloat4) data type used in QLoRA?"
+    ],
+    "tags": ["quantization", "qat", "ptq", "gptq", "awq"],
+    "source": "seed"
+  }
+]

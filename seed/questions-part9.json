@@ -1,0 +1,1042 @@
+[
+  {
+    "domainId": "mlops",
+    "difficulty": "foundational",
+    "question": "What is MLOps and why does it matter for production AI systems?",
+    "idealAnswerCore": "MLOps (Machine Learning Operations) is a set of practices combining ML, DevOps, and data engineering to deploy and maintain ML models in production reliably and efficiently.",
+    "idealAnswerFraming": "Frame this as the discipline that bridges the gap between experimental ML work and production systems — it reduces the high failure rate of ML projects reaching production.",
+    "idealAnswerKeyPoints": [
+      "MLOps addresses the 'last mile' problem: most ML projects never reach production due to operational complexity",
+      "Core pillars: reproducibility, automation, monitoring, versioning of code, data, and models together",
+      "Key difference from DevOps: ML systems have additional complexity around data dependencies, model decay, and probabilistic outputs",
+      "MLOps pipeline typically covers: data validation → training → evaluation → deployment → monitoring → retraining",
+      "Industry tools: MLflow for tracking, Kubeflow/Airflow for orchestration, Seldon/BentoML for serving, Evidently/WhyLabs for monitoring"
+    ],
+    "idealAnswerFollowups": [
+      "What are the biggest operational challenges you've faced with ML systems in production?",
+      "How do you decide when a model needs retraining?"
+    ],
+    "tags": ["mlops", "production", "devops", "model-deployment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "foundational",
+    "question": "How do you version ML models and datasets? What tools do you use?",
+    "idealAnswerCore": "ML versioning requires tracking code, data, model artifacts, hyperparameters, and metrics together as a single experiment unit — unlike software where only code versioning matters.",
+    "idealAnswerFraming": "Emphasize that reproducibility is the core goal: given the same code + data version, you should be able to recreate any past model. This requires versioning all inputs, not just code.",
+    "idealAnswerKeyPoints": [
+      "Code versioning: git (same as software) — but ML code must also capture random seeds for reproducibility",
+      "Data versioning: DVC (Data Version Control) stores data in S3/GCS with git-like semantics; alternatives include LakeFS, Delta Lake",
+      "Model versioning: MLflow Model Registry, Weights & Biases Artifacts, SageMaker Model Registry — track model file + lineage (data version + code SHA + hyperparams)",
+      "Experiment tracking: MLflow, W&B, Comet — log metrics/params/artifacts per run; enables comparison and reproducibility",
+      "Best practice: tag production models with their git SHA, data hash, and evaluation metrics so rollback is straightforward"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle large dataset versioning when files are too big for git?",
+      "What metadata do you store alongside a model artifact?"
+    ],
+    "tags": ["mlops", "versioning", "dvc", "mlflow", "reproducibility"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is model drift and how do you detect and respond to it?",
+    "idealAnswerCore": "Model drift occurs when a model's real-world performance degrades over time because the relationship between inputs and outputs changes — either the input distribution shifts or the concept being modeled changes.",
+    "idealAnswerFraming": "Interviewers want to hear you distinguish the types of drift and have concrete detection/response strategies, not just theoretical knowledge.",
+    "idealAnswerKeyPoints": [
+      "Data drift (covariate shift): input feature distribution changes (e.g., user demographics shift) — detect with statistical tests (KS test, PSI) on feature distributions",
+      "Concept drift: the relationship between inputs and outputs changes (e.g., fraud patterns evolve) — harder to detect, requires ground truth labels",
+      "Label drift: distribution of targets changes — monitor prediction distribution as a proxy when labels are delayed",
+      "Detection tools: Evidently AI, WhyLabs, Arize — compute drift metrics automatically on incoming data",
+      "Response strategies: retrain on recent data, implement online learning, use shadow deployment to validate new model before traffic shift"
+    ],
+    "idealAnswerFollowups": [
+      "How do you get ground truth labels for monitoring when feedback is delayed (e.g., a loan default takes months)?",
+      "What's the difference between retraining and fine-tuning for drift correction?"
+    ],
+    "tags": ["mlops", "model-drift", "monitoring", "data-drift"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "Explain the concept of a feature store. When is one necessary?",
+    "idealAnswerCore": "A feature store is a centralized repository for storing, serving, and reusing ML features — it decouples feature engineering from model training/serving and ensures consistency between training and inference.",
+    "idealAnswerFraming": "The key problem a feature store solves is training-serving skew: features computed differently offline (training) vs. online (serving) cause production models to underperform even when offline metrics look good.",
+    "idealAnswerKeyPoints": [
+      "Core components: feature registry (catalog of feature definitions), offline store (batch data for training, typically a data warehouse), online store (low-latency serving, typically Redis/DynamoDB)",
+      "Eliminates training-serving skew by using the same feature computation logic for both training datasets and real-time inference",
+      "Enables feature reuse across teams — a 'user engagement score' computed once can be used by 10 models",
+      "Point-in-time correctness: offline store should serve historical features as they existed at a given timestamp to prevent leakage",
+      "Necessary when: multiple teams share features, training-serving consistency is critical, feature computation is expensive, or feature reuse would save significant engineering time. Small teams with 1-2 models often don't need one."
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle point-in-time correctness in a feature store?",
+      "What's the difference between a feature store and a data warehouse?"
+    ],
+    "tags": ["mlops", "feature-store", "training-serving-skew", "infrastructure"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is A/B testing in the context of ML model deployment? How do you set it up?",
+    "idealAnswerCore": "A/B testing for ML models involves routing a fraction of production traffic to a new model and comparing business metrics between the control (current model) and treatment (new model) groups with statistical significance.",
+    "idealAnswerFraming": "Emphasize that offline metrics (AUC, F1) don't always correlate with business value — A/B tests are the gold standard for measuring actual impact on user behavior and business KPIs.",
+    "idealAnswerKeyPoints": [
+      "Traffic splitting: route X% of users/requests to model B while keeping the rest on model A — use consistent hashing to ensure the same user always gets the same model",
+      "Key metrics: business KPIs (CTR, conversion rate, revenue) as primary; model metrics (latency, error rate) as guardrails",
+      "Statistical significance: determine sample size upfront using power analysis; typical requirement is 95% confidence, 80% power",
+      "Duration: run long enough to capture weekly seasonality (usually 1-2 weeks minimum) and avoid novelty effects",
+      "Infrastructure: use feature flags or traffic routing at load balancer level; log predictions with model version for later analysis"
+    ],
+    "idealAnswerFollowups": [
+      "What's the difference between A/B testing and multi-armed bandit approaches for model selection?",
+      "How do you handle network effects where treatment group behavior affects control group results?"
+    ],
+    "tags": ["mlops", "ab-testing", "deployment", "experimentation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is shadow deployment and when should you use it?",
+    "idealAnswerCore": "Shadow deployment (shadow mode / mirror traffic) runs a new model in parallel with the current production model, receiving the same requests but not serving its predictions to users — enabling safe validation before full deployment.",
+    "idealAnswerFraming": "Position this as a risk-reduction technique for high-stakes models — you get production-like evaluation without user-facing risk.",
+    "idealAnswerKeyPoints": [
+      "Architecture: production traffic is duplicated (mirrored) to the shadow model; only the primary model's output is returned to users",
+      "Use cases: validating new model performance before cutover, testing infrastructure at production load, comparing output quality on real traffic",
+      "Metrics to collect: prediction distribution, latency, error rate, accuracy if ground truth is available",
+      "Limitations: adds infrastructure cost, doesn't capture feedback loops (user response affects shadow model but not its predictions), silent failure detection requires active logging",
+      "Transition path: shadow → canary (small live traffic) → full rollout — each stage provides increasing confidence with increasing risk"
+    ],
+    "idealAnswerFollowups": [
+      "How does shadow deployment differ from canary deployment?",
+      "What logging infrastructure do you need to support shadow deployments effectively?"
+    ],
+    "tags": ["mlops", "deployment", "shadow-deployment", "canary"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you monitor LLMs in production? What metrics matter?",
+    "idealAnswerCore": "LLM monitoring requires tracking both technical metrics (latency, cost, error rates) and quality metrics (faithfulness, relevance, safety) since traditional ML metrics like accuracy don't apply to open-ended text generation.",
+    "idealAnswerFraming": "LLM monitoring is harder than classical ML monitoring because outputs are unstructured — you need a mix of rule-based checks, embedding-based drift detection, and LLM-as-judge approaches.",
+    "idealAnswerKeyPoints": [
+      "Technical metrics: request latency (p50/p95/p99), cost per request, token counts (input/output), error rates, timeouts, and rate limit hits",
+      "Quality metrics: answer relevance, faithfulness to context (for RAG), toxicity/safety scores, format compliance (does it follow instructions), hallucination rate",
+      "User feedback signals: thumbs up/down, session abandonment, follow-up clarification questions as implicit quality signals",
+      "Drift detection: track embedding distributions of inputs/outputs to detect prompt distribution shifts that could affect quality",
+      "Tooling: LangSmith, Arize Phoenix, Langfuse, Helicone — specialized for LLM tracing and evaluation; alert on latency/cost anomalies and quality degradation"
+    ],
+    "idealAnswerFollowups": [
+      "How do you evaluate LLM output quality at scale without human reviewers for every response?",
+      "What's your strategy for monitoring a RAG system vs. a pure generation system?"
+    ],
+    "tags": ["mlops", "monitoring", "llm", "observability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is continuous training (CT) and how does it differ from continuous integration/delivery?",
+    "idealAnswerCore": "Continuous training automatically retrains ML models when triggered by data drift, schedule, or performance degradation — it extends CI/CD with an additional loop that treats the model artifact as the deployable unit.",
+    "idealAnswerFraming": "The key insight is that ML systems have three artifacts to version and deliver: code, data, and models — CT adds automated model refresh to the standard CI/CD pipeline.",
+    "idealAnswerKeyPoints": [
+      "CI/CD covers code changes; CT covers model freshness — together they form the full ML delivery pipeline",
+      "Trigger types: scheduled retraining (daily/weekly), drift-based triggers (when feature distributions shift beyond threshold), performance-based triggers (when production metrics degrade)",
+      "CT pipeline steps: data extraction → validation → training → evaluation → model registry update → deployment (if evaluation passes)",
+      "Validation gates: new model must pass evaluation on held-out test set AND outperform production model on champion/challenger comparison before promotion",
+      "Tooling: Kubeflow Pipelines, Metaflow, SageMaker Pipelines, Airflow with ML operators — orchestrate CT as a DAG"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent catastrophic performance regression from a continuous training pipeline?",
+      "What are the risks of fully automated CT without human approval?"
+    ],
+    "tags": ["mlops", "continuous-training", "automation", "pipeline"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you manage LLM costs at scale in production?",
+    "idealAnswerCore": "LLM cost management requires a multi-layered strategy: caching frequent responses, routing to cheaper models for simple queries, optimizing prompts, and implementing usage-based quotas.",
+    "idealAnswerFraming": "This is about engineering discipline and business awareness — show you can balance quality with cost by applying appropriate techniques at each layer of the system.",
+    "idealAnswerKeyPoints": [
+      "Semantic caching: cache responses to semantically similar queries using embedding similarity (not just exact match) — tools: Redis + cosine similarity, GPTCache",
+      "Model routing: route simple/common queries to smaller/cheaper models (GPT-4o-mini, Haiku) and complex queries to frontier models — reduces costs 50-80% with minimal quality loss",
+      "Prompt optimization: reduce token counts via concise system prompts, removing redundant context, using prompt compression techniques (LLMLingua)",
+      "Batching: batch non-real-time requests for batch API endpoints (typically 50% cheaper than synchronous)",
+      "Quotas and alerts: per-user/per-feature token budgets, cost anomaly detection, and circuit breakers to prevent runaway costs from prompt injection or bugs"
+    ],
+    "idealAnswerFollowups": [
+      "How do you decide which requests to route to cheaper models vs. frontier models?",
+      "What's your approach to measuring the ROI of a specific LLM feature?"
+    ],
+    "tags": ["mlops", "cost-optimization", "llm", "caching", "routing"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is a training-serving skew and how do you prevent it?",
+    "idealAnswerCore": "Training-serving skew occurs when features or preprocessing logic differs between model training and production inference, causing models that perform well offline to underperform in production.",
+    "idealAnswerFraming": "This is one of the most common and expensive production ML bugs — interviewers want to hear you have concrete prevention strategies, not just awareness of the problem.",
+    "idealAnswerKeyPoints": [
+      "Root causes: different code paths for offline (batch) vs. online (real-time) feature computation; data type mismatches; missing values handled differently; feature normalization applied inconsistently",
+      "Prevention strategy 1: use the same feature computation code for both training and serving — package feature transformations as a shared library deployed to both environments",
+      "Prevention strategy 2: feature stores enforce consistent feature definitions across training and serving",
+      "Prevention strategy 3: log serving-time features and compare their distribution to training features periodically",
+      "Detection: run the production model on training data and compare outputs to offline evaluation; large discrepancy indicates skew; tools like TFX's data validation can automate this"
+    ],
+    "idealAnswerFollowups": [
+      "How would you diagnose a model that performs well offline but poorly in production?",
+      "What role does a feature store play in preventing training-serving skew?"
+    ],
+    "tags": ["mlops", "training-serving-skew", "feature-store", "debugging"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you build a CI/CD pipeline for ML models?",
+    "idealAnswerCore": "An ML CI/CD pipeline extends traditional software pipelines with stages for data validation, model training, model evaluation, and controlled deployment — treating model artifacts with the same rigor as code artifacts.",
+    "idealAnswerFraming": "Walk through the pipeline stages systematically and emphasize the unique ML-specific gates (data quality checks, model evaluation thresholds) that don't exist in standard software CI/CD.",
+    "idealAnswerKeyPoints": [
+      "CI stages: code linting/testing, data validation (schema checks, distribution checks using Great Expectations or TFX), training job triggering on data/code changes",
+      "Model evaluation gate: new model must exceed baseline metrics on a held-out test set before proceeding — hard threshold failure blocks promotion",
+      "CD stages: push model to registry (with version tag), deploy to staging environment, run integration tests against staging, canary rollout to production",
+      "Rollback mechanism: keep previous model in registry; automated rollback triggered if production error rate or latency exceeds threshold post-deployment",
+      "Tooling: GitHub Actions / GitLab CI for orchestration, DVC for data pipelines, MLflow/W&B for model registry, ArgoCD/Helm for Kubernetes deployments"
+    ],
+    "idealAnswerFollowups": [
+      "How do you test an ML model before deploying it, beyond just accuracy metrics?",
+      "What does your pull request review process look like for ML changes?"
+    ],
+    "tags": ["mlops", "cicd", "pipeline", "automation", "deployment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you design a low-latency model serving infrastructure for a high-traffic production system?",
+    "idealAnswerCore": "Low-latency LLM serving requires a combination of model optimization (quantization, compilation), infrastructure optimization (GPU batching, caching), and traffic management (load balancing, autoscaling).",
+    "idealAnswerFraming": "Think through the problem in layers: model layer (reduce compute), infrastructure layer (maximize GPU utilization), request layer (reduce queuing). Each optimization compounds.",
+    "idealAnswerKeyPoints": [
+      "Model optimization: quantization (INT8/INT4 via bitsandbytes or GPTQ) reduces memory footprint and increases throughput; model compilation with TorchScript or TensorRT-LLM for GPU-specific optimization",
+      "Continuous batching (dynamic batching): vLLM's PagedAttention and continuous batching groups concurrent requests to maximize GPU utilization — critical for throughput at scale",
+      "Speculative decoding: use a small draft model to propose tokens and a large model to verify in parallel — reduces P50 latency 2-3x for large models",
+      "Infrastructure: use multiple GPU replicas with a load balancer; autoscale based on queue depth and GPU utilization; place replicas in regions closest to users",
+      "Caching layers: KV cache for repeated prefixes (system prompts), semantic cache for similar queries, CDN for static responses"
+    ],
+    "idealAnswerFollowups": [
+      "How would you trade off latency vs. cost in your serving design?",
+      "What's the impact of tensor parallelism vs. pipeline parallelism on serving latency?"
+    ],
+    "tags": ["mlops", "serving", "latency", "vllm", "infrastructure"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What are the key considerations when containerizing ML models for deployment?",
+    "idealAnswerCore": "Containerizing ML models requires managing large image sizes (model weights + GPU dependencies), CUDA compatibility, resource allocation, and health check design for probabilistic services.",
+    "idealAnswerFraming": "ML containers have unique challenges vs. standard microservices — the combination of large artifacts, GPU requirements, and slow startup times requires deliberate design choices.",
+    "idealAnswerKeyPoints": [
+      "Image size management: don't bake model weights into the Docker image — instead load them from S3/GCS at startup or use a shared volume mount; keeps images under 2GB for fast scaling",
+      "CUDA compatibility: pin CUDA/cuDNN versions carefully; use NVIDIA base images (nvidia/cuda) or framework-specific images (pytorch/pytorch:2.x-cuda12.x); mismatch causes silent failures",
+      "Resource specification: always specify GPU resource limits and memory requests in Kubernetes — GPU scheduling requires explicit declaration; CPU/RAM must account for model loading overhead",
+      "Startup/readiness probes: ML containers have slow startup (model loading can take 30-120s); configure `initialDelaySeconds` accordingly or serve a placeholder until model is warm",
+      "Multi-stage builds: separate build environment (with heavy compilation dependencies) from runtime image to minimize final image size"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle GPU memory fragmentation across multiple model replicas in Kubernetes?",
+      "What's your strategy for rolling updates when the model weights are stored externally?"
+    ],
+    "tags": ["mlops", "docker", "kubernetes", "containerization", "deployment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you implement data validation in an ML pipeline?",
+    "idealAnswerCore": "Data validation in ML pipelines involves automatically checking that incoming data conforms to an expected schema, statistical distribution, and quality constraints before it's used for training or inference.",
+    "idealAnswerFraming": "Garbage in, garbage out — data validation is the first defense against silent model degradation from upstream data quality issues. Emphasize both schema checks and statistical checks.",
+    "idealAnswerKeyPoints": [
+      "Schema validation: check feature names, data types, cardinality of categoricals — catch upstream schema changes that would break training",
+      "Statistical validation: compare feature distributions against a baseline using KS tests, chi-squared tests, or PSI — detect data drift before training on contaminated data",
+      "Constraint checks: null rates, value ranges, referential integrity (foreign keys exist), format validity (email patterns, date ranges)",
+      "Tooling: Great Expectations (rich constraint DSL, HTML reports), TFX Data Validation (TFFlow integrated), dbt tests (for warehouse transforms), Pandera (Python DataFrame validation)",
+      "Pipeline integration: validation runs as a blocking step before training — failed validation should halt the pipeline and alert data engineers, not silently retrain on bad data"
+    ],
+    "idealAnswerFollowups": [
+      "What do you do when data validation fails mid-training pipeline? Do you roll back or continue?",
+      "How do you set appropriate thresholds for distribution drift without triggering false alarms?"
+    ],
+    "tags": ["mlops", "data-quality", "validation", "pipeline", "great-expectations"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is the role of experiment tracking in ML development, and what do you log?",
+    "idealAnswerCore": "Experiment tracking captures the complete context of each model training run — hyperparameters, metrics, code version, data version, and artifacts — enabling reproducibility, comparison, and knowledge accumulation across the team.",
+    "idealAnswerFraming": "Without systematic tracking, ML development devolves into undocumented exploration where good results are lost and bad decisions are repeated. Show you log comprehensively, not just the metrics.",
+    "idealAnswerKeyPoints": [
+      "What to log: hyperparameters (learning rate, batch size, architecture choices), training/validation metrics per epoch, final evaluation metrics, git SHA, data version/hash, training duration, hardware used",
+      "Artifacts: model checkpoints, evaluation plots (confusion matrix, ROC curves), feature importance, sample predictions for qualitative inspection",
+      "Metadata: dataset splits used, preprocessing applied, random seeds for reproducibility, dependencies/library versions",
+      "Best practices: log from the start of experimentation (even failed runs are informative), use tags to group related experiments, write a run description explaining the hypothesis",
+      "Tooling: MLflow (open source, SQL backend), Weights & Biases (richer visualization, team collaboration), Comet ML (similar to W&B), Neptune — all export to pandas for analysis"
+    ],
+    "idealAnswerFollowups": [
+      "How do you organize experiments when you have hundreds of runs across multiple teams?",
+      "What do you do when you can't reproduce a previous run that had great results?"
+    ],
+    "tags": ["mlops", "experiment-tracking", "mlflow", "reproducibility"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you handle the cold start problem in online model serving?",
+    "idealAnswerCore": "The cold start problem occurs when new models, new users, or new items lack sufficient data for accurate prediction — it requires a strategy to serve reasonable predictions before enough signal has accumulated.",
+    "idealAnswerFraming": "Position this as an engineering + ML problem: you need both a fallback strategy (rule-based or simpler model) and a data collection strategy to warm up the new entity quickly.",
+    "idealAnswerKeyPoints": [
+      "New model cold start: during deployment, new model has no warm KV cache, no request history — mitigate with pre-warming (send representative requests before traffic cutover) and gradual traffic ramp",
+      "New user cold start (recommendation systems): no interaction history — use demographic features, collaborative filtering with similar users, or explicit onboarding questions to bootstrap",
+      "New item cold start: no engagement data — use content-based features (item embeddings from description/metadata) until interaction data accumulates",
+      "Hybrid approach: combine model prediction with fallback rule (e.g., serve popularity-based recommendations until user has 10+ interactions, then switch to personalized model)",
+      "Instrumentation: log when fallback is serving vs. main model; track how quickly new entities 'warm up' to inform threshold decisions"
+    ],
+    "idealAnswerFollowups": [
+      "How do you detect when a user or item has accumulated enough data to switch from fallback to the main model?",
+      "What are the business implications of poor cold start handling in a recommendation system?"
+    ],
+    "tags": ["mlops", "cold-start", "serving", "recommendation-systems"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "Explain blue-green deployment for ML models. What are the benefits and risks?",
+    "idealAnswerCore": "Blue-green deployment maintains two identical production environments (blue = current, green = new) and switches traffic instantly between them, enabling zero-downtime deployments and instant rollback for ML models.",
+    "idealAnswerFraming": "Contrast this with rolling updates — blue-green has higher infrastructure cost but provides instant rollback without complex state management, which matters more for models where partial rollouts create inconsistent user experiences.",
+    "idealAnswerKeyPoints": [
+      "Mechanism: green environment runs the new model with identical infrastructure; after validation, traffic is switched at the load balancer/DNS level in seconds",
+      "Benefits: zero-downtime deployment, instant rollback (switch back to blue if green has issues), no mixed-version traffic during rollout",
+      "ML-specific benefits: avoids users seeing both old and new model predictions simultaneously (important for consistency in recommendation/ranking systems)",
+      "Risks: double infrastructure cost during transition period, warm-up time for new model (GPU caches, JIT compilation) can cause initial latency spike after switch",
+      "Post-switch: keep blue environment running for 30-60 minutes as hot standby; gradually decomission after confidence in green is established"
+    ],
+    "idealAnswerFollowups": [
+      "When would you prefer canary deployment over blue-green for an LLM update?",
+      "How do you validate the green environment before switching traffic?"
+    ],
+    "tags": ["mlops", "deployment", "blue-green", "zero-downtime"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is data lineage and why is it important in ML pipelines?",
+    "idealAnswerCore": "Data lineage tracks the origin, movement, and transformation of data throughout an ML pipeline — from raw sources through feature engineering to model training — enabling debugging, compliance, and impact analysis.",
+    "idealAnswerFraming": "Data lineage is the 'audit trail' for ML systems. It answers: 'where did this training data come from, what transformations were applied, and which models were trained on it?'",
+    "idealAnswerKeyPoints": [
+      "Forward lineage: given a data source, which features and models depend on it — critical for understanding blast radius when a data source changes or has quality issues",
+      "Backward lineage: given a model or prediction, trace back to the raw data sources and transformations that produced it — critical for debugging and regulatory compliance (GDPR right to explanation)",
+      "ML-specific importance: a model trained on corrupted data must be retrained — lineage tells you which models are affected by a data quality incident",
+      "Tooling: OpenLineage (open standard), Marquez (OpenLineage server), DataHub, Apache Atlas — integrate with Spark, dbt, Airflow to capture lineage automatically",
+      "Regulatory use case: financial/healthcare models often require demonstrating that training data was appropriately licensed and PII-free — lineage provides the evidence trail"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement data lineage in a Spark-based feature engineering pipeline?",
+      "What's the relationship between data lineage and data governance?"
+    ],
+    "tags": ["mlops", "data-lineage", "governance", "compliance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you design an ML platform for a large organization? What are the core components?",
+    "idealAnswerCore": "An ML platform provides shared infrastructure for the complete ML lifecycle — from data preparation through model deployment and monitoring — allowing data science teams to focus on modeling rather than infrastructure.",
+    "idealAnswerFraming": "Think in terms of the full ML lifecycle and which repetitive, complex tasks are worth centralizing vs. leaving to individual teams. The platform should accelerate the 80% common path without constraining the 20% edge cases.",
+    "idealAnswerKeyPoints": [
+      "Data layer: feature store (Feast, Tecton) for consistent feature serving; data catalog for discoverability; data versioning for reproducibility",
+      "Experimentation layer: experiment tracking (MLflow, W&B), interactive compute (JupyterHub, SageMaker Studio), shared GPU clusters for training jobs",
+      "CI/CD layer: ML pipeline orchestration (Kubeflow, Metaflow, Airflow), automated evaluation and model registry, deployment automation",
+      "Serving layer: model serving infrastructure (KServe, Seldon, Triton Inference Server), traffic management, autoscaling",
+      "Observability layer: model monitoring (drift detection, performance tracking), cost attribution, lineage tracking — often the most neglected layer"
+    ],
+    "idealAnswerFollowups": [
+      "How do you balance standardization (platform prescribes tools) vs. flexibility (teams choose their own tools)?",
+      "What's the minimum viable ML platform for a team of 10 data scientists?"
+    ],
+    "tags": ["mlops", "platform", "infrastructure", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is online learning and when should you use it for LLM applications?",
+    "idealAnswerCore": "Online learning updates model parameters continuously from a stream of new data (rather than periodic batch retraining), enabling faster adaptation to changing patterns — but it requires careful safeguards against instability and concept poisoning.",
+    "idealAnswerFraming": "For LLMs specifically, true online learning (continuous gradient updates) is rare due to cost and instability risks. More common is 'online' updating of retrieval systems (vector databases) or smaller adapter layers.",
+    "idealAnswerKeyPoints": [
+      "Classical online learning: update model weights after each example or small batch using SGD variants — works for simpler models (linear, shallow neural nets) but unstable for large LLMs",
+      "LLM-specific patterns: update embedding indexes in real-time as new documents arrive (RAG applications), fine-tune LoRA adapters on recent feedback data on a daily/weekly schedule",
+      "When to use: high-velocity data streams where batch retraining lag (days/weeks) causes meaningful performance degradation; real-time personalization where user preferences change rapidly",
+      "Risks: catastrophic forgetting (new data overwrites old knowledge), concept poisoning (adversarial inputs that corrupt the model), training instability without careful learning rate scheduling",
+      "Safeguards: evaluation on a held-out set before accepting each update, rollback mechanism if performance degrades, anomaly detection on gradient norms to catch poisoning attempts"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement a system that learns from user feedback on LLM responses in near-real-time?",
+      "What monitoring would you put in place for an online learning system?"
+    ],
+    "tags": ["mlops", "online-learning", "streaming", "adaptation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you handle PII and sensitive data in ML training pipelines?",
+    "idealAnswerCore": "Handling PII in ML pipelines requires a combination of data minimization (don't collect more than needed), anonymization techniques, access controls, and audit logging — applied systematically at each stage from collection through model deployment.",
+    "idealAnswerFraming": "Frame this around the principle of privacy-by-design — PII handling should be built into the pipeline architecture, not bolted on afterward. Regulatory compliance (GDPR, HIPAA, CCPA) creates legal obligations, not just best practices.",
+    "idealAnswerKeyPoints": [
+      "Data minimization and pseudonymization: replace direct identifiers (names, emails) with pseudonyms/hashes before data enters the ML pipeline; store the mapping separately with strict access controls",
+      "Differential privacy: add calibrated noise during training to prevent the model from memorizing individual records — PyTorch Opacus, TensorFlow Privacy; required for high-risk applications",
+      "Access controls: enforce least-privilege — data scientists should access aggregate/anonymized data, not raw PII; use tools like Databricks Unity Catalog or AWS Lake Formation for fine-grained access",
+      "Data retention: don't persist raw PII longer than needed; implement automated deletion policies; ensure training datasets can be purged if a user exercises their right to erasure",
+      "Model memorization risk: LLMs can memorize and regurgitate PII from training data; mitigate with deduplication of training data, differential privacy, and red-teaming for memorization"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle a user's request to delete all their data including its influence on a trained model?",
+      "What's differential privacy and when is the privacy-utility tradeoff acceptable?"
+    ],
+    "tags": ["mlops", "data-privacy", "pii", "compliance", "gdpr"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is model explainability and how do you implement it in production?",
+    "idealAnswerCore": "Model explainability provides human-understandable justifications for model predictions — in production, this means generating feature attributions or natural language explanations alongside predictions for debugging, compliance, and user trust.",
+    "idealAnswerFraming": "Distinguish between global explainability (understanding the model overall) and local explainability (explaining a specific prediction). Production systems typically need local explainability for individual decisions.",
+    "idealAnswerKeyPoints": [
+      "Perturbation-based methods: SHAP (SHapley Additive exPlanations) and LIME compute feature importance by measuring output change when features are masked — model-agnostic, work on any model",
+      "Gradient-based methods (for neural networks): integrated gradients, saliency maps — computationally cheaper but require model internals access",
+      "LLM-specific approaches: chain-of-thought prompting (model explains its reasoning), attention visualization (which tokens influenced output), retrieval attribution (which documents were used in RAG)",
+      "Production considerations: explanation computation adds latency — pre-compute explanations for batch predictions, use approximate methods (SHAP TreeExplainer for tree models is fast) for real-time",
+      "Regulatory context: EU AI Act and financial regulations (SR 11-7 in banking) require model risk management that includes explainability for high-stakes decisions (credit, hiring, medical)"
+    ],
+    "idealAnswerFollowups": [
+      "When are SHAP explanations misleading or unreliable?",
+      "How do you explain a RAG system's answer to an end user?"
+    ],
+    "tags": ["mlops", "explainability", "shap", "compliance", "fairness"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you evaluate the cost-quality tradeoff when choosing between model sizes and providers?",
+    "idealAnswerCore": "Evaluating the cost-quality tradeoff requires defining a quality metric tied to business outcomes, benchmarking candidate models on a representative evaluation set, then computing cost-per-quality-point to find the Pareto-optimal choice.",
+    "idealAnswerFraming": "There's no universal answer — the right model depends on your specific task, acceptable quality floor, and cost constraints. Show you have a systematic evaluation framework rather than defaulting to the largest/cheapest model.",
+    "idealAnswerKeyPoints": [
+      "Define quality metrics first: task-specific (ROUGE for summarization, exact match for extraction, win rate for creative tasks) + business KPIs (conversion, task completion rate) — don't optimize for generic benchmarks",
+      "Build a representative evaluation set: diverse, covering edge cases and failure modes, with ground truth labels — minimum 200-500 examples for statistical significance",
+      "Benchmark systematically: test multiple models on the same eval set, compute accuracy/quality scores and per-query cost (input tokens × price + output tokens × price)",
+      "Consider latency as a constraint: some use cases (real-time chat) require p95 latency < 2s, which rules out certain large models regardless of quality",
+      "Hybrid routing: large model for complex queries (where quality delta matters), small model for simple ones — tools like RouteLLM, LiteLLM can automate this routing"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle the case where a cheaper model is better on your eval set but worse on rare edge cases that really matter?",
+      "How often do you re-evaluate your model selection as new models are released?"
+    ],
+    "tags": ["mlops", "cost-optimization", "model-selection", "evaluation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is model governance and what does a model risk management framework look like?",
+    "idealAnswerCore": "Model governance is the set of policies, processes, and controls ensuring ML models are developed, validated, deployed, and monitored responsibly — with accountability, documentation, and oversight at each stage.",
+    "idealAnswerFraming": "In regulated industries (banking, insurance, healthcare), governance is a legal requirement. In tech, it's increasingly expected as AI systems make consequential decisions. Frame it as risk management, not bureaucracy.",
+    "idealAnswerKeyPoints": [
+      "Model inventory: catalog every model in production with owner, purpose, risk tier, last validation date, and monitoring status — enables accountability and impact assessment for incidents",
+      "Model risk tiers: classify models by potential harm (Tier 1: high-stakes decisions like credit/hiring, Tier 2: significant user impact, Tier 3: internal tooling) — higher tiers require more rigorous validation",
+      "Validation requirements: independent validation (different team than builders), performance testing on diverse subgroups (fairness), adversarial testing, documentation of limitations",
+      "Model card / system card: structured documentation of training data, evaluation results, intended use, limitations, and risks — required for Tier 1/2 models",
+      "Change management: require approval workflow before updating production models (challenger must beat champion on defined metrics), maintain audit trail of all changes and who approved them"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle a situation where a production model is found to be systematically biased against a protected group?",
+      "What's the minimum governance framework for a startup vs. an enterprise?"
+    ],
+    "tags": ["mlops", "governance", "risk-management", "compliance", "fairness"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you debug a model that performs well offline but poorly in production?",
+    "idealAnswerCore": "Poor production performance despite good offline metrics typically stems from training-serving skew, distribution mismatch between test set and production traffic, feedback loops, or infrastructure issues — each requires a different debugging approach.",
+    "idealAnswerFraming": "Approach this systematically: isolate whether it's a data issue, code issue, or infrastructure issue before jumping to conclusions. Use production logs as your primary debugging tool.",
+    "idealAnswerKeyPoints": [
+      "Check for training-serving skew first: log serving-time features and compare their statistics to training features — a feature computed differently at serving time is the most common cause",
+      "Analyze production traffic distribution: compare input distributions (feature histograms) between production traffic and your test set — if they differ, your test set wasn't representative",
+      "Look for feedback loops: the model's predictions can change user behavior, which changes future training data — recommendation systems are particularly susceptible to popularity bias amplification",
+      "Check infrastructure: verify preprocessing code path is identical between training and serving; check for numerical precision differences (float16 vs. float32); verify model version deployed matches expected",
+      "Log predictions with confidence: sample low-confidence or incorrect predictions (if you have feedback) and manually inspect them to identify systematic failure patterns"
+    ],
+    "idealAnswerFollowups": [
+      "How would you set up logging to make production debugging easier before issues arise?",
+      "What would cause a model to degrade gradually over weeks rather than suddenly?"
+    ],
+    "tags": ["mlops", "debugging", "training-serving-skew", "monitoring"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you implement automated model retraining with guardrails to prevent silent regressions?",
+    "idealAnswerCore": "Safe automated retraining requires a champion-challenger evaluation framework where the new model must exceed the current production model on defined metrics before promotion — with automatic rollback triggers if production performance degrades post-deployment.",
+    "idealAnswerFraming": "The failure mode of naive automated retraining is silently deploying degraded models. Show you design the pipeline defensively with multiple validation layers.",
+    "idealAnswerKeyPoints": [
+      "Champion-challenger evaluation: new (challenger) model must exceed champion (current production model) on held-out test set for all guardrail metrics, not just primary metric — prevents trading precision for recall accidentally",
+      "Automated evaluation report: generate human-readable evaluation card with metric comparisons, performance on critical subgroups, examples of prediction changes — require human approval for Tier 1 models even if metrics pass",
+      "Post-deployment monitoring: immediately after promotion, watch error rates, latency, and business KPIs for 1-24 hours; automated rollback to champion if metrics exceed alarm thresholds",
+      "Canary rollout before full promotion: route 5% of traffic to challenger before full switch; collect production metrics comparison for additional confidence beyond offline evaluation",
+      "Alert on unexpected triggers: if retraining is triggered more frequently than expected (e.g., daily instead of weekly), investigate upstream data quality issues before running retraining"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle the case where both champion and challenger perform poorly — indicating a data quality issue rather than a model issue?",
+      "What metrics do you use to decide whether to automatically promote or require human review?"
+    ],
+    "tags": ["mlops", "continuous-training", "automation", "monitoring", "deployment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What are the key differences between batch inference and real-time inference architectures?",
+    "idealAnswerCore": "Batch inference processes large volumes of data asynchronously on a schedule, optimizing for throughput and cost. Real-time inference responds to individual requests synchronously, optimizing for latency. The choice depends on whether predictions must be available before or at the moment of a user action.",
+    "idealAnswerFraming": "Many teams default to real-time inference when batch would be far cheaper and simpler. Show you evaluate the actual latency requirements before choosing architecture.",
+    "idealAnswerKeyPoints": [
+      "Batch inference: pre-compute predictions on a schedule (hourly, daily) and store in a database for lookup — ideal for content recommendation, risk scores, search ranking, email personalization",
+      "Real-time inference: compute predictions on-demand per request — required for conversational AI, real-time fraud detection where the transaction hasn't happened yet, personalized search query responses",
+      "Cost difference: batch inference on GPU spot instances with full utilization costs 10-50x less than real-time inference at comparable throughput due to hardware utilization efficiency",
+      "Hybrid architecture: pre-compute expensive features/embeddings in batch, combine with lightweight real-time model — gets most of the performance with fraction of the cost",
+      "Operational complexity: batch systems are simpler (no SLA on latency, GPU can be spot instances, failures are retryable); real-time requires load balancing, autoscaling, SLO monitoring"
+    ],
+    "idealAnswerFollowups": [
+      "How would you migrate a real-time inference system to batch if you discovered users weren't seeing the predictions in real-time anyway?",
+      "What's the right architecture for an LLM that generates weekly email newsletters?"
+    ],
+    "tags": ["mlops", "serving", "batch-inference", "real-time", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you manage dependencies and environment reproducibility in ML projects?",
+    "idealAnswerCore": "ML environment reproducibility requires pinning all dependencies (including CUDA/cuDNN versions), containerizing the runtime, and capturing the full dependency graph — because ML results can change with minor library version upgrades.",
+    "idealAnswerFraming": "The horror story this prevents: a teammate runs your code six months later and gets different results because PyTorch updated. Show you've thought about this at every layer, not just pip requirements.",
+    "idealAnswerKeyPoints": [
+      "Python dependencies: use lock files (poetry.lock, pip-compile output) rather than version ranges in requirements.txt — captures exact versions of every transitive dependency",
+      "CUDA/cuDNN versioning: specify in Docker base image (e.g., nvidia/cuda:12.1-cudnn8-runtime-ubuntu22.04) — CUDA version changes can break numerical results even with same PyTorch version",
+      "Random seed management: set seeds for Python random, NumPy, PyTorch, and CUDA at the start of every training script — log the seeds used in experiment tracking",
+      "Container images: build and push a Docker image per training run, tagged with git SHA — provides complete environment snapshot including system libraries, not just Python packages",
+      "Hardware reproducibility caveat: even with identical code, data, seeds, and library versions, results can differ across GPU hardware types due to non-deterministic CUDA operations — document this limitation"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle the case where non-deterministic GPU operations make exact reproducibility impossible?",
+      "What's your workflow for debugging a training run that produced unexpected results last week but can't be reproduced today?"
+    ],
+    "tags": ["mlops", "reproducibility", "docker", "dependencies", "environment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is canary deployment and how does it differ from rolling deployment for ML models?",
+    "idealAnswerCore": "Canary deployment routes a small percentage of traffic (1-10%) to a new model version to validate real-world performance before full rollout. Rolling deployment gradually replaces instances of the old model with the new one. Canary provides a safer validation step but requires traffic splitting infrastructure.",
+    "idealAnswerFraming": "For ML models specifically, canary is often preferred over rolling because it lets you measure business KPIs on live traffic before committing — a key advantage when offline metrics don't fully predict production behavior.",
+    "idealAnswerKeyPoints": [
+      "Canary mechanics: route X% of traffic to new model, collect metrics for a defined time window, then either promote (expand to 100%) or rollback (return all traffic to original)",
+      "Rolling deployment mechanics: replace model replicas one by one — simpler orchestration but means all users see the new model during transition; harder to cleanly rollback",
+      "Metric collection during canary: business KPIs (task completion, click-through, conversion), technical metrics (latency, error rate), and model-specific metrics (prediction distribution changes)",
+      "Canary size selection: start at 1-5% to detect catastrophic failures cheaply; increase to 10-20% for statistical power on business metrics; full rollout once confidence threshold met",
+      "Automated promotion/rollback: set thresholds — if new model's error rate exceeds current model's by >10% or business metric decreases significantly, auto-rollback; if metrics are neutral or positive after N hours, auto-promote"
+    ],
+    "idealAnswerFollowups": [
+      "What canary percentage would you use for a model change you're confident in vs. one that's more experimental?",
+      "How do you handle the operational complexity of running two model versions simultaneously during a canary?"
+    ],
+    "tags": ["mlops", "canary", "deployment", "rolling-deployment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you build a self-healing ML pipeline that recovers from failures automatically?",
+    "idealAnswerCore": "A self-healing ML pipeline uses idempotent steps, retry logic with backoff, dead letter queues for unrecoverable failures, automated alerting, and pre-defined recovery procedures that can be executed without human intervention.",
+    "idealAnswerFraming": "Production ML pipelines fail regularly — data source outages, compute node failures, API rate limits. The goal is to make failures visible and recoverable without 3am pages for predictable failure modes.",
+    "idealAnswerKeyPoints": [
+      "Idempotent pipeline steps: each step should produce the same output if run multiple times with the same inputs — enables safe retry without corrupting state (use upsert rather than insert for database writes)",
+      "Retry with exponential backoff: transient failures (API rate limits, network blips) resolve on retry; use exponential backoff with jitter to avoid thundering herd on shared resources",
+      "Dead letter queues: after N retries, route failed messages/tasks to a DLQ for manual inspection — prevents one bad record from blocking the entire pipeline indefinitely",
+      "Checkpointing: save intermediate state at pipeline steps so failures restart from the last checkpoint rather than the beginning — critical for multi-hour training jobs",
+      "Automated alerting + runbooks: PagerDuty/Opsgenie alerts with severity-based routing; attach runbook link to each alert explaining diagnosis steps and known fixes"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle the case where a pipeline step is partially completed when a failure occurs?",
+      "What's the difference between a fault-tolerant system and a self-healing system?"
+    ],
+    "tags": ["mlops", "reliability", "pipeline", "fault-tolerance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What considerations go into choosing a model serving framework (e.g., Triton, TorchServe, vLLM, BentoML)?",
+    "idealAnswerCore": "Choosing a model serving framework depends on model type (LLM vs. classical ML), performance requirements (latency/throughput), deployment environment (cloud vs. on-premise), team expertise, and ecosystem compatibility.",
+    "idealAnswerFraming": "No single framework dominates — each has different strengths. Show you can map requirements to framework capabilities rather than defaulting to the most popular option.",
+    "idealAnswerKeyPoints": [
+      "vLLM: purpose-built for LLM serving with continuous batching and PagedAttention; best throughput for large language models; supports most HuggingFace models; strong choice for OpenAI-compatible LLM APIs",
+      "NVIDIA Triton Inference Server: supports multiple frameworks (PyTorch, TensorFlow, ONNX, TensorRT); model ensemble pipelines; best for mixed workloads on NVIDIA GPU infrastructure; requires more configuration",
+      "TorchServe: tight PyTorch integration, simple deployment model; good for single PyTorch models; less infrastructure overhead than Triton; lacks advanced batching of vLLM",
+      "BentoML: Python-first API, packaging model + dependencies into a 'Bento'; good for complex pipelines combining multiple models; simpler to use than Triton but less performant at scale",
+      "Decision factors: LLM? → vLLM first. Multiple models/frameworks? → Triton. Pure PyTorch at moderate scale? → TorchServe. Complex preprocessing pipeline? → BentoML or custom FastAPI"
+    ],
+    "idealAnswerFollowups": [
+      "How would you benchmark two serving frameworks to make the final decision for your use case?",
+      "When would you build a custom FastAPI serving wrapper instead of using an off-the-shelf framework?"
+    ],
+    "tags": ["mlops", "serving", "vllm", "triton", "infrastructure"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you handle model rollback in production when a new deployment causes degraded performance?",
+    "idealAnswerCore": "Model rollback requires a pre-staged previous model artifact, a fast traffic switching mechanism, clear rollback trigger criteria, and a post-mortem process — executed within minutes of detecting a regression to minimize user impact.",
+    "idealAnswerFraming": "The ability to roll back quickly is as important as the ability to deploy quickly. Show you design rollback capability upfront, not as an afterthought.",
+    "idealAnswerKeyPoints": [
+      "Pre-requisites: previous model must remain staged and ready to serve (not torn down after successful deployment); model registry retains all historical versions with metadata",
+      "Rollback triggers: automated (if error rate or latency exceeds threshold × previous model for N minutes) and manual (on-call engineer judgment); both should be tested in drills",
+      "Traffic switch: load balancer or service mesh routes traffic back to previous model version in <60 seconds; no redeployment required if previous model is still running (blue-green keeps this ready)",
+      "Communication: notify stakeholders immediately when rollback is triggered; distinguish between rollback (reactive) and planned revert (proactive) in post-mortems",
+      "Post-rollback: run the new model in shadow mode against production traffic to debug the issue before re-deploying; don't redeploy without understanding and fixing the root cause"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle rollback when the new model changed the database schema or output format that downstream systems depend on?",
+      "What's your rollback SLO (e.g., complete rollback within X minutes of decision)?"
+    ],
+    "tags": ["mlops", "deployment", "rollback", "reliability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is the difference between model evaluation and model monitoring, and why do you need both?",
+    "idealAnswerCore": "Model evaluation assesses a model's performance before deployment using static test sets and controlled experiments. Model monitoring measures performance of a deployed model on live traffic over time. You need both because offline evaluation can't capture distribution shift, feedback loops, or real-world usage patterns.",
+    "idealAnswerFraming": "These are complementary, not redundant. Offline evaluation answers 'is this model ready to deploy?' while monitoring answers 'is this model still performing as expected in production?'",
+    "idealAnswerKeyPoints": [
+      "Evaluation (offline): uses held-out test set with known ground truth; metrics like accuracy, F1, AUROC; run before each deployment to gate promotion; static snapshot in time",
+      "Monitoring (online): tracks live predictions on real traffic; uses proxies when ground truth is delayed (prediction confidence, user feedback, downstream business metrics)",
+      "Why offline evaluation is insufficient: test set may not represent future traffic; user behavior changes model's operating context; upstream data changes affect feature distributions",
+      "Why monitoring is insufficient alone: monitoring detects problems after users are affected; evaluation catches regressions before deployment; monitoring without evaluation baselines lacks context for what 'normal' looks like",
+      "Closing the loop: use production errors and user feedback to augment the evaluation set — makes future offline evaluation more predictive of production performance"
+    ],
+    "idealAnswerFollowups": [
+      "What's the minimum monitoring setup you'd recommend for a newly deployed LLM feature?",
+      "How do you set alert thresholds for model monitoring without generating too many false positives?"
+    ],
+    "tags": ["mlops", "monitoring", "evaluation", "production"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you implement rate limiting and quota management for an LLM API in production?",
+    "idealAnswerCore": "Rate limiting for LLM APIs requires token-based limits (not just request-based), per-user and per-feature quotas, graceful degradation strategies, and cost attribution — because a single request can consume 10x the tokens of another.",
+    "idealAnswerFraming": "Standard HTTP rate limiting (requests per minute) is insufficient for LLMs where cost is proportional to tokens, not requests. Show you understand the token-based economics.",
+    "idealAnswerKeyPoints": [
+      "Token-based rate limiting: track input + output tokens per user/API key using a sliding window counter in Redis; tokens consumed per request vary widely, making request-count limits insufficient",
+      "Tiered quotas: different limits per user tier (free: 10K tokens/day, pro: 100K, enterprise: custom); enforce at the API gateway layer before LLM calls",
+      "Graceful degradation: when quota is exceeded, return 429 with Retry-After header and clear error message; optionally route to a cheaper/smaller model rather than hard rejection",
+      "Cost attribution: tag every LLM call with user ID, feature, and use case for cost reporting; essential for detecting abuse, understanding ROI per feature, and allocating costs in multi-tenant systems",
+      "Soft and hard limits: soft limit sends warnings to user (80% of quota) and internal alerts; hard limit blocks requests; implement circuit breaker to prevent runaway cost from bugs (infinite loops calling LLM)"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle a user whose prompt intentionally triggers extremely long outputs to maximize token consumption?",
+      "What's your strategy for rate limiting a multi-turn conversation where context grows with each turn?"
+    ],
+    "tags": ["mlops", "rate-limiting", "cost", "api-design", "infrastructure"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is chaos engineering for ML systems, and what failure modes should you test?",
+    "idealAnswerCore": "Chaos engineering for ML systems deliberately injects failures (data corruption, model unavailability, latency spikes) in controlled experiments to verify that the system handles them gracefully and degrades predictably rather than failing catastrophically.",
+    "idealAnswerFraming": "ML systems have unique failure modes beyond standard software — model serving failures, data pipeline corruption, and silent model quality degradation are all worth testing in controlled chaos experiments.",
+    "idealAnswerKeyPoints": [
+      "Infrastructure failures: kill model serving pods to verify autoscaling and health checks work; simulate network partition between services; inject latency into feature store to test timeout handling",
+      "Data failures: inject malformed data or schema changes into the data pipeline to verify validation gates catch them; simulate feature store outages to test fallback prediction paths",
+      "Model failures: deploy a model that returns random predictions to verify monitoring alerts fire; test the rollback process end-to-end under simulated failure conditions",
+      "Cascading failure testing: what happens if the LLM provider API is down? Does the system fall back gracefully, or does it propagate errors to users? Test this explicitly",
+      "Establish steady-state baselines first: chaos experiments are only useful if you know what 'normal' looks like; define success criteria (system recovers within Xs, error rate stays below Y%) before injecting failure"
+    ],
+    "idealAnswerFollowups": [
+      "How would you run a chaos experiment in production without impacting all users?",
+      "What's the most important failure mode to test for an LLM-powered customer service system?"
+    ],
+    "tags": ["mlops", "chaos-engineering", "reliability", "testing"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you measure and optimize LLM inference throughput?",
+    "idealAnswerCore": "LLM inference throughput (tokens/second) is maximized by batching concurrent requests, using quantization to fit larger batches in GPU memory, and minimizing idle time between requests — with continuous batching being the most impactful technique.",
+    "idealAnswerFraming": "Throughput optimization is about GPU utilization efficiency — the goal is to keep the GPU doing useful compute as close to 100% of the time as possible.",
+    "idealAnswerKeyPoints": [
+      "Key metric: tokens per second per GPU dollar — measures throughput efficiency including hardware cost",
+      "Continuous batching (iteration-level batching): unlike static batching that waits to fill a batch, continuous batching adds new requests to the current batch as slots become available — implemented in vLLM, TGI; improves throughput 3-5x",
+      "PagedAttention (vLLM): manages KV cache memory in pages like virtual memory, eliminating fragmentation — allows higher batch sizes that were previously impossible due to memory limits",
+      "Tensor parallelism: split model across multiple GPUs — reduces per-GPU memory, allowing larger batches; but adds inter-GPU communication overhead that can hurt latency",
+      "Quantization for throughput: INT8 quantization roughly doubles throughput vs. FP16 with minimal quality loss; INT4 doubles again but with measurable quality degradation — benchmark on your task"
+    ],
+    "idealAnswerFollowups": [
+      "How do you benchmark throughput for an LLM serving system end-to-end?",
+      "What's the throughput-latency tradeoff of increasing batch size?"
+    ],
+    "tags": ["mlops", "serving", "throughput", "optimization", "vllm"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What are the key challenges of deploying multi-modal models (vision + language) in production?",
+    "idealAnswerCore": "Multi-modal model deployment adds complexity in image preprocessing pipelines, increased memory requirements, variable request sizes (text vs. image tokens), and evaluation challenges — requiring specialized serving infrastructure beyond standard LLM deployment.",
+    "idealAnswerFraming": "Multi-modal deployment inherits all LLM deployment challenges while adding image-specific complexity. Show you've thought through both the ML and infrastructure dimensions.",
+    "idealAnswerKeyPoints": [
+      "Image preprocessing pipeline: resize, normalize, and encode images server-side before LLM inference — must handle diverse formats (JPEG, PNG, WebP), sizes, and malformed inputs at scale",
+      "Token cost variability: images consume 300-1000+ tokens per image depending on resolution and model — makes cost estimation and rate limiting more complex than text-only systems",
+      "Memory requirements: vision encoders add significant memory overhead (CLIP-ViT-L adds ~1.2GB); combined vision+language model may require 80GB+ for large models, requiring careful GPU capacity planning",
+      "Evaluation complexity: need both text quality metrics and vision-grounding metrics (does the answer actually reference the image correctly vs. hallucinating image content)",
+      "Safety considerations: image content moderation is a separate problem from text safety — need image-level safety filters (CSAM, violent content) before passing images to the model"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle a user submitting a very high-resolution image that would consume thousands of tokens?",
+      "What's your approach to preventing prompt injection through image-embedded text?"
+    ],
+    "tags": ["mlops", "multimodal", "vision", "deployment", "infrastructure"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you implement a feedback loop system for continuous improvement of LLM applications?",
+    "idealAnswerCore": "A feedback loop system captures user signals (explicit ratings, implicit engagement), routes them through quality assessment, and automatically updates the model or system (via fine-tuning, RAG index updates, or prompt optimization) — creating a self-improving cycle.",
+    "idealAnswerFraming": "This is the difference between a static deployment and a system that gets better over time. Show you've thought through both the data collection and the closed-loop update mechanism.",
+    "idealAnswerKeyPoints": [
+      "Signal collection: explicit (thumbs up/down, star ratings, corrections), implicit (copy action, session continuation, task completion), and operational (retry rates, abandonment)",
+      "Quality assessment: sample feedback for human review to calibrate automatic quality classifiers; LLM-as-judge can score feedback at scale but needs human calibration",
+      "Update strategies: (1) add high-quality responses to fine-tuning dataset; (2) add successful Q&A pairs to RAG knowledge base; (3) use DSPy/TextGrad to automatically optimize prompts based on failure cases",
+      "Feedback-driven retraining: batch positive/negative pairs weekly, run supervised fine-tuning or DPO on the delta — maintain a holdout set to measure improvement objectively",
+      "Avoiding feedback bias: positive feedback biases toward popular/safe responses; explicit corrections are valuable but rare; use diverse signal types to get a complete picture of quality"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle the data flywheel problem where the model improves but the feedback distribution changes as users adapt to the better model?",
+      "What's the risk of training on user feedback that reflects biases in your user population?"
+    ],
+    "tags": ["mlops", "feedback-loop", "continuous-improvement", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is infrastructure as code (IaC) and how does it apply to ML infrastructure?",
+    "idealAnswerCore": "Infrastructure as Code manages infrastructure (GPU clusters, databases, networking, model serving) through version-controlled configuration files — enabling reproducible, auditable infrastructure provisioning and eliminating manual click-ops that cause environment drift.",
+    "idealAnswerFraming": "ML infrastructure has unique requirements (GPU types, spot instance strategies, specialized networking) that make IaC especially valuable — manual GPU cluster management is error-prone and hard to reproduce.",
+    "idealAnswerKeyPoints": [
+      "Key tools: Terraform (cloud-agnostic, declarative), Pulumi (programmatic IaC in Python/TypeScript), AWS CloudFormation/CDK, Kubernetes Helm charts for application deployment",
+      "ML-specific resources to codify: GPU instance types and quotas, training cluster autoscaling policies, model serving deployments and HPA configs, feature store infrastructure, monitoring dashboards and alerts",
+      "Benefits for ML: reproducible environments across dev/staging/prod, version history of infrastructure changes linked to ML experiments, easy multi-region deployment, disaster recovery through re-apply",
+      "Secrets management: never store API keys or credentials in IaC files — use references to secrets manager (AWS Secrets Manager, HashiCorp Vault) as IaC resources",
+      "Testing: validate IaC changes with `terraform plan` before apply; use tools like Checkov for security scanning of IaC configs; test in staging before applying to production"
+    ],
+    "idealAnswerFollowups": [
+      "How do you manage stateful ML infrastructure (like a feature store database) with IaC when state changes require careful migration?",
+      "What's your strategy for cost control when IaC makes it easy to provision expensive GPU resources?"
+    ],
+    "tags": ["mlops", "infrastructure", "terraform", "devops"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you test ML models beyond accuracy — what test categories matter in production?",
+    "idealAnswerCore": "Production ML models require testing beyond accuracy metrics: behavioral tests (invariance, directional, minimum functionality), performance tests (latency, throughput), fairness tests (performance across subgroups), and robustness tests (adversarial inputs, out-of-distribution data).",
+    "idealAnswerFraming": "Checklist-style ML testing mirrors software testing principles — unit tests check individual behaviors, integration tests check pipeline correctness, and acceptance tests validate business requirements.",
+    "idealAnswerKeyPoints": [
+      "Behavioral tests (Ribeiro et al. CheckList approach): minimum functionality tests (basic capabilities), invariance tests (output shouldn't change when irrelevant input changes, e.g., pronoun in sentiment), directional tests (increasing X should increase/decrease Y)",
+      "Fairness/bias tests: measure performance (accuracy, false positive rate) separately across demographic subgroups; use frameworks like Fairlearn, AI Fairness 360; ensure performance gaps are within acceptable bounds",
+      "Robustness tests: test on out-of-distribution inputs (typos, unusual formats, adversarial perturbations); measure model confidence calibration; test edge cases specific to your domain",
+      "Latency/performance tests: p50/p95/p99 latency under load; throughput at expected peak traffic; memory usage; cost per request — all with defined SLOs",
+      "Data validation tests: test the pipeline, not just the model — verify preprocessing handles edge cases (null values, unexpected formats, extremely long inputs) gracefully"
+    ],
+    "idealAnswerFollowups": [
+      "How do you maintain a test suite for an LLM that produces non-deterministic outputs?",
+      "What's the minimum test coverage you'd require before deploying a model that makes consequential decisions?"
+    ],
+    "tags": ["mlops", "testing", "fairness", "robustness", "evaluation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "How do you architect a multi-tenant LLM service where different customers require different models, compliance levels, and data isolation?",
+    "idealAnswerCore": "A multi-tenant LLM service requires tenant-aware routing to model pools, strict data plane isolation (ensuring no cross-tenant data leakage), per-tenant cost tracking and quotas, and configurable compliance tiers (shared vs. dedicated infrastructure).",
+    "idealAnswerFraming": "Multi-tenancy for LLMs is harder than standard SaaS because model serving state (KV cache) and training data could theoretically leak across tenants — security is a first-class design concern.",
+    "idealAnswerKeyPoints": [
+      "Request routing: each API request includes a tenant ID; routing layer selects the appropriate model endpoint/version for that tenant based on their tier and configuration",
+      "Data isolation: KV cache must not be shared across tenants — most serving frameworks isolate by default but verify; logs must be tenant-partitioned with access controls; audit trails per tenant for compliance",
+      "Model tiering: shared pool for standard tenants (lower cost, acceptable for most), dedicated instances for enterprise tenants requiring compliance isolation (SOC2, HIPAA) or custom fine-tuned models",
+      "Per-tenant cost tracking: tag every LLM call with tenant ID; aggregate token consumption per tenant per period; enable per-tenant billing and quota enforcement",
+      "Compliance configurations: some tenants may require zero data retention (no logging of prompts/responses), specific data residency (EU-only processing), or custom content filters — implement these as tenant-level configuration rather than code changes"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a tenant requesting that their fine-tuned model be isolated from other tenants' inference traffic?",
+      "What's the minimal isolation that satisfies SOC2 vs. HIPAA for an LLM service?"
+    ],
+    "tags": ["mlops", "multi-tenant", "architecture", "compliance", "infrastructure"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is LoRA-based fine-tuning in production contexts and how do you serve multiple LoRA adapters efficiently?",
+    "idealAnswerCore": "LoRA adapters are lightweight fine-tuned modules that modify a base model's behavior by adding low-rank weight matrices — they can be hot-swapped at serving time, enabling serving many fine-tuned models with the memory footprint of a single base model.",
+    "idealAnswerFraming": "LoRA's production advantage is its serving efficiency — storing 100 customer-specific models as 100 small LoRA adapters (~50MB each) on top of one shared base model is far cheaper than deploying 100 full model instances.",
+    "idealAnswerKeyPoints": [
+      "LoRA serving architecture: load the base model once on GPU; for each request, load the appropriate LoRA adapter (typically 10-200MB) into memory on top of the frozen base weights",
+      "Multi-LoRA serving: vLLM and Punica project support serving multiple LoRA adapters simultaneously with dynamic switching; eliminates the need to run separate model instances per customer",
+      "Adapter management: store LoRA weights in object storage (S3/GCS) indexed by adapter ID; implement LRU cache on the serving pod to keep frequently used adapters in GPU memory",
+      "Training efficiency: LoRA fine-tuning trains only 0.1-1% of parameters vs. full fine-tuning; reduces GPU hours needed, makes continuous fine-tuning (from user feedback) economically viable",
+      "Quality considerations: LoRA quality approaches full fine-tuning quality for most tasks; rank hyperparameter (r=4 to r=64) controls quality-efficiency tradeoff; QLoRA (quantized base + LoRA) enables fine-tuning on consumer GPUs"
+    ],
+    "idealAnswerFollowups": [
+      "How would you design a system that automatically triggers LoRA fine-tuning when a tenant's feedback data reaches a threshold?",
+      "What are the signs that a task requires full fine-tuning rather than LoRA?"
+    ],
+    "tags": ["mlops", "lora", "fine-tuning", "serving", "efficiency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you manage the tradeoff between model quality and latency SLOs in production?",
+    "idealAnswerCore": "Managing quality-latency tradeoffs requires defining an explicit latency SLO that reflects user experience requirements, then optimizing model quality within that constraint — using techniques like model distillation, quantization, caching, or model routing to stay within bounds.",
+    "idealAnswerFraming": "This is a system design and product problem, not just an ML problem. The right tradeoff depends on the use case — a code completion tool has different requirements than a batch report generator.",
+    "idealAnswerKeyPoints": [
+      "Define SLOs first by user experience impact: studies show >200ms latency for first token degrades user perception; >500ms is noticeable; >2s causes abandonment for interactive uses",
+      "Latency budget decomposition: break down end-to-end latency into components (preprocessing, model inference TTFT, streaming throughput, postprocessing) — optimize the largest components first",
+      "Quality-preserving optimizations: streaming (show output as it generates, reducing perceived latency); speculative decoding (faster without quality loss); KV cache for repeated prefixes",
+      "Quality-sacrificing optimizations (use sparingly): smaller model, lower quantization, fewer output tokens, simplified system prompt — measure quality impact on task-specific eval set before deploying",
+      "Adaptive degradation: under load, dynamically route to faster/cheaper model with notification; better than timing out; implement with circuit breaker pattern to prevent cascade failures"
+    ],
+    "idealAnswerFollowups": [
+      "How would you justify to your PM that a latency improvement requires accepting a quality decrease on a subset of queries?",
+      "What monitoring would you set up to ensure your latency SLO is being met in production?"
+    ],
+    "tags": ["mlops", "latency", "slo", "optimization", "tradeoffs"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "What is responsible AI and how do you operationalize it in your ML development process?",
+    "idealAnswerCore": "Responsible AI operationalizes fairness, accountability, transparency, and safety principles through concrete engineering practices: bias testing, model cards, audit trails, human oversight mechanisms, and incident response procedures.",
+    "idealAnswerFraming": "Responsible AI isn't just ethics principles — it's engineering practices embedded in the development process. Show you can translate abstract principles into concrete system requirements and team workflows.",
+    "idealAnswerKeyPoints": [
+      "Fairness operationalization: define fairness metrics relative to protected attributes before training; measure performance disparities across subgroups; set acceptable disparity thresholds in acceptance criteria",
+      "Transparency practices: model cards documenting intended use, training data, evaluation results, and known limitations; audit logs for all model predictions used in consequential decisions",
+      "Human oversight: implement human-in-the-loop for high-stakes automated decisions (hiring, loan, medical); define escalation paths when model confidence is low or edge cases are detected",
+      "Safety testing: red team models for harmful outputs before deployment; implement content filters and rate limiting for safety-critical use cases; test adversarial inputs systematically",
+      "Incident response: define what constitutes a 'responsible AI incident' (biased output at scale, safety failure, unexpected model behavior affecting users); have a playbook for investigation, communication, and remediation"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle discovering that a model you deployed 6 months ago has a systematic bias you weren't aware of?",
+      "What's the difference between model fairness and business equity, and which should take precedence?"
+    ],
+    "tags": ["mlops", "responsible-ai", "fairness", "governance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you implement distributed training for large models and what are the key challenges?",
+    "idealAnswerCore": "Distributed training partitions model parameters, gradients, or data across multiple GPUs/nodes using data parallelism, model parallelism, or hybrid strategies — with the key challenge being efficient communication between devices without communication becoming the bottleneck.",
+    "idealAnswerFraming": "The fundamental tension in distributed training is between compute efficiency (each GPU does useful work) and communication efficiency (GPUs don't spend too much time waiting for each other). Optimal strategy depends on model size, batch size, and hardware topology.",
+    "idealAnswerKeyPoints": [
+      "Data parallelism: each device has a full model copy and processes different mini-batches; gradients are synchronized via AllReduce after each backward pass — scales well but requires model to fit on one GPU",
+      "Tensor/model parallelism: split model weights across GPUs (each GPU has a shard); requires all-to-all communication during forward/backward pass — necessary when model doesn't fit on one GPU",
+      "Pipeline parallelism: split model layers across GPUs in a pipeline (micro-batching to hide bubbles); GPUs at different stages of the pipeline; good for very deep models",
+      "ZeRO (Zero Redundancy Optimizer): DeepSpeed's approach — shards optimizer states, gradients, and/or parameters across data-parallel ranks; enables training 70B+ parameter models with data-parallel-like communication efficiency",
+      "Key challenges: GPU memory management (OOM on unexpected shapes), communication bandwidth (NCCL tuning for network topology), checkpoint consistency across ranks, debugging distributed failures"
+    ],
+    "idealAnswerFollowups": [
+      "When would you choose ZeRO-3 over pipeline parallelism for training a 70B model?",
+      "How do you debug a training run that produces NaN losses on only some ranks?"
+    ],
+    "tags": ["mlops", "distributed-training", "deepspeed", "gpu", "parallelism"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "foundational",
+    "question": "What is a model registry and why is it essential for production ML?",
+    "idealAnswerCore": "A model registry is a centralized catalog that stores trained model artifacts along with their metadata (performance metrics, training parameters, lineage, and deployment history) — serving as the source of truth for which models are in production.",
+    "idealAnswerFraming": "The model registry is the 'release management system' for ML models. Without it, teams lose track of which model is deployed where, can't reproduce past models, and can't safely roll back.",
+    "idealAnswerKeyPoints": [
+      "Core functions: store model artifacts (weights, configs), track version history, record lineage (training data + code SHA), store evaluation metrics, manage deployment state (staging vs. production)",
+      "Promotion workflow: models move through stages (Registered → Staging → Production → Archived) with metadata about who promoted when and what evaluation results justified promotion",
+      "Integration with CI/CD: evaluation pipeline automatically registers new model versions; promotion to production requires evaluation gate pass and (for high-risk models) human approval",
+      "Deployment tracking: registry knows which model version is currently deployed to each environment — enables immediate answer to 'what model is in production right now and when was it deployed?'",
+      "Tools: MLflow Model Registry (open source, SQL backend), W&B Artifacts, SageMaker Model Registry, Vertex AI Model Registry — choose based on existing MLOps stack"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle storing very large model files (70B+ parameter models) in a model registry?",
+      "What metadata fields would you require for every model registered in your registry?"
+    ],
+    "tags": ["mlops", "model-registry", "versioning", "deployment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "foundational",
+    "question": "What is the difference between model performance metrics and business metrics? Why does this distinction matter for MLOps?",
+    "idealAnswerCore": "Model performance metrics (accuracy, F1, AUC) measure how well the model performs on a defined task; business metrics (revenue, conversion rate, churn) measure the impact on business outcomes. The distinction matters because a model can improve on performance metrics while degrading business metrics if the task definition is misaligned.",
+    "idealAnswerFraming": "This is a 'metric alignment' problem — the most expensive ML failure mode is optimizing the wrong metric. Show you habitually connect model metrics to business outcomes.",
+    "idealAnswerKeyPoints": [
+      "Goodhart's Law: 'When a measure becomes a target, it ceases to be a good measure' — optimizing accuracy on a test set can overfit to the test distribution while missing what actually matters to users",
+      "Common misalignments: high precision recommendation model that only recommends obvious items (safe but uncovery); fraud model with high AUC but too many false positives that anger legitimate customers",
+      "Proxy metric risk: using clicks as a proxy for satisfaction ignores clickbait; using task completion as proxy for success ignores user frustration before completion",
+      "Monitoring both: track model metrics for debugging (if model metrics degrade, investigate) and business metrics for outcome validation (if business metrics degrade without model metric change, investigate feature or UX issue)",
+      "Hierarchy: business metrics are primary, model metrics are diagnostic. Never ship a model that improves model metrics but degrades business metrics without stakeholder approval."
+    ],
+    "idealAnswerFollowups": [
+      "Give an example from your experience where a model with better performance metrics had worse business impact.",
+      "How do you align your ML evaluation metrics with business goals at the start of a project?"
+    ],
+    "tags": ["mlops", "evaluation", "business-metrics", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "foundational",
+    "question": "What is technical debt in ML systems and how is it different from software technical debt?",
+    "idealAnswerCore": "ML technical debt includes all the typical software debt (poor code structure, missing tests) plus ML-specific debt: undeclared data dependencies, feedback loop entanglement, correction cascades, and experimental code that became production code.",
+    "idealAnswerFraming": "Google's famous 'Hidden Technical Debt in Machine Learning Systems' paper identified ML-specific debt patterns. Show you've thought about these specifically, not just generic tech debt.",
+    "idealAnswerKeyPoints": [
+      "Undeclared data dependencies: ML models silently depend on upstream data sources that may change without notice — unlike code dependencies (which appear in import statements), data dependencies are invisible until they break",
+      "Feedback loop entanglement: model predictions influence future training data (recommendations affect what users click, which affects future training data) — creates hard-to-predict system dynamics",
+      "Experimental code in production: Jupyter notebooks used to prototype → productionized without proper refactoring; missing error handling, no tests, unreadable by others",
+      "Glue code anti-pattern: large amounts of code to convert data between formats, bridge incompatible libraries, or wrap ML frameworks — often brittle and undertested",
+      "Addressing ML debt: invest in feature pipelines (explicit data contracts), monitoring infrastructure (makes feedback loops visible), and modular code (separates ML from serving logic); regularly refactor experimental code"
+    ],
+    "idealAnswerFollowups": [
+      "How would you audit an existing ML system to identify the most costly technical debt?",
+      "What's the best way to productionize a model that was initially built as a Jupyter notebook prototype?"
+    ],
+    "tags": ["mlops", "technical-debt", "engineering", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "foundational",
+    "question": "What is model serialization and what formats should you use for production LLM deployment?",
+    "idealAnswerCore": "Model serialization converts trained model weights and architecture to a storable/transferable format. For LLM production deployment, SafeTensors is the recommended format over pickle-based formats due to security, and GGUF for CPU/edge deployment.",
+    "idealAnswerFraming": "Serialization format choice has security, performance, and compatibility implications that are often underappreciated. SafeTensors over Pickle is a non-negotiable security choice.",
+    "idealAnswerKeyPoints": [
+      "SafeTensors (Hugging Face): secure (no arbitrary code execution unlike pickle), fast loading (memory-mapped, lazy loading), framework-agnostic — recommended standard for production model distribution",
+      "Pickle/PT format: PyTorch's default serialization — DO NOT use for loading untrusted models (arbitrary code execution on load); acceptable for internal models in controlled environments",
+      "GGUF (llama.cpp format): optimized for CPU inference and edge deployment; quantization built-in; portable across hardware; use for local/edge deployments",
+      "ONNX: open standard for cross-framework model exchange; useful when deploying PyTorch models to non-PyTorch runtimes (TensorRT, ONNX Runtime); good for classical ML models",
+      "TensorRT format: NVIDIA-specific compilation for maximum GPU inference performance; non-portable (tied to GPU architecture and CUDA version); use for latency-critical GPU deployments where you control the hardware"
+    ],
+    "idealAnswerFollowups": [
+      "What security review would you do before loading a model checkpoint from an external source?",
+      "How do you handle the case where your model architecture changes but you need to load old checkpoint weights?"
+    ],
+    "tags": ["mlops", "serialization", "security", "deployment", "safetensors"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you set up alerting and on-call for an ML system in production?",
+    "idealAnswerCore": "ML system alerting requires layered alerts covering technical health (latency, error rate, availability), model quality (prediction distribution drift, business metric degradation), and data pipeline health — with clear ownership, on-call rotation, and severity-based escalation.",
+    "idealAnswerFraming": "Effective alerting is about signal-to-noise ratio: alert on things that require action, not just things that are interesting. Over-alerting causes alert fatigue; under-alerting causes prolonged incidents.",
+    "idealAnswerKeyPoints": [
+      "Technical alerts (immediate action): p99 latency > SLO, error rate > threshold, serving pod restarts, GPU memory > 90%, model endpoint down — page on-call immediately",
+      "Model quality alerts (investigate): prediction distribution shifts significantly from baseline, business metric drops >X% day-over-day, feature drift detected in data pipeline — alert during business hours",
+      "Data pipeline alerts: upstream data source missing expected records, feature values out of expected range, pipeline job failures — alert data team, not model team",
+      "Alert design principles: every alert should have a corresponding runbook; alerts should be actionable (if you can't act on it, don't alert); tune thresholds to minimize false positives while catching real issues",
+      "On-call rotation: define clear handoff procedures (state of current incidents, known issues, upcoming deployments); review alert volume weekly and eliminate noisy alerts; conduct post-mortems for every severity-1 incident"
+    ],
+    "idealAnswerFollowups": [
+      "How do you distinguish between a model quality issue and a data quality issue when an alert fires?",
+      "What's the right severity for an alert that indicates model predictions are 5% less accurate than last week?"
+    ],
+    "tags": ["mlops", "monitoring", "alerting", "on-call", "observability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "foundational",
+    "question": "What is the purpose of an evaluation set (holdout set) and what are common mistakes in constructing one?",
+    "idealAnswerCore": "An evaluation set is a representative sample of real-world data held back from training to provide an unbiased estimate of model performance. Common mistakes include test set leakage, lack of temporal correctness, and lack of diversity that causes overoptimistic offline metrics.",
+    "idealAnswerFraming": "The quality of your evaluation set determines the reliability of your offline metrics as predictors of production performance. A bad eval set is worse than no eval set because it gives false confidence.",
+    "idealAnswerKeyPoints": [
+      "Test set contamination (leakage): training data that 'leaks' into the eval set inflates metrics — occurs through random splits that ignore temporal ordering, data augmentation applied before splitting, or preprocessing fit on full dataset",
+      "Temporal split for time-series data: always split chronologically (train on past, test on future) — random splits let the model 'cheat' by seeing future patterns during training",
+      "Distribution mismatch: eval set must represent production traffic distribution including edge cases, rare classes, and domain variation — if you only test on easy examples, you won't catch production failures",
+      "Annotation quality: if human labels have disagreements, eval set accuracy is limited by inter-annotator agreement — measure and report label quality, not just model performance",
+      "Dynamic eval sets: maintain a 'challenge set' of known hard examples that grow over time as production failures are collected; combine with random eval set for comprehensive assessment"
+    ],
+    "idealAnswerFollowups": [
+      "How do you construct a representative evaluation set when your production traffic distribution is unknown at the time of development?",
+      "What's the minimum size for a reliable evaluation set, and how do you compute it?"
+    ],
+    "tags": ["mlops", "evaluation", "holdout-set", "leakage", "methodology"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "How do you handle model serving when the model is too large to fit in GPU memory at full precision?",
+    "idealAnswerCore": "When a model exceeds single-GPU memory, you have three main strategies: quantization (reduce precision to fit more in VRAM), model parallelism (split across multiple GPUs), or CPU offloading (use RAM + swap at the cost of latency).",
+    "idealAnswerFraming": "GPU memory is the primary constraint in LLM deployment. Show you understand the memory math and the quality-efficiency tradeoffs of each approach.",
+    "idealAnswerKeyPoints": [
+      "Quick memory math: a model with N billion parameters requires approximately 2N GB in FP16, N GB in INT8, or 0.5N GB in INT4 — a 70B model needs ~140GB FP16, ~70GB INT8, ~35GB INT4",
+      "Quantization options: bitsandbytes INT8 (minimal quality loss, ~50% memory reduction), GPTQ/AWQ INT4 (significant memory reduction, small quality loss), GGUF Q4 (CPU inference)",
+      "Multi-GPU tensor parallelism: split attention heads and FFN layers across GPUs; requires NVLink or fast interconnect for acceptable performance; vLLM and TensorRT-LLM support this natively",
+      "CPU offloading with Accelerate: offload some layers to CPU RAM; allows running models that don't fit in GPU VRAM but with significant latency penalty (only acceptable for batch inference)",
+      "Practical recommendation: INT8 quantization for production serving when quality matters; INT4 (GPTQ or AWQ) when memory is severely constrained and quality loss is acceptable on your task"
+    ],
+    "idealAnswerFollowups": [
+      "How would you measure the quality impact of quantization for your specific use case?",
+      "What's the latency difference between INT8 quantization on a single GPU vs. FP16 on two GPUs with tensor parallelism?"
+    ],
+    "tags": ["mlops", "quantization", "serving", "gpu", "memory"],
+    "source": "seed"
+  }
+]

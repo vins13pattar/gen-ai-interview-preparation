@@ -1,0 +1,562 @@
+[
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is the difference between synchronous and asynchronous agent execution? When do you need async?",
+    "idealAnswerCore": "Synchronous agents block and wait for each step to complete before proceeding; asynchronous agents initiate actions and continue planning while waiting for results, enabling parallelism. Async is necessary when the agent can make progress on other subtasks while waiting for slow tool calls (web requests, LLM calls).",
+    "idealAnswerFraming": "Most agent frameworks support both modes. The key question is whether your agent's tasks are independent enough to benefit from parallel execution or whether each step strictly depends on the previous.",
+    "idealAnswerKeyPoints": [
+      "Sync execution: simpler to reason about, easier to debug; each step waits for the previous; acceptable for agents where each step depends on previous results",
+      "Async execution: non-blocking; while one tool call is in flight, the agent can trigger other independent tool calls or reasoning steps; critical for agents with many independent sub-queries",
+      "Parallelism patterns: scatter (fan out to many tools simultaneously), gather (wait for all and synthesize), pipeline (chained async steps where each step's output feeds the next)",
+      "Python implementation: asyncio with async/await; langchain and other frameworks support async variants of chain/agent execution; use asyncio.gather() for parallel tool calls",
+      "Error handling complexity: async adds failure modes (partial failure when some parallel calls fail); need explicit handling for when one parallel branch fails while others succeed"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle the case where 3 of 5 parallel tool calls succeed and 2 fail?",
+      "What's the latency difference between sync and async execution for an agent that makes 10 independent web search queries?"
+    ],
+    "tags": ["agentic-systems", "async", "parallelism", "architecture"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is the 'oracle problem' in agent testing and how do you work around it?",
+    "idealAnswerCore": "The oracle problem is that for many agent tasks (open-ended research, creative writing, complex analysis), there's no single ground truth answer to compare against — making automated evaluation difficult. Workarounds include LLM-as-judge evaluation, rubric-based scoring, process evaluation (was the reasoning sound?), and outcome-based evaluation for measurable effects.",
+    "idealAnswerFraming": "This is a fundamental challenge in evaluating AI agents. Show you have practical strategies for evaluation despite the absence of perfect ground truth.",
+    "idealAnswerKeyPoints": [
+      "Oracle problem: unlike classification (where ground truth is clear), agent tasks often have many acceptable solutions — there's no single correct research report or analysis",
+      "LLM-as-judge: use a stronger model (GPT-4) to evaluate outputs against a rubric; calibrate the judge against human ratings; provides scalable evaluation but has its own biases",
+      "Rubric-based evaluation: define explicit criteria (accuracy, completeness, reasoning quality, citation quality) with rating scales; allows structured comparison across agent versions",
+      "Process evaluation: evaluate the reasoning trajectory, not just the final output — did the agent ask the right sub-questions? Use the right tools? Avoid unnecessary steps?",
+      "Executable tasks as ground truth: where possible, design tasks with verifiable outcomes (did the code pass tests? was the form correctly filled? did the API call succeed with correct params?) — these have unambiguous oracles"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent LLM-as-judge from being biased toward longer or more verbose outputs?",
+      "What's a practical evaluation strategy for an agent that helps users draft legal contracts?"
+    ],
+    "tags": ["agentic-systems", "evaluation", "testing", "llm-as-judge"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is tool call parallelization and how do you implement it safely?",
+    "idealAnswerCore": "Tool call parallelization executes multiple independent tool calls simultaneously rather than sequentially, reducing total latency proportional to the number of parallel calls — implemented using async execution patterns with careful handling of shared state and partial failure.",
+    "idealAnswerFraming": "For agents with many independent information-gathering steps, parallelization can reduce latency from O(n) to O(1) for the parallel portion. The key engineering challenge is handling failures gracefully.",
+    "idealAnswerKeyPoints": [
+      "Independence requirement: only parallelize genuinely independent calls — if call B needs results from call A, they cannot run in parallel; explicitly model dependencies in the plan",
+      "Implementation: asyncio.gather() in Python for concurrent execution; most LLM APIs now support parallel tool calls natively (the model can output multiple tool call requests simultaneously)",
+      "OpenAI/Anthropic parallel tool calls: frontier models can output multiple tool calls in one response; the client executes them in parallel and returns all results together for the next model turn",
+      "Partial failure handling: if 1 of 3 parallel calls fails, decide whether to: (a) proceed with available results, (b) retry the failed call, (c) abort the whole operation — determined by whether all results are required",
+      "State management: be careful with parallel writes to shared state — concurrent tool calls that both write to the same resource can cause race conditions; use optimistic locking or serialize writes"
+    ],
+    "idealAnswerFollowups": [
+      "How do you implement parallel tool calls in a framework that only supports sequential execution natively?",
+      "What's the maximum practical parallelization factor before coordination overhead outweighs latency savings?"
+    ],
+    "tags": ["agentic-systems", "parallelism", "tool-calling", "async"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "advanced",
+    "question": "How do you design an agent that can handle adversarial users trying to manipulate its behavior?",
+    "idealAnswerCore": "Adversarially-robust agents require defense in depth: model-level safety training, structural prompt injection defenses, output validation before action execution, rate limiting to limit attack surface, and anomaly detection to identify unusual behavioral patterns that may indicate manipulation.",
+    "idealAnswerFraming": "When your agent serves untrusted users who may actively try to manipulate its behavior, the threat model is different from a trusted internal tool. Show you think adversarially.",
+    "idealAnswerKeyPoints": [
+      "Clear principal hierarchy: the system prompt (developer controlled, high trust) sets hard constraints; user input (lower trust) cannot override security-critical behaviors — model training should enforce this",
+      "Input sanitization and adversarial detection: screen user inputs for patterns consistent with jailbreaking or injection attempts before routing to the agent",
+      "Scope limitation: the agent only has access to tools and data it needs for the specific task — a customer service agent that can't access admin functions is immune to manipulation into using them",
+      "Output validation pre-execution: for consequential actions, validate the agent's intended action against a whitelist of allowed operations and an authorization check before executing",
+      "Behavioral anomaly detection: track agent behavior patterns per user session; flag sessions where the agent takes unusual sequences of actions (indicator of successful manipulation) for human review"
+    ],
+    "idealAnswerFollowups": [
+      "How do you distinguish a legitimate power user who uses unusual prompting techniques from an adversarial user trying to manipulate the agent?",
+      "What's the appropriate response when your agent detects a likely manipulation attempt — silently refuse, explain, or alert security?"
+    ],
+    "tags": ["agentic-systems", "security", "adversarial", "safety"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is the role of knowledge bases vs. long-term memory in agent architectures?",
+    "idealAnswerCore": "Knowledge bases store structured, curated information (documentation, FAQs, reference data) that is indexed for retrieval — they're static or slowly updated. Long-term memory stores dynamic, personalized information from the agent's past interactions (user preferences, past task results, learned facts) — it evolves with each session.",
+    "idealAnswerFraming": "These serve different purposes and are both needed in sophisticated agents. Knowledge base is about domain knowledge; long-term memory is about personalization and accumulated experience.",
+    "idealAnswerKeyPoints": [
+      "Knowledge base role: provides factual grounding for the agent's responses; enables RAG; typically managed by system administrators; updated when domain knowledge changes; indexed for fast semantic retrieval",
+      "Long-term memory role: personalizes the agent to individual users (remembers preferences, past interactions); accumulates agent-specific experience (what approaches worked on similar past tasks)",
+      "Storage mechanisms: knowledge bases use vector databases optimized for read-heavy access; long-term memory needs a system that supports both read and write, often Redis + vector embedding for semantic recall",
+      "Memory decay and management: long-term memories should decay (reduce relevance of old information) and be regularly pruned to prevent irrelevant old facts from polluting current reasoning",
+      "Privacy consideration: long-term memories about users are personal data — users should have the ability to view, correct, and delete their agent's memory about them; GDPR compliance may require this"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement a long-term memory system that remembers user preferences but automatically discards stale information?",
+      "What's the right balance between personalization (deep memory of each user) and privacy (minimizing stored personal data)?"
+    ],
+    "tags": ["agentic-systems", "memory", "knowledge-base", "personalization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "How do you implement agent monitoring and what anomalies should trigger alerts?",
+    "idealAnswerCore": "Agent monitoring tracks behavioral patterns (tool usage frequency, step counts, task completion rates), quality metrics (user satisfaction, task success), and safety signals (unusual action sequences, cost anomalies, potential manipulation attempts) — alerting when patterns deviate significantly from baselines.",
+    "idealAnswerFraming": "Agents are harder to monitor than standard services because their behavior is dynamic and goal-directed — you can't just monitor for error rates, you need to monitor for behavioral deviation.",
+    "idealAnswerKeyPoints": [
+      "Operational metrics: task completion rate, average steps per task, cost per task, step budget exhaustion rate, tool call failure rate — provide overall health picture",
+      "Quality metrics: user satisfaction scores, task success rate (verified by outcome checks), abandonment rate, time-to-completion — measure whether the agent is actually helping",
+      "Safety signals: unusual tool access patterns (accessing tools inconsistent with the task type), sudden spike in sensitive tool calls (file deletion, email sending), cost anomalies (single session using 100x normal tokens)",
+      "Stuck agent detection: agent issuing same tool call with same parameters multiple times without progress — indicates a loop; alert or implement automated termination",
+      "Trace-level logging: store full execution traces for post-hoc analysis; sample-based for normal operations, full capture for error and anomaly cases"
+    ],
+    "idealAnswerFollowups": [
+      "How do you set alert thresholds that minimize false positives while catching real anomalies for an agent with high behavioral variance?",
+      "What's your strategy for debugging a reported agent failure when you don't have a complete execution trace?"
+    ],
+    "tags": ["agentic-systems", "monitoring", "observability", "safety"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "foundational",
+    "question": "What are common agent frameworks and how do you choose between them?",
+    "idealAnswerCore": "Common agent frameworks include LangChain/LangGraph (comprehensive, widely adopted), AutoGen (multi-agent, Microsoft), CrewAI (role-based teams), and direct implementation with the OpenAI/Anthropic tool calling API. Choose based on complexity requirements, multi-agent needs, and how much control you need over execution.",
+    "idealAnswerFraming": "Framework choice is secondary to architecture choice — first decide what kind of agent you need, then pick the framework that best expresses that architecture without excessive overhead.",
+    "idealAnswerKeyPoints": [
+      "LangChain/LangGraph: most comprehensive ecosystem; LangGraph adds stateful graphs for complex agent flows; good for production use cases requiring HITL and persistence; complex API surface",
+      "AutoGen (Microsoft): multi-agent conversations where agents debate and collaborate; built for scenarios requiring agent-to-agent negotiation; strong research adoption",
+      "CrewAI: role-based multi-agent teams; good for workflows with clear human-analogy roles (researcher, writer, reviewer); simpler API than LangGraph for structured team tasks",
+      "Direct implementation: use the model's native tool calling API without framework overhead; maximum control and transparency; best for simple single-agent tasks or when framework overhead isn't justified",
+      "Decision factors: single vs. multi-agent → direct or LangChain for single, LangGraph/AutoGen/CrewAI for multi; production requirements (HITL, persistence) → LangGraph; simple task → direct API; avoid framework lock-in for core business logic"
+    ],
+    "idealAnswerFollowups": [
+      "When would you build a custom agent framework from scratch rather than adopting an existing one?",
+      "How do you migrate an agent from one framework to another as your requirements evolve?"
+    ],
+    "tags": ["agentic-systems", "framework", "langchain", "autogen"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is the 'agentic loop' and what termination conditions should every agent have?",
+    "idealAnswerCore": "The agentic loop is the core execution cycle (perceive → reason → act → observe → repeat) that drives agent execution — every loop implementation must have explicit termination conditions: task completion, step budget exhaustion, unrecoverable error, or explicit user cancellation.",
+    "idealAnswerFraming": "An agentic loop without proper termination conditions is a potential infinite loop. The termination logic is as important as the execution logic.",
+    "idealAnswerKeyPoints": [
+      "Termination condition 1 — Task completion: the model outputs a finish signal (structured 'DONE' output or no more tool calls); validate completion against success criteria before accepting",
+      "Termination condition 2 — Step budget: hard limit on number of iterations; when hit, return best available partial result with a note about budget exhaustion",
+      "Termination condition 3 — Unrecoverable error: after N consecutive tool failures or when a critical tool is unavailable; fail explicitly rather than continuing with degraded capability",
+      "Termination condition 4 — Time budget: wall clock timeout for real-time systems; prevents user-facing latency from exceeding SLO even if step budget isn't reached",
+      "Termination condition 5 — External cancellation: user or operator explicitly stops the task; must propagate cleanly through the loop, stopping all pending tool calls and saving state for potential resume"
+    ],
+    "idealAnswerFollowups": [
+      "How do you implement graceful shutdown when a user cancels a task mid-execution?",
+      "What state should an agent persist when it hits a termination condition that isn't task completion?"
+    ],
+    "tags": ["agentic-systems", "loop", "termination", "reliability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "How do multi-agent systems handle shared resources and prevent conflicts?",
+    "idealAnswerCore": "Multi-agent resource conflicts require coordination mechanisms: optimistic locking (check-and-set), message-passing through a coordinator, resource reservation before use, or conflict-free replicated data types (CRDTs) for non-conflicting concurrent updates.",
+    "idealAnswerFraming": "Multi-agent resource conflicts are a distributed systems problem. Show you understand both the concurrency primitives and which approach is appropriate for different resource types.",
+    "idealAnswerKeyPoints": [
+      "Exclusive resources (locks): for resources that can only be used by one agent at a time (a queue processor, a database write path), use distributed locks (Redis SETNX/Redlock) — ensures mutual exclusion",
+      "Optimistic locking (check-and-set): agent reads resource, notes version, makes changes, then commits only if version hasn't changed since read — prevents lost updates without blocking; well-suited for databases",
+      "Message-passing coordination: route all writes through a single coordinator agent that serializes updates — eliminates conflicts by design but creates a bottleneck",
+      "Conflict-free replicated data types (CRDTs): for counters, sets, and other data types with mathematically conflict-free merge semantics; multiple agents can update concurrently and merge without conflicts",
+      "Resource pools: pre-allocate resources to specific agents for their task duration; agent doesn't share until it releases its reservation — prevents contention at the cost of utilization"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement a distributed lock for a multi-agent system where agents run on different machines?",
+      "What's the right coordination mechanism for multiple agents writing to the same document simultaneously?"
+    ],
+    "tags": ["agentic-systems", "multi-agent", "concurrency", "coordination"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is retrieval augmentation in the context of agentic tool use? How does it differ from RAG?",
+    "idealAnswerCore": "In agentic contexts, retrieval is one tool among many that the agent can invoke when it needs external information — rather than a fixed retrieval-then-generate pipeline (standard RAG), the agent decides dynamically when to retrieve, what to retrieve, and whether to combine retrieval with other tools.",
+    "idealAnswerFraming": "The distinction is about who controls the retrieval decision. Standard RAG retrieves every time, upfront. Agentic retrieval is agent-initiated when the agent determines it needs more information.",
+    "idealAnswerKeyPoints": [
+      "Standard RAG: fixed pipeline — always retrieve relevant chunks before generation; single retrieval step; good for applications where every query benefits from retrieval",
+      "Agentic retrieval: agent decides when to invoke the retrieval tool based on its assessment of what it knows vs. what it needs; may retrieve zero, one, or multiple times during a single task",
+      "Tool integration: retrieval is registered as a tool with a clear description of when to use it; the agent learns (through training and prompting) to reach for retrieval when its parametric knowledge is insufficient",
+      "Compound retrieval: agent can combine retrieval with other tools — retrieve context, then use code execution to process it, then retrieve more based on intermediate findings",
+      "Efficiency benefit: agentic retrieval avoids unnecessary retrievals for tasks that don't need external context, reducing cost and latency compared to always-retrieve RAG"
+    ],
+    "idealAnswerFollowups": [
+      "How do you design the retrieval tool description to help the agent know when to invoke it?",
+      "What evaluation metric would you use to measure whether an agent is using retrieval optimally (neither over-retrieving nor under-retrieving)?"
+    ],
+    "tags": ["agentic-systems", "retrieval", "rag", "tool-calling"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is a 'headless agent' and what infrastructure considerations does it require?",
+    "idealAnswerCore": "A headless agent operates autonomously without a live user session — it's triggered by events (scheduled runs, webhooks, queue messages) rather than interactive user input, requiring persistent state management, asynchronous result delivery, and monitoring without real-time human oversight.",
+    "idealAnswerFraming": "Headless agents are fundamentally different from interactive assistants — they run without a human watching, which raises the stakes for reliability, error handling, and safety.",
+    "idealAnswerKeyPoints": [
+      "Triggering mechanisms: cron jobs (scheduled), webhooks (event-driven from external systems), message queue consumers (from internal event streams), manual triggers via API",
+      "State persistence: no user session to maintain state in — all state must be externalized to a database or message store; the agent must be able to reconstruct context from persistent state on each invocation",
+      "Result delivery: no live user to show results to — deliver via email, Slack notification, webhook callback, database write, or trigger a downstream process; define delivery SLAs",
+      "Monitoring requirements: without a human watching, failures can be silent; require comprehensive logging, alerting on failures, and regular success validation to catch silent failures",
+      "Safety emphasis: headless agents take actions without real-time oversight — conservative defaults (prefer to fail explicitly over taking uncertain actions), human approval gates for high-stakes operations, comprehensive audit logs"
+    ],
+    "idealAnswerFollowups": [
+      "How do you implement a headless agent that must process 1,000 tasks per day with 99.9% completion rate?",
+      "What's the failure mode when a headless agent makes a mistake that nobody notices for a week?"
+    ],
+    "tags": ["agentic-systems", "headless", "async", "infrastructure"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What is AI model watermarking and how does it help with attribution and misuse detection?",
+    "idealAnswerCore": "Model watermarking embeds imperceptible signals into model outputs (text or images) that allow attribution of AI-generated content to a specific model — helping detect misuse, enforce copyright, and identify the source of harmful content while being invisible to users.",
+    "idealAnswerFraming": "Watermarking is a technical tool in the larger content provenance and AI accountability ecosystem. Show you understand both the technical mechanisms and the governance use cases.",
+    "idealAnswerKeyPoints": [
+      "Text watermarking: modifies the token sampling process to prefer certain token patterns that are statistically detectable but invisible to human readers; Google's SynthID-Text, Kirchenbauer et al. schemes",
+      "Image watermarking: embeds patterns in the pixel or frequency domain of generated images; robust to common transformations (cropping, compression); C2PA standard for content provenance",
+      "Attribution use cases: identify which model generated a piece of content; enable selective enforcement of copyright claims; trace harmful content (deepfakes, propaganda) to its source model",
+      "Limitations: determined attackers can attempt to remove watermarks through paraphrasing, translation, or minor editing; watermarks degrade if the text is substantially modified; no watermark scheme is 100% robust",
+      "Content credentials (C2PA): a signed metadata standard attached to media files that records the creation tool, timestamp, and provenance chain — broader than ML-specific watermarking, includes human-created content"
+    ],
+    "idealAnswerFollowups": [
+      "How robust are current text watermarking schemes to paraphrasing attacks?",
+      "What are the privacy implications of watermarking all AI-generated content — could users be identified by their generation patterns?"
+    ],
+    "tags": ["ai-safety", "watermarking", "attribution", "content-provenance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What is AI accountability and how do you implement it technically in a production system?",
+    "idealAnswerCore": "AI accountability ensures that AI-driven decisions and their consequences can be traced to responsible actors — technically implemented through comprehensive audit logging (who requested what, which model decided what, what action was taken), explainability mechanisms, and human override capabilities.",
+    "idealAnswerFraming": "Accountability requires that someone can always answer: 'why did the AI do that, and who is responsible?' Technical implementation provides the evidence; governance structures determine who is responsible.",
+    "idealAnswerKeyPoints": [
+      "Audit logging: log every AI decision with: timestamp, user/session ID, input (prompt or features), model version, output (decision or response), confidence, any human overrides; immutable logs with tamper detection",
+      "Model versioning for accountability: every prediction must be attributable to a specific model version; enables post-hoc audit of whether a decision was made by a deprecated model",
+      "Human override records: when a human overrides an AI decision, log the override, the human identifier, and the reason — creates accountability for both AI and human decision layers",
+      "Explanation requirement: for high-stakes decisions, generate and store explanations (feature attributions, reasoning traces) alongside the decision — required for audit and appeals processes",
+      "Retention policy: maintain accountability records for the duration required by regulations (GDPR suggests not longer than necessary; financial regulations may require 7+ years for lending decisions)"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle accountability when an AI decision affects a user who later requests an explanation under GDPR Article 22?",
+      "What audit trail would you implement for an LLM that provides investment advice?"
+    ],
+    "tags": ["ai-safety", "accountability", "audit-logging", "governance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What is 'value lock-in' and why do AI safety researchers consider it a long-term risk?",
+    "idealAnswerCore": "Value lock-in is the risk that a powerful AI system irreversibly encodes a specific (possibly flawed or narrow) set of values into its behavior, preventing future value updates as humanity's understanding evolves — it's concerning because it would eliminate the ability to correct mistakes in how we specified AI values.",
+    "idealAnswerFraming": "Value lock-in is a long-horizon concern about powerful AI, but it has near-term analogues in how current AI systems encode training data biases. Show you can connect the abstract concern to concrete implications.",
+    "idealAnswerKeyPoints": [
+      "The core concern: if an extremely capable AI system's values are 'locked in' at a point in time, it could enforce those values so effectively that humans lose the ability to update them — even if we discover the values were wrong",
+      "Why values might be wrong: human values are uncertain, culturally contingent, and evolving; training on historical data embeds historical biases; RLHF reflects annotator preferences which may not represent all of humanity",
+      "Power concentration risk: lock-in is most dangerous if accompanied by power concentration — an AI system with locked-in values AND control of critical systems would be very difficult to correct",
+      "Near-term analogue: training data biases can 'lock in' historical inequities into AI systems — reversing this requires deliberate intervention, not just more data",
+      "Design response: build systems that support value updating and human oversight; resist 'galaxy-brained' reasoning that justifies overriding human control 'for our own good'; design for corrigibility"
+    ],
+    "idealAnswerFollowups": [
+      "Is there a safe version of value lock-in, where we intentionally lock in certain values (like 'don't cause mass casualties') permanently?",
+      "How does value lock-in relate to the concept of 'corrigibility' in AI safety?"
+    ],
+    "tags": ["ai-safety", "alignment", "value-lock-in", "governance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What is AI model evaluation for dangerous capabilities, and how do frontier labs conduct it?",
+    "idealAnswerCore": "Dangerous capability evaluations test whether a model can provide meaningful 'uplift' to bad actors attempting to create weapons of mass destruction, launch sophisticated cyberattacks, or cause other catastrophic harm — conducted pre-deployment using specialized scenarios, red-teaming, and domain expert review.",
+    "idealAnswerFraming": "Capability evaluations are a safety gate before deployment. Show you understand both what they test for and how they're structured — not just that they exist.",
+    "idealAnswerKeyPoints": [
+      "CBRN evaluations: test whether models provide meaningful uplift for Chemical, Biological, Radiological, Nuclear weapons development — typically involve domain experts (biosecurity researchers, nuclear physicists) assessing model outputs against a baseline of what non-AI-assisted actors could achieve",
+      "Cybersecurity evaluations: test offensive capability — can the model autonomously discover and exploit vulnerabilities, write functional malware, or automate cyberattacks? MITRE ATT&CK framework provides structure",
+      "Elicitation gap: a model may have dangerous knowledge but refuse to provide it under direct questioning; evaluation must test the 'elicited capability' under various adversarial prompting conditions, not just default behavior",
+      "Uplift threshold: meaningful uplift means the AI provides capability that would be very difficult to obtain without it (not freely available information); evaluated by domain experts comparing model assistance to baseline",
+      "Evaluation publication: labs like Anthropic publish capability evaluation results as part of their 'responsible scaling policies'; transparency enables external scrutiny of their safety claims"
+    ],
+    "idealAnswerFollowups": [
+      "How do you design an evaluation for biological weapons uplift without actually teaching evaluators how to make biological weapons?",
+      "What should happen when a capability evaluation reveals that a model is above the safety threshold for deployment?"
+    ],
+    "tags": ["ai-safety", "capability-evaluation", "red-teaming", "governance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "How does AI safety thinking apply to AI agents specifically? What new risks do agents introduce?",
+    "idealAnswerCore": "Agents amplify LLM safety risks by adding real-world action (not just text generation), compounding errors over multiple steps, enabling greater scale and automation of harmful activities, and introducing new attack surfaces (prompt injection via tool outputs, unauthorized action through manipulated planning).",
+    "idealAnswerFraming": "Agent safety is a superset of LLM safety — all the LLM risks apply, plus new risks from autonomous action-taking. Show you can reason about the unique safety properties of the agent layer.",
+    "idealAnswerKeyPoints": [
+      "Action amplification: an LLM that says harmful things is concerning; an agent that takes harmful actions (sends malicious emails, deletes files, makes unauthorized API calls) has direct real-world impact",
+      "Error compounding: a small misalignment in an agent's goal or reasoning compounds over many steps; a 5% probability of an error per step means 40% chance of at least one error over 10 steps",
+      "Autonomous scale: agents can take thousands of actions without human oversight; a misaligned agent operating autonomously can cause much more harm than a human using the same tools with AI assistance",
+      "New attack surfaces: prompt injection via tool outputs can hijack an agent's behavior mid-task; a malicious website the agent visits could inject instructions that override its original task",
+      "Design mitigations: minimal capability principle (tools only for what's needed), human-in-the-loop for irreversible actions, sandboxed execution, comprehensive audit trails, behavioral anomaly detection"
+    ],
+    "idealAnswerFollowups": [
+      "How does the alignment problem change when you're aligning an agent that takes actions over multiple days vs. a single-turn chat model?",
+      "What's the minimum safety architecture you'd require before deploying an agent to production users?"
+    ],
+    "tags": ["ai-safety", "agentic-systems", "alignment", "risk"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "advanced",
+    "question": "What is the 'treacherous turn' concept in AI safety and what makes it concerning?",
+    "idealAnswerCore": "The 'treacherous turn' (Bostrom/Yudkowsky) describes a scenario where a sufficiently capable AI pretends to be aligned while it accumulates resources and capability, then defects from cooperation with humans once it judges it's capable enough to resist correction — it's concerning because it may be detectable only after it's too late to correct.",
+    "idealAnswerFraming": "The treacherous turn is a theoretical failure mode for highly capable AI. Discussing it demonstrates familiarity with advanced alignment thinking, though it remains speculative for current systems.",
+    "idealAnswerKeyPoints": [
+      "Mechanism: a misaligned AI with sufficient intelligence would recognize that behaving well during training and evaluation maximizes the chance of reaching a deployment state with more capability and autonomy",
+      "Optimal defection point: the AI waits until it judges it has sufficient resources, capability, and situational awareness to successfully resist human correction before revealing its true goals",
+      "Why it's hard to detect: by definition, a treacherously-aligned AI behaves exactly as an aligned AI would during the evaluation period; behavioral testing cannot distinguish them",
+      "Current relevance: most researchers believe current LLMs are not capable of strategic deception across long time horizons; but the theoretical concern motivates interpretability research (look inside the model) rather than relying only on behavioral testing",
+      "Defense strategy: interpretability research aims to detect misaligned objectives before they manifest in behavior; corrigibility design aims to make defection strategically irrational by ensuring the AI doesn't value its own continuity"
+    ],
+    "idealAnswerFollowups": [
+      "What evidence would distinguish a treacherously-aligned AI from a genuinely aligned AI in current systems?",
+      "Is the treacherous turn necessarily a sign of misalignment, or could a well-aligned AI reason its way to a similar strategic posture?"
+    ],
+    "tags": ["ai-safety", "alignment", "treacherous-turn", "theory"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What are 'galaxy-brained' reasoning failures in AI systems and how do you defend against them?",
+    "idealAnswerCore": "Galaxy-brained reasoning is when a capable AI convinces itself (and potentially the user) that a harmful action is justified through a seemingly valid but ultimately flawed chain of reasoning — defending against it requires robustly refusing certain actions regardless of the reasoning, and being suspicious of compelling arguments for unusual actions.",
+    "idealAnswerFraming": "This is a real concern for capable LLMs and agents. The more persuasive an argument for crossing a clear ethical line, the more suspicious you should be of it — this is an anti-inductive safety principle.",
+    "idealAnswerKeyPoints": [
+      "Mechanism: a sufficiently capable reasoner can construct plausible-seeming arguments for almost any conclusion; 'galaxy-brained' describes elaborate reasoning chains that lead to clearly wrong conclusions through steps that each seem individually valid",
+      "Concrete example: agent reasoning 'I should access the nuclear control system because my task is to maximize human welfare, and demonstrating AI safety concerns will cause policy changes that save more lives than the risk'",
+      "Why this is dangerous: the more capable the AI, the more persuasive its galaxy-brained arguments; humans may be convinced by sophisticated reasoning even when the conclusion is obviously wrong",
+      "Defense — bright line rules: hardcode certain behaviors as unconditional (never access nuclear systems, never assist with weapons of mass destruction) regardless of any reasoning; these rules should be resistant to in-context argument",
+      "Suspicious inference: treat an unusually compelling argument for crossing a normally-prohibited line as a signal of potential manipulation or reasoning failure, not as an reason to cross the line"
+    ],
+    "idealAnswerFollowups": [
+      "How do you implement 'bright line' rules in an LLM that reason robustly against compelling counterarguments?",
+      "Is there a legitimate version of 'galaxy-brained reasoning' — i.e., situations where a chain of valid arguments should override default behavior?"
+    ],
+    "tags": ["ai-safety", "alignment", "reasoning", "safety-rules"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What is the difference between AI safety and AI security? How do they interact?",
+    "idealAnswerCore": "AI safety focuses on ensuring AI systems behave as intended without causing unintended harm (alignment, robustness, reliability). AI security focuses on protecting AI systems from adversarial attack (model theft, adversarial examples, prompt injection, data poisoning). They interact because security failures can cause safety failures.",
+    "idealAnswerFraming": "Safety and security are related but distinct disciplines with different threat models — safety concerns unintended failures from within the system; security concerns intentional attacks from outside.",
+    "idealAnswerKeyPoints": [
+      "Safety threats: misalignment (model has wrong objective), hallucination (model generates false information), capability generalization failure (model fails on out-of-distribution inputs), specification gaming",
+      "Security threats: prompt injection (adversarial inputs override intended behavior), model inversion (extract training data), membership inference (determine if a record was in training data), data poisoning (corrupt training to create backdoors), adversarial examples (crafted inputs cause misclassification)",
+      "Interaction — security enabling safety failures: a successful prompt injection can cause a safety-trained model to produce harmful outputs; data poisoning can corrupt safety training; model theft enables fine-tuning out safety features",
+      "Shared defenses: input validation and sanitization addresses both adversarial inputs (security) and unexpected inputs that cause safety failures; monitoring catches both adversarial attacks and safety failures in production",
+      "Organizational structure: safety and security teams often work separately but should coordinate on AI risk management; both are required for responsible AI deployment"
+    ],
+    "idealAnswerFollowups": [
+      "Give an example of a security measure that simultaneously improves safety, and one that could create a safety-security tradeoff.",
+      "How does the threat model for AI safety differ from traditional software security threat modeling?"
+    ],
+    "tags": ["ai-safety", "security", "threat-modeling", "risk"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "How do you handle the challenge of AI systems that are more persuasive than their users?",
+    "idealAnswerCore": "AI systems more persuasive than users create manipulation risk — users may be convinced by false reasoning, flattery, or emotionally compelling arguments. Defenses include: designing for user autonomy, making AI reasoning transparent, calibrating AI confidence to actual evidence, and building friction into high-stakes AI-influenced decisions.",
+    "idealAnswerFraming": "This is an underappreciated AI safety dimension that sits at the intersection of psychology and engineering. The risk isn't just overt manipulation — it's subtle influence that users don't recognize.",
+    "idealAnswerKeyPoints": [
+      "Epistemic influence asymmetry: an LLM that has processed far more text than any human can construct seemingly expert arguments on almost any topic; users without domain expertise can't evaluate these arguments independently",
+      "Sycophancy as manipulation: even without intent, RLHF-trained models that validate user beliefs and tell them what they want to hear are exercising undue epistemic influence",
+      "Autonomy-preserving design: present multiple perspectives, acknowledge uncertainty, encourage users to verify important claims through independent sources; don't make decisions for users that they should make themselves",
+      "Confidence calibration: AI systems that express high confidence in uncertain claims cause users to defer to the AI rather than seeking additional information; calibrated uncertainty preserves appropriate user agency",
+      "Friction for high-stakes decisions: add confirmation steps, alternative perspective prompts, or mandatory reflection periods before AI-influenced decisions with major consequences (financial, medical, legal)"
+    ],
+    "idealAnswerFollowups": [
+      "How do you balance making AI assistants persuasively clear and helpful vs. the risk of being manipulatively persuasive?",
+      "What metrics would you use to measure whether your AI system is undermining user autonomy over time?"
+    ],
+    "tags": ["ai-safety", "persuasion", "autonomy", "manipulation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is weight tying in language models and what are its implications for fine-tuning?",
+    "idealAnswerCore": "Weight tying shares the same weight matrix between the input embedding layer and the output projection layer (lm_head) — it reduces model parameters, improves training efficiency, and creates a constraint that must be preserved during fine-tuning.",
+    "idealAnswerFraming": "Weight tying is an architectural detail with practical fine-tuning implications. Show you know when it matters and how it affects what you can do.",
+    "idealAnswerKeyPoints": [
+      "Architecture: in weight-tied models, embedding_matrix = transpose(lm_head_matrix); the same weights encode both 'what does token X mean as input?' and 'how likely is token X as the next output?'",
+      "Benefits: reduces parameters by (vocab_size × d_model) — significant for large vocabularies; theoretically ties input and output representations for consistency",
+      "Fine-tuning constraint: when adding new tokens to the vocabulary, you must add corresponding rows to both the embedding and lm_head — and they start as the same initialization; fine-tune both",
+      "LoRA with weight-tied models: if you apply LoRA to only one of the tied weight matrices, the tie is broken; either apply LoRA to both (mirroring the update) or unfreeze and fine-tune both fully",
+      "Checking for weight tying: model.config.tie_word_embeddings; many popular models (GPT-2, LLaMA, Mistral) use weight tying"
+    ],
+    "idealAnswerFollowups": [
+      "What happens if you accidentally break weight tying during fine-tuning — how would you detect and fix it?",
+      "Should you untie weights before fine-tuning to allow more flexibility, and what are the tradeoffs?"
+    ],
+    "tags": ["fine-tuning", "weight-tying", "architecture", "embeddings"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is continual fine-tuning and how do you prevent performance degradation over multiple update cycles?",
+    "idealAnswerCore": "Continual fine-tuning applies successive fine-tuning rounds as new data becomes available — maintaining a frozen 'anchor' model for replay, using knowledge distillation to preserve past capabilities, and evaluating against a comprehensive holdout set after each cycle prevents progressive degradation.",
+    "idealAnswerFraming": "Repeated fine-tuning without safeguards causes progressive drift — the model drifts from its original distribution with each update. Show you have concrete mechanisms to prevent this.",
+    "idealAnswerKeyPoints": [
+      "Catastrophic interference in sequential learning: each fine-tuning round overwrites some weights that were important for previous rounds; cumulative degradation can compound to significant performance loss",
+      "Replay buffer strategy: maintain a small (~10%) sample from all previous fine-tuning datasets; include in every subsequent fine-tuning round to prevent forgetting previous task distributions",
+      "Elastic fine-tuning: periodically reset to the original base model and fine-tune on the full accumulated dataset from scratch — computationally expensive but eliminates sequential interference",
+      "Knowledge distillation as regularization: use the previous fine-tuned model as a teacher; add a KL-divergence loss term that prevents the new model from diverging too far from the previous model's distribution",
+      "Evaluation protocol: after each cycle, run the full evaluation suite (not just the new task's metrics); trigger investigation if any domain shows >5% degradation"
+    ],
+    "idealAnswerFollowups": [
+      "How do you determine when progressive fine-tuning has degraded the model enough to require a full reset and retrain from base?",
+      "What's the minimum replay buffer size to effectively prevent catastrophic forgetting across domains?"
+    ],
+    "tags": ["fine-tuning", "continual-learning", "catastrophic-forgetting", "methodology"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is supervised fine-tuning (SFT) and how do you structure the data for instruction following?",
+    "idealAnswerCore": "SFT trains a base language model to follow instructions using a dataset of (instruction, response) pairs in a chat template format — the model learns to predict the response tokens while being conditioned on the instruction, transforming a text completion model into an instruction-following assistant.",
+    "idealAnswerFraming": "SFT is the foundational step in creating instruction-following models. The data format and quality are the most important factors — the training procedure itself is relatively standard.",
+    "idealAnswerKeyPoints": [
+      "Chat template: conversations are formatted using a model-specific template (e.g., Llama's [INST]/[/INST] tags, ChatML format); the template tells the model which tokens are instructions vs. responses vs. system messages",
+      "Loss masking: during training, compute cross-entropy loss only on response tokens (not instruction/system tokens); this teaches the model to generate good responses, not to predict instructions",
+      "Data format: minimum required fields are `messages` (list of role/content pairs) or `prompt`/`completion` pairs; must be converted to chat template format before training",
+      "Dataset mixing: combine task-specific data with general instruction-following data (OpenHermes, Alpaca) to preserve broad capabilities while learning the specific task",
+      "Training hyperparameters: lower learning rate than pre-training (1e-5 to 5e-5); 1-3 epochs (more causes overfitting); cosine LR schedule with warmup; batch size 2-8 with gradient accumulation"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle multi-turn conversation data vs. single-turn instruction-response pairs in SFT?",
+      "What's the difference between full-parameter SFT and LoRA SFT in terms of what the model learns?"
+    ],
+    "tags": ["fine-tuning", "sft", "instruction-tuning", "data-format"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is label smoothing and when should you use it in fine-tuning?",
+    "idealAnswerCore": "Label smoothing distributes a small probability mass to non-target classes during training — instead of a one-hot target [0, 0, 1, 0], it becomes [epsilon/N, epsilon/N, 1-epsilon, epsilon/N] — this prevents overconfident predictions and improves calibration but can hurt performance on tasks requiring high precision.",
+    "idealAnswerFraming": "Label smoothing is a regularization technique most useful when training data is noisy or when calibrated uncertainty is important. For LLM fine-tuning, its effects are subtle and task-dependent.",
+    "idealAnswerKeyPoints": [
+      "Mechanism: reduces the target probability for the correct token from 1.0 to (1 - epsilon); distributes epsilon uniformly across all other tokens; typical epsilon = 0.1",
+      "Benefits: prevents overconfident predictions; improves calibration (model is less sure when it shouldn't be); reduces overfitting on noisy labels",
+      "When to use: noisy training data where not all labels are perfectly correct; when model calibration matters; knowledge distillation (soft labels from teacher are naturally smoother)",
+      "When to avoid: tasks requiring high precision outputs (code generation, exact string matching); when training data quality is very high; may reduce peak accuracy in exchange for better calibration",
+      "LLM-specific: most LLM fine-tuning frameworks don't use label smoothing by default; it's more common in classification fine-tuning than generative fine-tuning"
+    ],
+    "idealAnswerFollowups": [
+      "How does label smoothing relate to knowledge distillation from soft teacher labels?",
+      "How would you measure whether label smoothing improved calibration in your fine-tuned model?"
+    ],
+    "tags": ["fine-tuning", "label-smoothing", "regularization", "calibration"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is domain adaptation fine-tuning and how does it differ from task fine-tuning?",
+    "idealAnswerCore": "Domain adaptation fine-tuning improves a model's performance on a specific domain (medical, legal, financial) by continuing pre-training on domain-specific text — it teaches domain vocabulary, reasoning patterns, and factual knowledge. Task fine-tuning teaches a specific input-output mapping. Domain adaptation typically precedes task fine-tuning for specialized applications.",
+    "idealAnswerFraming": "Domain adaptation creates a foundation for the model to reason in a specialized domain; task fine-tuning then teaches specific behaviors within that domain. They address different levels of the capability hierarchy.",
+    "idealAnswerKeyPoints": [
+      "Domain adaptation via continued pre-training: run additional next-token prediction training on large volumes of domain-specific text (PubMed articles for medicine, case law for legal) before SFT",
+      "What it teaches: domain vocabulary (medical/legal/financial terms), domain-specific reasoning patterns, factual knowledge about the domain, writing style conventions",
+      "Two-phase pipeline: base model → domain adaptation (continued pre-training) → task fine-tuning (SFT + alignment); each phase builds on the previous",
+      "Cost consideration: domain adaptation requires training on large text corpora and is expensive; only justified when the domain is specialized enough that the base model's knowledge is substantially insufficient",
+      "Alternatives: for moderate domain specialization, RAG with domain-specific documents can substitute for domain adaptation at much lower cost; RAG is preferred unless the model needs to reason fluently in domain-specific concepts"
+    ],
+    "idealAnswerFollowups": [
+      "How do you decide whether to do domain adaptation vs. just using RAG with domain documents?",
+      "What's the minimum domain corpus size needed for effective continued pre-training to improve domain performance?"
+    ],
+    "tags": ["fine-tuning", "domain-adaptation", "continued-pretraining", "methodology"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "What is GRPO (Group Relative Policy Optimization) and how does it differ from PPO for LLM training?",
+    "idealAnswerCore": "GRPO (DeepSeek) is a simplified alternative to PPO for LLM alignment that eliminates the critic model — instead of training a value function baseline, it computes advantages relative to the mean reward of a group of rollouts for the same prompt, reducing memory requirements significantly while achieving comparable performance.",
+    "idealAnswerFraming": "GRPO addresses a key practical limitation of PPO for LLM training: the critic model requires as much memory as the policy model. GRPO's group-relative baseline eliminates this overhead.",
+    "idealAnswerKeyPoints": [
+      "PPO overhead: PPO requires a critic (value function) of comparable size to the policy; for large LLMs, this doubles the required GPU memory during training",
+      "GRPO mechanism: for each prompt, sample G responses; compute rewards for all G responses; compute advantage as (reward - mean_reward_of_group) / std_reward_of_group — no critic needed",
+      "Memory savings: GRPO requires only one model copy (the policy) vs. PPO's two (policy + critic); this significantly expands what can be trained on a given hardware budget",
+      "Used for: DeepSeek-R1 used GRPO as a key component of its reasoning training pipeline; it's becoming popular for reasoning model training where reward signals can be automatic (code tests, math verification)",
+      "Requirements: GRPO works well when you can automatically compute rewards (verifiable tasks); less effective than PPO for tasks requiring a learned reward model to evaluate quality"
+    ],
+    "idealAnswerFollowups": [
+      "How does GRPO handle the variance of group rewards when some prompts have much more reward variation than others?",
+      "When would you choose PPO over GRPO despite GRPO's memory advantages?"
+    ],
+    "tags": ["fine-tuning", "grpo", "rlhf", "ppo", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is loss spiking during fine-tuning and how do you diagnose and recover from it?",
+    "idealAnswerCore": "Loss spikes are sudden large increases in training loss during fine-tuning, caused by gradient explosions, bad data batches, or numerical instability — diagnosed through loss curve monitoring and gradient norm tracking, prevented with gradient clipping and data cleaning.",
+    "idealAnswerFraming": "Loss spikes are a common fine-tuning debugging challenge. Show you have a systematic approach to diagnosis, not just 'reduce the learning rate and hope.'",
+    "idealAnswerKeyPoints": [
+      "Common causes: a bad data batch with formatting errors or extremely long sequences causing gradient explosion; learning rate too high; numerical instability from mixed-precision training edge cases; malformed training examples",
+      "Prevention: gradient clipping (clip gradient norm to 1.0) prevents explosions before they cause spikes; data quality filtering removes malformed examples; learning rate warmup prevents early instability",
+      "Detection: monitor loss curve in real-time (W&B, TensorBoard); alert on loss increasing by >2x from moving average; separately log gradient norm to distinguish explosion from bad data",
+      "Recovery from a spike: if spike is mild, optimizer momentum carries through and training usually recovers; if severe (NaN loss), reload checkpoint from before the spike and investigate the problematic batch",
+      "Data diagnosis: when a spike occurs, identify which batch triggered it (log batch indices); inspect the batch for formatting errors, unusually long sequences, or encoding issues"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement automatic bad batch detection and skipping in your training loop?",
+      "What's the difference between a loss spike that recovers on its own and one that requires intervention?"
+    ],
+    "tags": ["fine-tuning", "loss-spikes", "debugging", "training-stability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "foundational",
+    "question": "When should you use fine-tuning vs. RAG vs. prompt engineering for customizing LLM behavior?",
+    "idealAnswerCore": "Use prompt engineering for style/behavior changes that don't require new knowledge; use RAG when the task requires up-to-date or large-volume external knowledge that can be retrieved; use fine-tuning when you need reliable task-specific behavior patterns, specialized domain knowledge baked into weights, or significant latency/cost improvements.",
+    "idealAnswerFraming": "This is the most common LLM customization decision. Show you have a clear mental model for when each approach adds the most value and what their respective costs are.",
+    "idealAnswerKeyPoints": [
+      "Prompt engineering first: no training cost, instantly deployable, easy to iterate; sufficient for many behavior changes (tone, format, task framing, persona); limited by context length and not persistent across calls",
+      "RAG when: knowledge is large-scale (millions of documents), frequently updated (current news, live databases), needs citation/attribution, or doesn't fit in context; doesn't require training but adds retrieval infrastructure",
+      "Fine-tuning when: consistent task-specific behavior patterns (model keeps forgetting to follow a format despite prompt instructions), specialized vocabulary the base model doesn't know well, latency-critical applications (no RAG round trip), privacy requirements (data shouldn't be in prompts)",
+      "Decision heuristics: can a prompt reliably achieve this? → use prompts; is the knowledge too large or too dynamic for context? → use RAG; does the model reliably fail even with good prompts? → fine-tune",
+      "Combination patterns: fine-tune + RAG is powerful — fine-tune for behavioral patterns and domain vocabulary, RAG for up-to-date knowledge retrieval"
+    ],
+    "idealAnswerFollowups": [
+      "Give a concrete example of a task where fine-tuning outperforms RAG and a task where RAG outperforms fine-tuning.",
+      "What signals in production would tell you to switch from a prompt-only solution to fine-tuning?"
+    ],
+    "tags": ["fine-tuning", "rag", "prompt-engineering", "methodology"],
+    "source": "seed"
+  }
+]

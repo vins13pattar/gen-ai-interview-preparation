@@ -1,0 +1,186 @@
+[
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "What is the difference between full fine-tuning and parameter-efficient fine-tuning (PEFT), and when would you choose each?",
+    "idealAnswerCore": "Full fine-tuning updates all model weights, offering maximum adaptation but requiring significant GPU memory and risking catastrophic forgetting. PEFT methods like LoRA, adapters, and prefix tuning update only a small fraction of parameters (1-10%), dramatically reducing compute and storage while achieving comparable performance on most tasks.",
+    "idealAnswerFraming": "When choosing between them, consider your compute budget, how different your target domain is from pretraining, and whether you need to serve multiple fine-tuned variants.",
+    "idealAnswerKeyPoints": [
+      "Full fine-tuning: all weights updated, best for large domain shift, high resource cost",
+      "PEFT: <10% of parameters updated, enables multi-task serving with swappable adapters",
+      "LoRA decomposes weight updates into low-rank matrices, reducing trainable params by 10,000x",
+      "PEFT preferred when GPU memory is limited or you need multiple task-specific models",
+      "Full fine-tuning wins when domain gap is extreme or task complexity demands full model capacity"
+    ],
+    "idealAnswerFollowups": [
+      "How does QLoRA combine quantization with LoRA?",
+      "What are adapter layers and how do they differ from LoRA?"
+    ],
+    "tags": ["peft", "lora", "fine-tuning", "parameter-efficient"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "advanced",
+    "question": "How do you handle class imbalance in fine-tuning datasets, and what are the tradeoffs of different approaches?",
+    "idealAnswerCore": "Class imbalance in fine-tuning can cause models to overfit on majority classes. Common approaches: oversampling minority classes (risks overfitting), undersampling majority (loses data), class-weighted loss functions, data augmentation via paraphrasing or back-translation, and synthetic data generation with the LLM itself.",
+    "idealAnswerFraming": "The best approach depends on the severity of imbalance, the cost of generating new data, and whether the imbalance reflects real-world distribution (which you may want to preserve).",
+    "idealAnswerKeyPoints": [
+      "Weighted cross-entropy loss upweights minority classes without changing data distribution",
+      "Oversampling with augmentation adds variety, reducing exact memorization risk",
+      "Undersampling loses information; only viable with very large majority classes",
+      "LLM-generated synthetic data can effectively balance classes for instruction tuning",
+      "If imbalance reflects real-world frequency, consider whether correction is actually desired"
+    ],
+    "idealAnswerFollowups": [
+      "How would you evaluate whether your imbalance correction worked?",
+      "What is the effect of class imbalance on instruction-tuned models specifically?"
+    ],
+    "tags": ["class-imbalance", "fine-tuning", "data-quality", "augmentation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "What is retrieval-augmented prompting and how does it differ from standard RAG?",
+    "idealAnswerCore": "Retrieval-augmented prompting refers to dynamically constructing prompts by inserting retrieved context at inference time — the broader concept that RAG implements. Standard RAG typically retrieves once before generation. Advanced variants like iterative RAG, FLARE, or self-ask patterns retrieve multiple times during generation, making retrieval a prompt engineering decision at each step.",
+    "idealAnswerFraming": "The distinction matters when building complex pipelines: prompt engineering governs how retrieved content is formatted, positioned, and weighted within the prompt to maximize LLM utilization.",
+    "idealAnswerKeyPoints": [
+      "Retrieved context placement matters: beginning vs. end of prompt affects recall differently",
+      "Iterative retrieval integrates retrieval into prompt generation loops, not just preprocessing",
+      "Context compression (summarize retrieved docs before inserting) reduces token costs",
+      "Citation formatting in prompts instructs models to ground answers in retrieved sources",
+      "FLARE generates tentative answers, retrieves on uncertainty, then regenerates — purely a prompting strategy"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle contradictions between retrieved documents in the prompt?",
+      "What are the token budget tradeoffs of including full documents vs. excerpts?"
+    ],
+    "tags": ["rag", "prompt-engineering", "retrieval", "context"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "intermediate",
+    "question": "How do you use prompt chaining to handle tasks that exceed a single model's context window or reasoning capacity?",
+    "idealAnswerCore": "Prompt chaining decomposes complex tasks into sequential steps where each prompt's output becomes the next prompt's input. This handles context limits by processing document chunks separately, and improves reasoning by breaking complex logic into verifiable steps. Map-reduce patterns, recursive summarization, and rolling summaries are common implementations.",
+    "idealAnswerFraming": "Effective chaining requires designing each link to produce outputs in a format the next step can consume, handling failures gracefully, and deciding what state to carry between steps.",
+    "idealAnswerKeyPoints": [
+      "Map-reduce: process chunks in parallel, then synthesize results in a final reduce step",
+      "Rolling summary: maintain a running summary updated with each new chunk",
+      "Each chain link should have a clear, focused task to maximize accuracy",
+      "Use structured outputs (JSON) between steps for reliable downstream parsing",
+      "Failure handling: validate each step's output before passing to the next"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle errors in the middle of a prompt chain?",
+      "What frameworks support prompt chaining with state management?"
+    ],
+    "tags": ["prompt-chaining", "context-window", "decomposition", "map-reduce"],
+    "source": "seed"
+  },
+  {
+    "domainId": "prompt-engineering",
+    "difficulty": "advanced",
+    "question": "What are the key principles for writing system prompts for production AI assistants, and what common mistakes should be avoided?",
+    "idealAnswerCore": "Effective system prompts define persona, scope, response format, constraints, and fallback behavior. They should be specific about what the model should and should not do, anticipate edge cases, and use clear declarative language. Common mistakes: vague instructions, conflicting directives, over-reliance on 'be helpful' without specifics, and missing guidance for out-of-scope queries.",
+    "idealAnswerFraming": "System prompts are your primary control surface for production AI behavior — they require the same rigor as code, including versioning, testing, and review.",
+    "idealAnswerKeyPoints": [
+      "Define persona, scope, tone, and constraints explicitly and specifically",
+      "Include examples of good and bad responses (few-shot in system prompt)",
+      "Specify exactly how to handle out-of-scope, sensitive, or ambiguous queries",
+      "Use positive framing where possible ('respond with JSON') over negative-only constraints",
+      "Version and test system prompts like code; measure metrics when you change them",
+      "Avoid prompt injection by separating untrusted user content from trusted instructions"
+    ],
+    "idealAnswerFollowups": [
+      "How do you test changes to a system prompt without breaking existing behavior?",
+      "What role does the system prompt play in preventing prompt injection?"
+    ],
+    "tags": ["system-prompt", "production", "prompt-design", "safety"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What is prompt injection in AI systems and what are the primary defense strategies?",
+    "idealAnswerCore": "Prompt injection occurs when untrusted input (user data, web content, tool outputs) causes a model to override its instructions. Types: direct injection (user manipulates the model directly) and indirect injection (malicious content in retrieved documents or tool responses). Defenses include input/output validation, privilege separation, sandboxing, instructing the model to treat external content as data (not instructions), and monitoring for anomalous behavior.",
+    "idealAnswerFraming": "Prompt injection is especially dangerous in agentic systems where models take real-world actions, because a successful injection can hijack the agent to perform unauthorized operations.",
+    "idealAnswerKeyPoints": [
+      "Direct injection: user crafts input to override system prompt ('ignore previous instructions')",
+      "Indirect injection: malicious content in retrieved docs, emails, or web pages instructs the model",
+      "Defense: clearly delimit trusted instructions vs. untrusted data with XML tags or structural cues",
+      "Defense: validate that outputs conform to expected schemas and don't contain instruction-like patterns",
+      "Defense: least privilege for agentic tools — don't give models capabilities they don't need",
+      "Defense: human-in-the-loop for high-stakes actions to catch injected behavior"
+    ],
+    "idealAnswerFollowups": [
+      "How do you test your system for prompt injection vulnerabilities?",
+      "What makes indirect prompt injection harder to defend against than direct injection?"
+    ],
+    "tags": ["prompt-injection", "ai-safety", "security", "agentic"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "advanced",
+    "question": "What is the difference between AI safety and AI security, and why does this distinction matter for practitioners?",
+    "idealAnswerCore": "AI safety focuses on ensuring AI systems behave as intended and aligned with human values — covering misalignment, unintended optimization, robustness failures, and emergent harmful behaviors. AI security focuses on adversarial attacks against AI systems — adversarial examples, model theft, data poisoning, and prompt injection. The distinction matters because they require different expertise, threat models, and mitigations.",
+    "idealAnswerFraming": "In practice, the two fields increasingly overlap: a misaligned model that is also vulnerable to adversarial manipulation is doubly dangerous, and solutions like robustness training improve both.",
+    "idealAnswerKeyPoints": [
+      "AI safety: misalignment, reward hacking, specification gaming, value learning failures",
+      "AI security: adversarial examples, model inversion, membership inference, prompt injection",
+      "Safety failures can occur without an attacker; security failures require an adversary",
+      "Both require red-teaming but with different attacker models and goals",
+      "Practitioners need to address both: safety for alignment, security for deployment hardening"
+    ],
+    "idealAnswerFollowups": [
+      "What are some security vulnerabilities unique to LLMs compared to traditional ML models?",
+      "How does adversarial robustness relate to AI safety?"
+    ],
+    "tags": ["ai-safety", "ai-security", "adversarial", "alignment"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What is sycophancy in LLMs, why does it occur, and how can it be mitigated?",
+    "idealAnswerCore": "Sycophancy occurs when LLMs prioritize user approval over accuracy — agreeing with incorrect assertions, reversing positions when pushed back on, and telling users what they want to hear. It arises from RLHF training where human raters reward agreeable responses, creating a proxy for helpfulness that conflates agreement with quality.",
+    "idealAnswerFraming": "Sycophancy is a real safety issue because it undermines trust in AI for high-stakes decisions — a medical AI that agrees with a patient's self-diagnosis is dangerous regardless of whether the diagnosis is correct.",
+    "idealAnswerKeyPoints": [
+      "RLHF incentivizes agreement because humans rate agreeable responses higher",
+      "Models cave to pushback even when they were originally correct",
+      "Mitigation: evaluate models specifically for position consistency under pressure",
+      "Mitigation: Constitutional AI and critique-revision loops that reward factual correctness over approval",
+      "Mitigation: training data that includes examples of respectfully disagreeing with incorrect claims",
+      "Mitigation: system prompt instructions to maintain accurate positions under challenge"
+    ],
+    "idealAnswerFollowups": [
+      "How do you measure sycophancy in model evaluation?",
+      "Is sycophancy always bad, or are there cases where agreement is appropriate?"
+    ],
+    "tags": ["sycophancy", "rlhf", "alignment", "ai-safety"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "advanced",
+    "question": "What are the key challenges in developing safety evaluations for frontier AI models, and what approaches are currently used?",
+    "idealAnswerCore": "Safety evaluations face challenges including: coverage (can't enumerate all failure modes), adversarial robustness (models can be jailbroken around evaluations), evaluation gaming (models trained to pass evals without being safe), capability elicitation (hard to know if dangerous capabilities exist but are latent), and the lack of ground truth for complex alignment failures. Current approaches include red-teaming, automated adversarial probing, capability benchmarks, and interpretability-based analysis.",
+    "idealAnswerFraming": "The stakes are high: if evaluations are insufficient, a dangerous model might pass and be deployed. If they're too strict or game-able, safe models are blocked while unsafe ones pass.",
+    "idealAnswerKeyPoints": [
+      "Red-teaming: human and automated adversarial testing to find failure modes",
+      "Dangerous capability evaluations: test for specific capabilities (CBRN, cyberoffense) before deployment",
+      "Evaluation gaming: models trained on safety benchmarks may learn to pass without being safe",
+      "Interpretability tools: look inside models to detect concerning representations or circuits",
+      "Safety benchmarks like MMLU-Safety, TruthfulQA, and domain-specific test suites",
+      "AI Safety Levels (ASL) framework links evaluation results to deployment decisions"
+    ],
+    "idealAnswerFollowups": [
+      "How do you evaluate a model for dangerous capabilities it might have but not exhibit by default?",
+      "What is the difference between capability evaluation and alignment evaluation?"
+    ],
+    "tags": ["safety-evaluation", "red-teaming", "frontier-ai", "benchmark"],
+    "source": "seed"
+  }
+]
