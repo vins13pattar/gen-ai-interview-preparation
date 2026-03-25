@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Domain {
+  id              String     @id @default(cuid())
+  slug            String     @unique
+  name            String
+  description     String?
+  questionCount   Int        @default(0)
+  lastGeneratedAt DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  questions       Question[]
+}
+
+model Question {
+  id                     String     @id @default(cuid())
+  domainId               String
+  domain                 Domain     @relation(fields: [domainId], references: [id])
+  difficulty             String     // 'foundational' | 'intermediate' | 'advanced'
+  question               String     @unique
+  idealAnswerCore        String
+  idealAnswerFraming     String
+  idealAnswerKeyPoints   String     // JSON array of strings
+  idealAnswerFollowups   String     // JSON array of strings
+  tags                   String     @default("[]") // JSON array of strings
+  source                 String     @default("seed") // 'seed' | 'generated' | 'community'
+  generatedAt            DateTime   @default(now())
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  bookmark               Bookmark?
+
+  @@index([domainId])
+  @@index([difficulty])
+}
+
+model Bookmark {
+  questionId String   @id
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  state      String   // 'studied' | 'needs_review'
+  updatedAt  DateTime @updatedAt
+}
+
+model AppConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

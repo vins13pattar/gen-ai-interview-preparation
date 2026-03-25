@@ -1,0 +1,50 @@
+[
+  {
+    "id": "llm-internals",
+    "slug": "llm-internals",
+    "name": "LLM Internals",
+    "description": "Transformer architecture, attention mechanisms, tokenization, KV cache, context windows, quantization, speculative decoding, and mixture of experts."
+  },
+  {
+    "id": "rag",
+    "slug": "rag",
+    "name": "Retrieval-Augmented Generation",
+    "description": "RAG pipelines, embedding models, vector databases, chunking strategies, hybrid search, reranking, and RAG evaluation frameworks."
+  },
+  {
+    "id": "fine-tuning",
+    "slug": "fine-tuning",
+    "name": "Fine-tuning & Alignment",
+    "description": "Supervised fine-tuning, PEFT, LoRA/QLoRA, instruction tuning, RLHF, DPO, dataset curation, and catastrophic forgetting."
+  },
+  {
+    "id": "prompt-engineering",
+    "slug": "prompt-engineering",
+    "name": "Prompt Engineering",
+    "description": "Zero-shot, few-shot, chain-of-thought, tree-of-thought, self-consistency, structured output, and adversarial prompting."
+  },
+  {
+    "id": "agentic-systems",
+    "slug": "agentic-systems",
+    "name": "Agentic Systems & Tool Use",
+    "description": "Function calling, Model Context Protocol (MCP), ReAct, Plan-and-Execute, multi-agent orchestration, and agent memory architectures."
+  },
+  {
+    "id": "mlops",
+    "slug": "mlops",
+    "name": "MLOps for LLMs",
+    "description": "Model serving (vLLM, TGI, Triton), throughput vs. latency trade-offs, cost optimization, and LLM observability."
+  },
+  {
+    "id": "ai-safety",
+    "slug": "ai-safety",
+    "name": "AI Safety & Ethics",
+    "description": "Hallucination mitigation, red-teaming, bias auditing, responsible AI frameworks, EU AI Act, and output guardrails."
+  },
+  {
+    "id": "behavioral",
+    "slug": "behavioral",
+    "name": "Behavioral & Situational",
+    "description": "STAR method, technical trade-off reasoning, communicating AI limitations, cross-functional collaboration, and production incident debugging."
+  }
+]
