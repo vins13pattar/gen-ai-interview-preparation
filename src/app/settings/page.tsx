@@ -97,7 +97,8 @@ export default function SettingsPage() {
         </div>
         <h1 className="mb-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Settings</h1>
         <p className="mb-8 text-base text-zinc-600 dark:text-zinc-400">
-          Update your BYOK provider, model, or rotate the API key. Keys stay encrypted locally.
+          Update your BYOK provider, model, or rotate the API key. Keys stay encrypted locally. Before anything is
+          saved, we send a minimal test request to your provider; invalid keys are rejected.
         </p>
 
         <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">

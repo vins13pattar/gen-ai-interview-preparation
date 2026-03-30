@@ -84,6 +84,12 @@ export async function getProviderSettingsPublic(): Promise<{
   return { configured: true, provider, model, baseUrl };
 }
 
+function httpStatusFromError(err: unknown): number | undefined {
+  if (!err || typeof err !== 'object') return undefined;
+  const s = (err as { status?: unknown }).status;
+  return typeof s === 'number' ? s : undefined;
+}
+
 export async function validateAPIKey(apiKey: string, config: APIKeyConfig): Promise<{ valid: boolean; error?: string }> {
   const model =
     config.model?.trim() || DEFAULT_MODELS[config.provider];
@@ -97,14 +103,39 @@ export async function validateAPIKey(apiKey: string, config: APIKeyConfig): Prom
     });
     return { valid: true };
   } catch (err: unknown) {
+    const status = httpStatusFromError(err);
     const message = err instanceof Error ? err.message : String(err);
-    if (message.includes('401') || message.includes('Unauthorized') || message.includes('invalid_api_key')) {
+
+    if (status === 401 || status === 403) {
       return { valid: false, error: 'Invalid API key. Please check and try again.' };
     }
-    if (message.includes('429') || message.includes('quota')) {
-      return { valid: false, error: 'API quota exceeded. Please check your billing.' };
+    if (status === 404) {
+      return {
+        valid: false,
+        error: 'Model or endpoint not found. Check the model name and base URL.',
+      };
     }
-    return { valid: false, error: `Validation failed: ${message}` };
+    if (status === 429) {
+      return { valid: false, error: 'API quota exceeded or rate limited. Try again later or check billing.' };
+    }
+
+    const lower = message.toLowerCase();
+    if (
+      lower.includes('401') ||
+      lower.includes('unauthorized') ||
+      lower.includes('invalid_api_key') ||
+      lower.includes('authentication') ||
+      lower.includes('incorrect api key')
+    ) {
+      return { valid: false, error: 'Invalid API key. Please check and try again.' };
+    }
+    if (lower.includes('429') || lower.includes('quota') || lower.includes('rate_limit')) {
+      return { valid: false, error: 'API quota exceeded or rate limited. Try again later or check billing.' };
+    }
+
+    const short =
+      message.length > 200 ? `${message.slice(0, 197)}…` : message;
+    return { valid: false, error: `Could not verify the connection: ${short}` };
   }
 }
 

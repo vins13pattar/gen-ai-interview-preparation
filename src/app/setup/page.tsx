@@ -62,7 +62,9 @@ export default function SetupPage() {
             Gen AI Interview Prep
           </h1>
           <p className="text-base text-zinc-600 dark:text-zinc-300">
-            Add your API key to get started. Keys are encrypted and stored locally — never sent to any server other than your configured provider.
+            Add your API key to get started. Keys are encrypted and stored locally — never sent to any server other than
+            your configured provider. We verify the key with a tiny test call before saving; if it fails, nothing is
+            stored.
           </p>
         </div>
 
