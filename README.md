@@ -2,7 +2,7 @@
 
 **A free, open-source, self-hosted tool for Gen AI developer interview preparation.**
 
-Browse 104 realistic interview questions across 8 Gen AI domains, each paired with a curated ideal answer — the kind of answer that would impress a senior interviewer. No timers, no scores, no pressure.
+Browse 500+ realistic interview questions across 8 Gen AI domains, each paired with a curated ideal answer — the kind of answer that would impress a senior interviewer. No timers, no scores, no pressure.
 
 **Bring Your Own Key (BYOK):** Supply your own OpenAI, Anthropic, or Ollama API key. Keys are encrypted with AES-256 and stored locally — never sent anywhere except your configured LLM provider.
 
@@ -40,7 +40,7 @@ cp .env.example .env
 pnpm setup
 ```
 
-This creates a local SQLite database and seeds it with 104 questions. No API key needed for this step.
+This creates a local SQLite database and seeds it with 500+ questions. No API key needed for this step.
 
 ### 3. Start the app
 
@@ -81,7 +81,7 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll be p
 - **Bookmark questions** as "Studied" or "Needs Review"
 - **Full-text search** across all questions and answers
 - **Random Question mode** per domain for quick 10-minute reviews
-- **Regenerate question bank** for any domain using your API key — new questions are appended, never replacing existing ones
+- **Add more questions (AI)** per domain using your API key — new questions are appended to the bank, never replacing existing ones
 - **JSON export** of the full question bank for contributor workflows
 
 ## Security

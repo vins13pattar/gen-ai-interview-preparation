@@ -161,7 +161,7 @@ class OpenAIAdapter implements LLMAdapter {
 class AnthropicAdapter implements LLMAdapter {
   constructor(private config: LLMConfig) {}
 
-  async generate({ systemPrompt, userPrompt, model, maxTokens }: Parameters<LLMAdapter['generate']>[0]): Promise<string> {
+  async generate({ systemPrompt, userPrompt, model, maxTokens, responseFormat }: Parameters<LLMAdapter['generate']>[0]): Promise<string> {
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const client = new Anthropic({ apiKey: this.config.apiKey });
     const response = await client.messages.create({
@@ -171,7 +171,8 @@ class AnthropicAdapter implements LLMAdapter {
       messages: [{ role: 'user', content: userPrompt }],
     });
     const block = response.content[0];
-    return block.type === 'text' ? block.text : '';
+    const text = block.type === 'text' ? block.text : '';
+    return responseFormat === 'json' ? normalizeJsonGenerationToQuestionsArray(text) : text;
   }
 }
 

@@ -42,8 +42,8 @@ export default function DomainPage() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(true);
-  const [regenerating, setRegenerating] = useState(false);
-  const [regenResult, setRegenResult] = useState<string>('');
+  const [generatingMore, setGeneratingMore] = useState(false);
+  const [generateResult, setGenerateResult] = useState<string>('');
   const [randomMode, setRandomMode] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -96,22 +96,22 @@ export default function DomainPage() {
     setSearch(searchInput);
   };
 
-  const handleRegenerate = async () => {
+  const handleAddMoreQuestions = async () => {
     if (!domain) return;
-    setRegenerating(true);
-    setRegenResult('');
+    setGeneratingMore(true);
+    setGenerateResult('');
     const res = await fetch('/api/regenerate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ domainId: domain.id }),
     });
     const data = await res.json();
-    setRegenerating(false);
+    setGeneratingMore(false);
     if (res.ok) {
-      setRegenResult(`${data.added} new questions added. ${data.skipped} duplicates skipped.`);
+      setGenerateResult(`${data.added} new questions added. ${data.skipped} duplicates skipped.`);
       fetchQuestions();
     } else {
-      setRegenResult(`Error: ${data.error}`);
+      setGenerateResult(`Error: ${data.error}`);
     }
   };
 
@@ -267,17 +267,17 @@ export default function DomainPage() {
           </div>
         </div>
 
-        {/* Regenerate */}
+        {/* AI: add more questions (appends; does not replace existing) */}
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <button
             type="button"
-            onClick={handleRegenerate}
-            disabled={regenerating}
+            onClick={handleAddMoreQuestions}
+            disabled={generatingMore}
             className="min-h-11 w-fit rounded-lg border border-zinc-300 px-4 py-2.5 text-base font-medium text-zinc-800 transition-colors hover:border-zinc-400 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800/50"
           >
-            {regenerating ? 'Generating...' : 'Regenerate Questions'}
+            {generatingMore ? 'Generating...' : 'Add more questions (AI)'}
           </button>
-          {regenResult && <span className="text-base text-zinc-600 dark:text-zinc-400">{regenResult}</span>}
+          {generateResult && <span className="text-base text-zinc-600 dark:text-zinc-400">{generateResult}</span>}
         </div>
 
         {/* Questions */}
@@ -285,7 +285,7 @@ export default function DomainPage() {
           <div className="py-20 text-center text-base text-zinc-600 dark:text-zinc-400">Loading questions…</div>
         ) : questions.length === 0 ? (
           <div className="py-20 text-center text-base text-zinc-600 dark:text-zinc-400">
-            No questions found. Try different filters or regenerate.
+            No questions found. Try different filters, or add AI-generated questions with the button above (API key required in Settings).
           </div>
         ) : (
           <div className="space-y-4">

@@ -51,8 +51,18 @@ Return ONLY the JSON object with a "questions" array — no markdown, no explana
       maxTokens: 8000,
       responseFormat: 'json',
     });
-    generated = JSON.parse(raw);
-    if (!Array.isArray(generated)) throw new Error('Expected JSON array');
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      generated = parsed as GeneratedQuestion[];
+    } else if (
+      parsed &&
+      typeof parsed === 'object' &&
+      Array.isArray((parsed as { questions?: unknown }).questions)
+    ) {
+      generated = (parsed as { questions: GeneratedQuestion[] }).questions;
+    } else {
+      throw new Error('Expected JSON array or { "questions": [...] }');
+    }
   } catch (err) {
     return NextResponse.json({ error: `Generation failed: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 });
   }
