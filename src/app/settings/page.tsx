@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [configured, setConfigured] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,10 +30,14 @@ export default function SettingsPage() {
     setError('');
     setSuccess('');
 
+    const payload: Record<string, string> = { provider, model };
+    if (apiKey.trim()) payload.apiKey = apiKey.trim();
+    if (provider === 'ollama') payload.baseUrl = baseUrl.trim();
+
     const res = await fetch('/api/apikey', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey, provider, model, baseUrl: baseUrl || undefined }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -51,6 +56,32 @@ export default function SettingsPage() {
     await fetch('/api/apikey', { method: 'DELETE' });
     router.push('/setup');
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await fetch('/api/apikey');
+      const data = (await res.json()) as {
+        configured?: boolean;
+        provider?: string;
+        model?: string | null;
+        baseUrl?: string | null;
+      };
+      if (cancelled || !data.configured) return;
+      setConfigured(true);
+      if (data.provider === 'openai' || data.provider === 'anthropic' || data.provider === 'ollama') {
+        setProvider(data.provider);
+        setModel(
+          data.model?.trim() ||
+            PROVIDERS.find((x) => x.value === data.provider)!.defaultModel,
+        );
+      }
+      if (data.baseUrl?.trim()) setBaseUrl(data.baseUrl.trim());
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -87,13 +118,19 @@ export default function SettingsPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-800 dark:text-zinc-200">New API Key</label>
+              <label className="mb-1 block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                {configured ? 'New API Key (optional)' : 'API Key'}
+              </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                required
-                placeholder="Enter new key to replace existing"
+                required={!configured}
+                placeholder={
+                  configured
+                    ? 'Leave blank to keep current key'
+                    : 'Enter new key to replace existing'
+                }
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400/20"
               />
             </div>

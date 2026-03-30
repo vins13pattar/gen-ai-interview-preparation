@@ -6,7 +6,13 @@
 
 import { db } from './db';
 import { encrypt, decrypt } from './crypto';
-import { createAdapter, LLMConfig, LLMProvider } from './llm';
+import { createAdapter, DEFAULT_MODELS, LLMConfig, LLMProvider } from './llm';
+
+const PROVIDERS: LLMProvider[] = ['openai', 'anthropic', 'ollama'];
+
+export function isLLMProvider(value: unknown): value is LLMProvider {
+  return typeof value === 'string' && PROVIDERS.includes(value as LLMProvider);
+}
 
 const CONFIG_KEY_PROVIDER = 'llm_provider';
 const CONFIG_KEY_API_KEY = 'llm_api_key_encrypted';
@@ -30,7 +36,10 @@ export async function saveAPIKey(apiKey: string, config: APIKeyConfig): Promise<
   await Promise.all([
     upsert(CONFIG_KEY_API_KEY, encrypted),
     upsert(CONFIG_KEY_PROVIDER, config.provider),
-    upsert(CONFIG_KEY_BASE_URL, config.baseUrl ?? ''),
+    upsert(
+      CONFIG_KEY_BASE_URL,
+      config.provider === 'ollama' ? (config.baseUrl ?? '') : '',
+    ),
     upsert(CONFIG_KEY_MODEL, config.model ?? ''),
   ]);
 }
@@ -54,13 +63,36 @@ export async function hasAPIKey(): Promise<boolean> {
   return !!row;
 }
 
+/** Non-secret fields for Settings UI (no key material). */
+export async function getProviderSettingsPublic(): Promise<{
+  configured: boolean;
+  provider: LLMProvider | null;
+  model: string | null;
+  baseUrl: string | null;
+}> {
+  const rows = await db.appConfig.findMany({
+    where: { key: { in: [CONFIG_KEY_API_KEY, CONFIG_KEY_PROVIDER, CONFIG_KEY_BASE_URL, CONFIG_KEY_MODEL] } },
+  });
+  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  if (!map[CONFIG_KEY_API_KEY]) {
+    return { configured: false, provider: null, model: null, baseUrl: null };
+  }
+  const providerRaw = map[CONFIG_KEY_PROVIDER];
+  const provider = isLLMProvider(providerRaw) ? providerRaw : null;
+  const model = map[CONFIG_KEY_MODEL]?.trim() || null;
+  const baseUrl = map[CONFIG_KEY_BASE_URL]?.trim() || null;
+  return { configured: true, provider, model, baseUrl };
+}
+
 export async function validateAPIKey(apiKey: string, config: APIKeyConfig): Promise<{ valid: boolean; error?: string }> {
+  const model =
+    config.model?.trim() || DEFAULT_MODELS[config.provider];
   try {
     const adapter = createAdapter({ ...config, apiKey });
     await adapter.generate({
       systemPrompt: 'Respond with exactly: ok',
       userPrompt: 'ok',
-      model: config.model ?? 'gpt-4o-mini',
+      model,
       maxTokens: 5,
     });
     return { valid: true };
