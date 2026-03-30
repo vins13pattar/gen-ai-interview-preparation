@@ -36,7 +36,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-white dark:bg-zinc-950">{children}</body>
+      <body className="min-h-full flex flex-col bg-zinc-50 font-sans text-foreground dark:bg-zinc-950">
+        {children}
+      </body>
     </html>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ThemeToggle from '@/components/ThemeToggle';
 
 type Provider = 'openai' | 'anthropic' | 'ollama';
 
@@ -51,32 +52,35 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-zinc-100 p-8">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 dark:bg-zinc-950">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
+      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-zinc-900 mb-2">Gen AI Interview Prep</h1>
-          <p className="text-zinc-500 text-sm">
+          <h1 className="mb-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Gen AI Interview Prep</h1>
+          <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
             Add your API key to get started. Keys are encrypted and stored locally — never sent to any server other than your configured provider.
           </p>
         </div>
 
-        <div className="mb-6 p-3 bg-zinc-50 rounded-lg border border-zinc-100 text-xs text-zinc-500">
+        <div className="mb-6 rounded-lg border border-zinc-200 bg-zinc-100 p-3 text-xs leading-relaxed text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
           Your API key is encrypted with AES-256 and stored in a local SQLite database. It is never logged or shared.
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-2">Provider</label>
+            <label className="mb-2 block text-sm font-medium text-zinc-800 dark:text-zinc-200">Provider</label>
             <div className="grid grid-cols-1 gap-2">
               {PROVIDERS.map((p) => (
                 <button
                   key={p.value}
                   type="button"
                   onClick={() => handleProviderChange(p.value)}
-                  className={`text-left px-4 py-3 rounded-lg border text-sm transition-colors ${
+                  className={`rounded-lg border px-4 py-3 text-left text-sm transition-colors ${
                     provider === p.value
-                      ? 'border-zinc-900 bg-zinc-900 text-white'
-                      : 'border-zinc-200 hover:border-zinc-300 text-zinc-700'
+                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950'
+                      : 'border-zinc-300 text-zinc-800 hover:border-zinc-400 dark:border-zinc-600 dark:text-zinc-200 dark:hover:border-zinc-500'
                   }`}
                 >
                   {p.label}
@@ -86,7 +90,7 @@ export default function SetupPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">
+            <label className="mb-1 block text-sm font-medium text-zinc-800 dark:text-zinc-200">
               API Key {provider === 'ollama' ? '(optional)' : ''}
             </label>
             <input
@@ -95,35 +99,35 @@ export default function SetupPage() {
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={selectedProvider.placeholder}
               required={provider !== 'ollama'}
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400/20"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Model</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-800 dark:text-zinc-200">Model</label>
             <input
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-400/20"
             />
           </div>
 
           {provider === 'ollama' && (
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Base URL</label>
+              <label className="mb-1 block text-sm font-medium text-zinc-800 dark:text-zinc-200">Base URL</label>
               <input
                 type="url"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
                 placeholder="http://localhost:11434/v1"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400/20"
               />
             </div>
           )}
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-sm">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
               {error}
             </div>
           )}
@@ -131,7 +135,7 @@ export default function SetupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+            className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
             {loading ? 'Validating key...' : 'Save & Start Studying'}
           </button>

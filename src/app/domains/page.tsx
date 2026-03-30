@@ -38,8 +38,8 @@ export default async function DomainsPage() {
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="mb-10 flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Gen AI Interview Prep</h1>
-            <p className="text-zinc-500 dark:text-zinc-400">
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">Gen AI Interview Prep</h1>
+            <p className="text-zinc-600 dark:text-zinc-300 max-w-prose leading-relaxed">
               Browse {totalQuestions} questions across {domains.length} domains.
               Study at your own pace — no timers, no scores.
             </p>
@@ -59,13 +59,13 @@ export default async function DomainsPage() {
               <Link
                 key={domain.id}
                 href={`/domains/${domain.slug}`}
-                className="group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-xl p-6 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-sm transition-all"
+                className="group rounded-xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
               >
                 <div className="flex items-start justify-between mb-3">
-                  <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-700 dark:group-hover:text-zinc-300">{domain.name}</h2>
-                  <span className="text-sm text-zinc-400 shrink-0 ml-2">{domain._count.questions} Qs</span>
+                  <h2 className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-zinc-800 dark:group-hover:text-zinc-100">{domain.name}</h2>
+                  <span className="ml-2 shrink-0 text-sm font-medium text-zinc-600 dark:text-zinc-400">{domain._count.questions} Qs</span>
                 </div>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">{domain.description}</p>
+                <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-300">{domain.description}</p>
 
                 {/* Study progress */}
                 {hasProgress && (
@@ -80,17 +80,17 @@ export default async function DomainsPage() {
                         style={{ width: `${reviewPct}%` }}
                       />
                     </div>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1.5">
-                      {stats.studied > 0 && <span className="text-emerald-600 dark:text-emerald-500">{stats.studied} studied</span>}
+                    <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">
+                      {stats.studied > 0 && <span className="font-medium text-emerald-700 dark:text-emerald-400">{stats.studied} studied</span>}
                       {stats.studied > 0 && stats.needs_review > 0 && <span> · </span>}
-                      {stats.needs_review > 0 && <span className="text-amber-600 dark:text-amber-500">{stats.needs_review} needs review</span>}
-                      <span className="ml-1 text-zinc-400">/ {total} total</span>
+                      {stats.needs_review > 0 && <span className="font-medium text-amber-700 dark:text-amber-400">{stats.needs_review} needs review</span>}
+                      <span className="ml-1 text-zinc-500 dark:text-zinc-500">/ {total} total</span>
                     </p>
                   </div>
                 )}
 
                 {domain.lastGeneratedAt && !hasProgress && (
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-3">
+                  <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
                     Last refreshed {new Date(domain.lastGeneratedAt).toLocaleDateString()}
                   </p>
                 )}
@@ -100,11 +100,19 @@ export default async function DomainsPage() {
         </div>
 
         <div className="mt-8 flex gap-3 text-sm">
-          <Link href="/settings" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+          <Link
+            href="/settings"
+            className="font-medium text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-zinc-50"
+          >
             Settings
           </Link>
-          <span className="text-zinc-300 dark:text-zinc-700">·</span>
-          <a href="/api/export" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+          <span className="text-zinc-400 dark:text-zinc-600" aria-hidden>
+            ·
+          </span>
+          <a
+            href="/api/export"
+            className="font-medium text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-zinc-50"
+          >
             Export JSON
           </a>
         </div>

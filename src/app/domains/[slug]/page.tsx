@@ -169,17 +169,27 @@ export default function DomainPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [questions, randomMode, handleBookmark, fetchQuestions]);
 
-  if (!domain) return <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-400">Loading...</div>;
+  if (!domain)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">
+        Loading…
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/domains" className="text-sm text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 mb-3 inline-block">← All Domains</Link>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{domain.name}</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{domain.description}</p>
-          <div className="flex items-center gap-4 mt-3 text-sm text-zinc-400">
+          <Link
+            href="/domains"
+            className="mb-3 inline-block text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          >
+            ← All Domains
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{domain.name}</h1>
+          <p className="mt-1 max-w-prose text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{domain.description}</p>
+          <div className="mt-3 flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
             <span>{total} questions</span>
             {domain.lastGeneratedAt && (
               <span>Last refreshed {new Date(domain.lastGeneratedAt).toLocaleDateString()}</span>
@@ -188,7 +198,7 @@ export default function DomainPage() {
         </div>
 
         {/* Controls */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-xl p-4 mb-5 space-y-3">
+        <div className="mb-5 space-y-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
           {/* Search */}
           <form onSubmit={handleSearch} className="flex gap-2">
             <input
@@ -196,10 +206,26 @@ export default function DomainPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search questions..."
-              className="flex-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+              className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/15 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400/20"
             />
-            <button type="submit" className="px-4 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm hover:bg-zinc-800 dark:hover:bg-zinc-200">Search</button>
-            {search && <button type="button" onClick={() => { setSearch(''); setSearchInput(''); }} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 text-sm">Clear</button>}
+            <button
+              type="submit"
+              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            >
+              Search
+            </button>
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setSearchInput('');
+                }}
+                className="px-3 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                Clear
+              </button>
+            )}
           </form>
 
           {/* Filters */}
@@ -207,26 +233,29 @@ export default function DomainPage() {
             {(['all', 'foundational', 'intermediate', 'advanced'] as Difficulty[]).map((d) => (
               <button
                 key={d}
+                type="button"
                 onClick={() => setDifficulty(d)}
-                className={`px-3 py-1 rounded-full text-xs capitalize transition-colors ${difficulty === d ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium capitalize transition-colors ${difficulty === d ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
               >
                 {d}
               </button>
             ))}
-            <div className="w-px bg-zinc-200 dark:bg-zinc-700 mx-1" />
+            <div className="mx-1 w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
             {(['all', 'studied', 'needs_review'] as BookmarkFilter[]).map((b) => (
               <button
                 key={b}
+                type="button"
                 onClick={() => setBookmarkFilter(b)}
-                className={`px-3 py-1 rounded-full text-xs capitalize transition-colors ${bookmarkFilter === b ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium capitalize transition-colors ${bookmarkFilter === b ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
               >
                 {b.replace('_', ' ')}
               </button>
             ))}
-            <div className="w-px bg-zinc-200 dark:bg-zinc-700 mx-1" />
+            <div className="mx-1 w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
             <button
+              type="button"
               onClick={() => setRandomMode(!randomMode)}
-              className={`px-3 py-1 rounded-full text-xs transition-colors ${randomMode ? 'bg-amber-500 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${randomMode ? 'bg-amber-600 text-white dark:bg-amber-500' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
             >
               Random
             </button>
@@ -236,20 +265,23 @@ export default function DomainPage() {
         {/* Regenerate */}
         <div className="mb-5 flex items-center gap-3">
           <button
+            type="button"
             onClick={handleRegenerate}
             disabled={regenerating}
-            className="px-4 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-500 disabled:opacity-50 transition-colors"
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 transition-colors hover:border-zinc-400 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800/50"
           >
             {regenerating ? 'Generating...' : 'Regenerate Questions'}
           </button>
-          {regenResult && <span className="text-sm text-zinc-500">{regenResult}</span>}
+          {regenResult && <span className="text-sm text-zinc-600 dark:text-zinc-400">{regenResult}</span>}
         </div>
 
         {/* Questions */}
         {loading ? (
-          <div className="text-center py-20 text-zinc-400">Loading questions...</div>
+          <div className="py-20 text-center text-zinc-600 dark:text-zinc-400">Loading questions…</div>
         ) : questions.length === 0 ? (
-          <div className="text-center py-20 text-zinc-400">No questions found. Try different filters or regenerate.</div>
+          <div className="py-20 text-center text-zinc-600 dark:text-zinc-400">
+            No questions found. Try different filters or regenerate.
+          </div>
         ) : (
           <div className="space-y-3">
             {questions.map((q, i) => (
@@ -265,14 +297,49 @@ export default function DomainPage() {
 
         {/* Keyboard shortcuts hint */}
         {questions.length > 0 && (
-          <div className="mt-8 py-4 border-t border-zinc-200 dark:border-zinc-800">
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center mb-2 font-medium uppercase tracking-wide">Keyboard Shortcuts</p>
-            <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-xs text-zinc-500 dark:text-zinc-500">
-              <span><kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">→</kbd> <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">j</kbd> next</span>
-              <span><kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">←</kbd> <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">k</kbd> prev</span>
-              <span><kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">s</kbd> mark studied</span>
-              <span><kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">r</kbd> needs review</span>
-              {randomMode && <span><kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">space</kbd> next random</span>}
+          <div className="mt-8 border-t border-zinc-200 py-4 dark:border-zinc-800">
+            <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
+              Keyboard shortcuts
+            </p>
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-xs text-zinc-700 dark:text-zinc-300">
+              <span>
+                <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                  →
+                </kbd>{' '}
+                <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                  j
+                </kbd>{' '}
+                next
+              </span>
+              <span>
+                <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                  ←
+                </kbd>{' '}
+                <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                  k
+                </kbd>{' '}
+                prev
+              </span>
+              <span>
+                <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                  s
+                </kbd>{' '}
+                mark studied
+              </span>
+              <span>
+                <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                  r
+                </kbd>{' '}
+                needs review
+              </span>
+              {randomMode && (
+                <span>
+                  <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                    space
+                  </kbd>{' '}
+                  next random
+                </span>
+              )}
             </div>
           </div>
         )}
