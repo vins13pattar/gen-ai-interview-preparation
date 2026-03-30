@@ -40,7 +40,7 @@ Domain description: ${domain.description}
 
 Focus on questions that senior Gen AI engineers and AI labs actually ask in interviews.
 Include a mix of difficulties: ~30% foundational, ~50% intermediate, ~20% advanced.
-Return ONLY the JSON array — no markdown, no explanation.`;
+Return ONLY the JSON object with a "questions" array — no markdown, no explanation.`;
 
   let generated: GeneratedQuestion[];
   try {

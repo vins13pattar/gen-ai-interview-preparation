@@ -68,7 +68,7 @@ export default function SetupPage() {
           </p>
         </div>
 
-        <div className="mb-6 rounded-lg border border-zinc-200 bg-zinc-100 p-4 text-sm leading-relaxed text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+        <div className="mb-6 rounded-lg border border-zinc-200 bg-zinc-100 p-4 text-base leading-relaxed text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
           Your API key is encrypted with AES-256 and stored in a local SQLite database. It is never logged or shared.
         </div>
 

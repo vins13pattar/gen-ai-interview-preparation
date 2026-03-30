@@ -171,24 +171,27 @@ export default function DomainPage() {
 
   if (!domain)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-base text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">
+      <div className="flex flex-1 items-center justify-center bg-zinc-50 py-24 text-base text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">
         Loading…
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className="bg-zinc-50 dark:bg-zinc-950">
+      <div className="mx-auto max-w-5xl px-4 pb-12 pt-6 sm:px-6 sm:pb-16 sm:pt-8">
         {/* Header */}
         <div className="mb-8">
-          <Link
-            href="/domains"
-            className="mb-4 inline-block text-base font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            ← All Domains
-          </Link>
+          <nav aria-label="Breadcrumb" className="mb-4">
+            <Link
+              href="/domains"
+              className="inline-flex items-center gap-2 text-base font-medium text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              <span aria-hidden>←</span>
+              All domains
+            </Link>
+          </nav>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">{domain.name}</h1>
-          <p className="mt-2 max-w-prose text-base text-zinc-600 dark:text-zinc-300">{domain.description}</p>
+          <p className="mt-2 max-w-prose text-lg text-zinc-600 dark:text-zinc-300">{domain.description}</p>
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-base text-zinc-600 dark:text-zinc-400">
             <span>{total} questions</span>
             {domain.lastGeneratedAt && (
@@ -197,8 +200,8 @@ export default function DomainPage() {
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="mb-6 space-y-4 rounded-xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        {/* Controls — sticky below app header for long question lists */}
+        <div className="sticky top-14 z-30 mb-6 space-y-4 rounded-xl border border-zinc-200/90 bg-white/95 p-4 shadow-md shadow-zinc-900/5 ring-1 ring-zinc-900/[0.04] backdrop-blur-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900/95 dark:shadow-black/30 dark:ring-white/[0.06]">
           {/* Search */}
           <form onSubmit={handleSearch} className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
             <input
@@ -237,7 +240,7 @@ export default function DomainPage() {
                 key={d}
                 type="button"
                 onClick={() => setDifficulty(d)}
-                className={`rounded-full px-3.5 py-2 text-sm font-medium capitalize transition-colors ${difficulty === d ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
+                className={`rounded-full px-3.5 py-2 text-base font-medium capitalize transition-colors ${difficulty === d ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
               >
                 {d}
               </button>
@@ -248,7 +251,7 @@ export default function DomainPage() {
                 key={b}
                 type="button"
                 onClick={() => setBookmarkFilter(b)}
-                className={`rounded-full px-3.5 py-2 text-sm font-medium capitalize transition-colors ${bookmarkFilter === b ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
+                className={`rounded-full px-3.5 py-2 text-base font-medium capitalize transition-colors ${bookmarkFilter === b ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
               >
                 {b.replace('_', ' ')}
               </button>
@@ -257,7 +260,7 @@ export default function DomainPage() {
             <button
               type="button"
               onClick={() => setRandomMode(!randomMode)}
-              className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${randomMode ? 'bg-amber-600 text-white dark:bg-amber-500' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
+              className={`rounded-full px-3.5 py-2 text-base font-medium transition-colors ${randomMode ? 'bg-amber-600 text-white dark:bg-amber-500' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
             >
               Random
             </button>
@@ -300,10 +303,10 @@ export default function DomainPage() {
         {/* Keyboard shortcuts hint */}
         {questions.length > 0 && (
           <div className="mt-10 border-t border-zinc-200 py-6 dark:border-zinc-800">
-            <p className="mb-3 text-center text-sm font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
+            <p className="mb-3 text-center text-base font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
               Keyboard shortcuts
             </p>
-            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-base text-zinc-700 dark:text-zinc-300">
               <span>
                 <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
                   →

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
 import Link from 'next/link';
-
+import { useState, useRef } from 'react';
 type ImportResult = {
   imported: number;
   duplicates: number;
@@ -48,16 +47,10 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-6 dark:bg-zinc-950">
+    <div className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-8 sm:px-6 sm:py-12 dark:bg-zinc-950">
       <div className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-10">
         <div className="mb-8">
-          <Link
-            href="/domains"
-            className="text-base font-medium text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            ← Back to domains
-          </Link>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Import questions</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Import questions</h1>
           <p className="mt-2 text-base text-zinc-600 dark:text-zinc-400">
             Upload a JSON file exported from this app to import questions in bulk.
           </p>
@@ -74,7 +67,7 @@ export default function ImportPage() {
               className="block w-full cursor-pointer text-base text-zinc-800 file:mr-4 file:rounded-lg file:border file:border-zinc-300 file:bg-zinc-50 file:px-4 file:py-2.5 file:text-base file:font-medium file:text-zinc-800 hover:file:bg-zinc-100 dark:text-zinc-200 dark:file:border-zinc-600 dark:file:bg-zinc-800 dark:file:text-zinc-100 dark:hover:file:bg-zinc-700"
             />
             {file && (
-              <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="mt-2 text-base text-zinc-500 dark:text-zinc-400">
                 {file.name} — {(file.size / 1024).toFixed(1)} KB
               </p>
             )}

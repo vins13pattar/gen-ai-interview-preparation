@@ -22,6 +22,122 @@ export interface LLMConfig {
   model?: string;
 }
 
+function normalizeOpenAICompatibleBaseUrl(baseUrl?: string): string {
+  const fallback = 'http://localhost:11434/v1';
+  const raw = baseUrl?.trim();
+  if (!raw) return fallback;
+
+  // OpenAI-compatible local servers usually expose /v1; add it when missing.
+  const withoutTrailingSlash = raw.replace(/\/+$/, '');
+  if (/\/v1$/i.test(withoutTrailingSlash)) return withoutTrailingSlash;
+  return `${withoutTrailingSlash}/v1`;
+}
+
+function extractOpenAITextContent(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+
+  const textParts = content
+    .map((part) => {
+      if (!part || typeof part !== 'object') return '';
+      const maybeText = (part as { text?: unknown }).text;
+      return typeof maybeText === 'string' ? maybeText : '';
+    })
+    .filter(Boolean);
+
+  return textParts.join('\n').trim();
+}
+
+/** OpenAI Chat Completions now reject `json_object`; use structured outputs (`json_schema`) instead. */
+const OPENAI_INTERVIEW_QUESTIONS_RESPONSE_FORMAT = {
+  type: 'json_schema' as const,
+  json_schema: {
+    name: 'interview_questions',
+    description: 'Generated interview questions with ideal answers',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        questions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              question: { type: 'string' },
+              difficulty: { type: 'string', enum: ['foundational', 'intermediate', 'advanced'] },
+              ideal_answer: {
+                type: 'object',
+                properties: {
+                  core_concept: { type: 'string' },
+                  interview_framing: { type: 'string' },
+                  key_points: { type: 'array', items: { type: 'string' } },
+                  follow_up_questions: { type: 'array', items: { type: 'string' } },
+                },
+                required: ['core_concept', 'interview_framing', 'key_points', 'follow_up_questions'],
+                additionalProperties: false,
+              },
+              tags: { type: 'array', items: { type: 'string' } },
+            },
+            required: ['question', 'difficulty', 'ideal_answer', 'tags'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['questions'],
+      additionalProperties: false,
+    },
+  },
+};
+
+function normalizeJsonGenerationToQuestionsArray(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+
+  const candidates: string[] = [trimmed];
+
+  // Common failure mode from models: wrapping valid JSON in markdown code fences.
+  const fencedMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fencedMatch?.[1]) {
+    candidates.push(fencedMatch[1].trim());
+  }
+
+  // If there is extra text around JSON, try slicing from first object/array token.
+  const firstBrace = trimmed.indexOf('{');
+  const firstBracket = trimmed.indexOf('[');
+  const starts = [firstBrace, firstBracket].filter((idx) => idx >= 0);
+  if (starts.length > 0) {
+    const start = Math.min(...starts);
+    candidates.push(trimmed.slice(start).trim());
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed: unknown = JSON.parse(candidate);
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        !Array.isArray(parsed) &&
+        Array.isArray((parsed as { questions?: unknown }).questions)
+      ) {
+        return JSON.stringify((parsed as { questions: unknown[] }).questions);
+      }
+      if (Array.isArray(parsed)) {
+        return JSON.stringify(parsed);
+      }
+    } catch {
+      // Try next candidate variant.
+    }
+  }
+
+  try {
+    // Preserve prior behavior of returning raw when parse cannot be normalized.
+    JSON.parse(trimmed);
+  } catch {
+    /* caller may parse; return raw */
+  }
+  return text;
+}
+
 class OpenAIAdapter implements LLMAdapter {
   constructor(private config: LLMConfig) {}
 
@@ -31,13 +147,14 @@ class OpenAIAdapter implements LLMAdapter {
     const response = await client.chat.completions.create({
       model,
       max_tokens: maxTokens,
-      response_format: responseFormat === 'json' ? { type: 'json_object' } : undefined,
+      response_format: responseFormat === 'json' ? OPENAI_INTERVIEW_QUESTIONS_RESPONSE_FORMAT : undefined,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
     });
-    return response.choices[0]?.message?.content ?? '';
+    const text = extractOpenAITextContent(response.choices[0]?.message?.content);
+    return responseFormat === 'json' ? normalizeJsonGenerationToQuestionsArray(text) : text;
   }
 }
 
@@ -65,18 +182,21 @@ class OllamaAdapter implements LLMAdapter {
     const { default: OpenAI } = await import('openai');
     const client = new OpenAI({
       apiKey: this.config.apiKey || 'ollama',
-      baseURL: this.config.baseUrl || 'http://localhost:11434/v1',
+      baseURL: normalizeOpenAICompatibleBaseUrl(this.config.baseUrl),
     });
+    // LM Studio and other OpenAI-compatible locals often reject `json_object` (same 400 as
+    // api.openai.com: only `json_schema` or `text`). We use plain text + prompts and normalize below.
     const response = await client.chat.completions.create({
       model,
       max_tokens: maxTokens,
-      response_format: responseFormat === 'json' ? { type: 'json_object' } : undefined,
+      response_format: responseFormat === 'json' ? { type: 'text' } : undefined,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
     });
-    return response.choices[0]?.message?.content ?? '';
+    const text = extractOpenAITextContent(response.choices[0]?.message?.content);
+    return responseFormat === 'json' ? normalizeJsonGenerationToQuestionsArray(text) : text;
   }
 }
 
@@ -108,7 +228,7 @@ Each question must be:
 - Calibrated to the requested difficulty level
 - Paired with an ideal answer that would impress a senior interviewer
 
-Return ONLY a valid JSON array with no additional text. Each item must follow this exact schema:
+Return ONLY a JSON object with a single property "questions" whose value is an array. No markdown or extra text. Each array item must follow this exact schema:
 {
   "question": "string",
   "difficulty": "foundational" | "intermediate" | "advanced",

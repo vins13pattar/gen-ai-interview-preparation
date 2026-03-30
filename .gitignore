@@ -45,3 +45,6 @@ prisma/local.db
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sensitive planning docs
+PRD_AI_Interview_Prep_App.md

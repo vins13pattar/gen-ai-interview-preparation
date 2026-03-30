@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import ThemeToggle from '@/components/ThemeToggle';
 
 type Provider = 'openai' | 'anthropic' | 'ollama';
 
@@ -84,17 +82,8 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="mx-auto max-w-xl px-4 py-10 sm:px-6 sm:py-14">
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <Link
-            href="/domains"
-            className="text-base font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            ← Back to Domains
-          </Link>
-          <ThemeToggle />
-        </div>
+    <div className="bg-zinc-50 dark:bg-zinc-950">
+      <div className="mx-auto max-w-xl px-4 pb-12 pt-6 sm:px-6 sm:pb-16 sm:pt-8">
         <h1 className="mb-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Settings</h1>
         <p className="mb-8 text-base text-zinc-600 dark:text-zinc-400">
           Update your BYOK provider, model, or rotate the API key. Keys stay encrypted locally. Before anything is

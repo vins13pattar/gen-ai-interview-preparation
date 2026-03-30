@@ -25,13 +25,40 @@
   --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Slightly larger type scale for comfortable reading (body ~18px vs 16px). */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.25;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.625;
+  --text-lg: 1.3125rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1.45;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.35;
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: 1.25;
+  --text-4xl: 2.5rem;
+  --text-4xl--line-height: 1.2;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  font-size: 1rem;
   line-height: 1.625;
   -webkit-font-smoothing: antialiased;
 }
