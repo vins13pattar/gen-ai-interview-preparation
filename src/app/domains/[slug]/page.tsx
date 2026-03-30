@@ -49,7 +49,9 @@ export default function DomainPage() {
 
   // Keep a stable ref to activeIndex for the keyboard handler
   const activeIndexRef = useRef<number | null>(null);
-  activeIndexRef.current = activeIndex;
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   // Fetch domain info
   useEffect(() => {
