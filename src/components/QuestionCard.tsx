@@ -77,7 +77,7 @@ export default function QuestionCard({ question, onBookmark, focused = false }: 
         onClick={() => setExpanded(!expanded)}
         className="w-full text-left p-5 flex items-start gap-3"
       >
-        <span className="mt-0.5 shrink-0 text-zinc-400 dark:text-zinc-500">
+        <span className="mt-0.5 shrink-0 text-zinc-600 dark:text-zinc-400">
           {expanded ? '▼' : '▶'}
         </span>
         <div className="flex-1 min-w-0">
@@ -105,18 +105,18 @@ export default function QuestionCard({ question, onBookmark, focused = false }: 
         <div className="px-5 pb-5 border-t border-zinc-50 dark:border-zinc-800">
           <div className="pt-4 space-y-4">
             <div>
-              <h4 className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-1.5">Core Concept</h4>
+              <h4 className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Core Concept</h4>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{question.idealAnswerCore}</p>
             </div>
 
             <div>
-              <h4 className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-1.5">Interview Framing</h4>
+              <h4 className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Interview Framing</h4>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{question.idealAnswerFraming}</p>
             </div>
 
             {keyPoints.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-1.5">Key Points to Hit</h4>
+                <h4 className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Key Points to Hit</h4>
                 <ul className="space-y-1">
                   {keyPoints.map((point, i) => (
                     <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300 flex gap-2">
@@ -130,11 +130,11 @@ export default function QuestionCard({ question, onBookmark, focused = false }: 
 
             {followups.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-1.5">Likely Follow-up Questions</h4>
+                <h4 className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Likely Follow-up Questions</h4>
                 <ul className="space-y-1">
                   {followups.map((fq, i) => (
-                    <li key={i} className="text-sm text-zinc-500 dark:text-zinc-400 italic flex gap-2">
-                      <span className="text-zinc-300 dark:text-zinc-600 shrink-0">›</span>
+                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300 italic flex gap-2">
+                      <span className="text-zinc-500 dark:text-zinc-500 shrink-0">›</span>
                       <span>{fq}</span>
                     </li>
                   ))}
@@ -145,7 +145,7 @@ export default function QuestionCard({ question, onBookmark, focused = false }: 
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {tags.map((tag) => (
-                  <span key={tag} className="text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-full">{tag}</span>
+                  <span key={tag} className="text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full">{tag}</span>
                 ))}
               </div>
             )}
@@ -169,11 +169,11 @@ export default function QuestionCard({ question, onBookmark, focused = false }: 
             {/* Related questions */}
             {related.length > 0 && (
               <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                <h4 className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">Related Questions</h4>
+                <h4 className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Related Questions</h4>
                 <ul className="space-y-1.5">
                   {related.map((rq) => (
-                    <li key={rq.id} className="text-sm text-zinc-600 dark:text-zinc-400 flex gap-2">
-                      <span className="text-zinc-300 dark:text-zinc-600 shrink-0 mt-0.5">→</span>
+                    <li key={rq.id} className="text-sm text-zinc-700 dark:text-zinc-300 flex gap-2">
+                      <span className="text-zinc-500 dark:text-zinc-500 shrink-0 mt-0.5">→</span>
                       <span>{rq.question}</span>
                     </li>
                   ))}

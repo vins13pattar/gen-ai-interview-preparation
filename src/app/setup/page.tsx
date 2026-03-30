@@ -8,7 +8,7 @@ type Provider = 'openai' | 'anthropic' | 'ollama';
 const PROVIDERS: { value: Provider; label: string; placeholder: string; defaultModel: string }[] = [
   { value: 'openai', label: 'OpenAI (GPT-4o)', placeholder: 'sk-...', defaultModel: 'gpt-4o' },
   { value: 'anthropic', label: 'Anthropic (Claude)', placeholder: 'sk-ant-...', defaultModel: 'claude-opus-4-6' },
-  { value: 'ollama', label: 'Ollama / Custom endpoint', placeholder: 'leave blank for local Ollama', defaultModel: 'llama3.2' },
+  { value: 'ollama', label: 'Ollama / LM Studio (OpenAI-compatible)', placeholder: 'optional — use lm-studio if required', defaultModel: 'llama3.2' },
 ];
 
 export default function SetupPage() {
@@ -116,9 +116,12 @@ export default function SetupPage() {
                 type="url"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder="http://localhost:11434/v1"
+                placeholder="http://192.168.1.5:1234 or http://localhost:11434"
                 className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
               />
+              <p className="text-xs text-zinc-600 mt-1.5">
+                LM Studio: use the OpenAI base address (port is usually 1234). <code className="text-zinc-800">/v1</code> is added automatically if missing.
+              </p>
             </div>
           )}
 

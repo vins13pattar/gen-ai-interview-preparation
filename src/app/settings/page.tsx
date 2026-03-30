@@ -9,7 +9,7 @@ type Provider = 'openai' | 'anthropic' | 'ollama';
 const PROVIDERS = [
   { value: 'openai' as Provider, label: 'OpenAI (GPT-4o)', defaultModel: 'gpt-4o' },
   { value: 'anthropic' as Provider, label: 'Anthropic (Claude)', defaultModel: 'claude-opus-4-6' },
-  { value: 'ollama' as Provider, label: 'Ollama / Custom', defaultModel: 'llama3.2' },
+  { value: 'ollama' as Provider, label: 'Ollama / LM Studio', defaultModel: 'llama3.2' },
 ];
 
 export default function SettingsPage() {
@@ -80,7 +80,7 @@ export default function SettingsPage() {
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                required
+                required={provider !== 'ollama'}
                 placeholder="Enter new key to replace existing"
                 className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
               />
@@ -101,7 +101,7 @@ export default function SettingsPage() {
                   type="url"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://localhost:11434/v1"
+                  placeholder="http://host:1234 or http://localhost:11434"
                   className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
                 />
               </div>

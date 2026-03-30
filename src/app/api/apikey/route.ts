@@ -10,16 +10,21 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { apiKey, provider, model, baseUrl } = body;
 
-  if (!apiKey || !provider) {
-    return NextResponse.json({ error: 'apiKey and provider are required' }, { status: 400 });
+  if (!provider) {
+    return NextResponse.json({ error: 'provider is required' }, { status: 400 });
   }
 
-  const validation = await validateAPIKey(apiKey, { provider, model, baseUrl });
+  const resolvedKey = provider === 'ollama' ? String(apiKey ?? '') : apiKey;
+  if (provider !== 'ollama' && !resolvedKey) {
+    return NextResponse.json({ error: 'apiKey is required for this provider' }, { status: 400 });
+  }
+
+  const validation = await validateAPIKey(resolvedKey, { provider, model, baseUrl });
   if (!validation.valid) {
     return NextResponse.json({ error: validation.error }, { status: 422 });
   }
 
-  await saveAPIKey(apiKey, { provider, model, baseUrl });
+  await saveAPIKey(resolvedKey, { provider, model, baseUrl });
   return NextResponse.json({ success: true });
 }
 

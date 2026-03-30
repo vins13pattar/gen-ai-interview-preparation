@@ -22,6 +22,13 @@ export interface LLMConfig {
   model?: string;
 }
 
+/** LM Studio and OpenAI-compatible servers expect baseURL ending in /v1 */
+export function normalizeOpenAICompatibleBaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  if (!trimmed) return 'http://localhost:11434/v1';
+  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`;
+}
+
 class OpenAIAdapter implements LLMAdapter {
   constructor(private config: LLMConfig) {}
 
@@ -37,7 +44,7 @@ class OpenAIAdapter implements LLMAdapter {
         { role: 'user', content: userPrompt },
       ],
     });
-    return response.choices[0]?.message?.content ?? '';
+    return response.choices?.[0]?.message?.content ?? '';
   }
 }
 
@@ -53,8 +60,9 @@ class AnthropicAdapter implements LLMAdapter {
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     });
-    const block = response.content[0];
-    return block.type === 'text' ? block.text : '';
+    const block = response.content?.[0];
+    if (!block || block.type !== 'text') return '';
+    return block.text;
   }
 }
 
@@ -63,9 +71,12 @@ class OllamaAdapter implements LLMAdapter {
 
   async generate({ systemPrompt, userPrompt, model, maxTokens, responseFormat }: Parameters<LLMAdapter['generate']>[0]): Promise<string> {
     const { default: OpenAI } = await import('openai');
+    const baseURL = this.config.baseUrl
+      ? normalizeOpenAICompatibleBaseUrl(this.config.baseUrl)
+      : 'http://localhost:11434/v1';
     const client = new OpenAI({
       apiKey: this.config.apiKey || 'ollama',
-      baseURL: this.config.baseUrl || 'http://localhost:11434/v1',
+      baseURL,
     });
     const response = await client.chat.completions.create({
       model,
@@ -76,7 +87,7 @@ class OllamaAdapter implements LLMAdapter {
         { role: 'user', content: userPrompt },
       ],
     });
-    return response.choices[0]?.message?.content ?? '';
+    return response.choices?.[0]?.message?.content ?? '';
   }
 }
 

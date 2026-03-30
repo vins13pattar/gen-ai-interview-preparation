@@ -6,7 +6,7 @@
 
 import { db } from './db';
 import { encrypt, decrypt } from './crypto';
-import { createAdapter, LLMConfig, LLMProvider } from './llm';
+import { createAdapter, DEFAULT_MODELS, LLMConfig, LLMProvider, normalizeOpenAICompatibleBaseUrl } from './llm';
 
 const CONFIG_KEY_PROVIDER = 'llm_provider';
 const CONFIG_KEY_API_KEY = 'llm_api_key_encrypted';
@@ -21,6 +21,10 @@ export interface APIKeyConfig {
 
 export async function saveAPIKey(apiKey: string, config: APIKeyConfig): Promise<void> {
   const encrypted = encrypt(apiKey);
+  const storedBaseUrl =
+    config.provider === 'ollama' && config.baseUrl?.trim()
+      ? normalizeOpenAICompatibleBaseUrl(config.baseUrl)
+      : config.baseUrl ?? '';
   const upsert = (key: string, value: string) =>
     db.appConfig.upsert({
       where: { key },
@@ -30,7 +34,7 @@ export async function saveAPIKey(apiKey: string, config: APIKeyConfig): Promise<
   await Promise.all([
     upsert(CONFIG_KEY_API_KEY, encrypted),
     upsert(CONFIG_KEY_PROVIDER, config.provider),
-    upsert(CONFIG_KEY_BASE_URL, config.baseUrl ?? ''),
+    upsert(CONFIG_KEY_BASE_URL, storedBaseUrl),
     upsert(CONFIG_KEY_MODEL, config.model ?? ''),
   ]);
 }
@@ -56,13 +60,25 @@ export async function hasAPIKey(): Promise<boolean> {
 
 export async function validateAPIKey(apiKey: string, config: APIKeyConfig): Promise<{ valid: boolean; error?: string }> {
   try {
-    const adapter = createAdapter({ ...config, apiKey });
-    await adapter.generate({
+    const model = (config.model?.trim() || DEFAULT_MODELS[config.provider]) ?? 'gpt-4o-mini';
+    const baseUrl =
+      config.provider === 'ollama' && config.baseUrl?.trim()
+        ? normalizeOpenAICompatibleBaseUrl(config.baseUrl)
+        : config.baseUrl;
+    const adapter = createAdapter({ ...config, apiKey, baseUrl });
+    const text = await adapter.generate({
       systemPrompt: 'Respond with exactly: ok',
       userPrompt: 'ok',
-      model: config.model ?? 'gpt-4o-mini',
-      maxTokens: 5,
+      model,
+      maxTokens: 32,
     });
+    if (!text.trim()) {
+      return {
+        valid: false,
+        error:
+          'No text returned from the model. Confirm the model id matches the server, the base URL reaches your machine (e.g. http://192.168.x.x:1234 — /v1 is added if omitted), and the server is running.',
+      };
+    }
     return { valid: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
