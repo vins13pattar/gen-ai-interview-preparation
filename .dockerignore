@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+*.md
+.env
+.env.*
+!.env.example
+prisma/*.db
+prisma/*.db-journal
+.keyfile
+local.db
+coverage
+.turbo
+.cursor
+.paperclip
