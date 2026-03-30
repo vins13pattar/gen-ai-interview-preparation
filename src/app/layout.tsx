@@ -36,7 +36,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-zinc-50 font-sans text-foreground dark:bg-zinc-950">
+      <body className="min-h-full flex flex-col bg-zinc-50 font-sans text-base leading-relaxed text-foreground dark:bg-zinc-950">
         {children}
       </body>
     </html>

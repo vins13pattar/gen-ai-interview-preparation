@@ -35,19 +35,23 @@ export default async function DomainsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="mb-10 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">Gen AI Interview Prep</h1>
-            <p className="text-zinc-600 dark:text-zinc-300 max-w-prose leading-relaxed">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <h1 className="mb-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">
+              Gen AI Interview Prep
+            </h1>
+            <p className="max-w-prose text-base text-zinc-600 dark:text-zinc-300">
               Browse {totalQuestions} questions across {domains.length} domains.
               Study at your own pace — no timers, no scores.
             </p>
           </div>
-          <ThemeToggle />
+          <div className="shrink-0 sm:pt-1">
+            <ThemeToggle />
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           {domains.map((domain) => {
             const stats = statsMap[domain.id] ?? { studied: 0, needs_review: 0 };
             const total = domain._count.questions;
@@ -61,11 +65,15 @@ export default async function DomainsPage() {
                 href={`/domains/${domain.slug}`}
                 className="group rounded-xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <h2 className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-zinc-800 dark:group-hover:text-zinc-100">{domain.name}</h2>
-                  <span className="ml-2 shrink-0 text-sm font-medium text-zinc-600 dark:text-zinc-400">{domain._count.questions} Qs</span>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-zinc-900 group-hover:text-zinc-800 dark:text-zinc-50 dark:group-hover:text-zinc-100">
+                    {domain.name}
+                  </h2>
+                  <span className="ml-2 shrink-0 text-sm font-medium tabular-nums text-zinc-600 dark:text-zinc-400">
+                    {domain._count.questions} Qs
+                  </span>
                 </div>
-                <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-300">{domain.description}</p>
+                <p className="line-clamp-2 text-base leading-relaxed text-zinc-600 dark:text-zinc-300">{domain.description}</p>
 
                 {/* Study progress */}
                 {hasProgress && (
@@ -99,7 +107,7 @@ export default async function DomainsPage() {
           })}
         </div>
 
-        <div className="mt-8 flex gap-3 text-sm">
+        <div className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2 text-base">
           <Link
             href="/settings"
             className="font-medium text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-300 dark:hover:text-zinc-50"

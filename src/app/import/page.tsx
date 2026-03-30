@@ -42,40 +42,40 @@ export default function ImportPage() {
       setError(data.error || 'Import failed');
     } else {
       setResult(data as ImportResult);
-      // Reset file input
       setFile(null);
       if (fileRef.current) fileRef.current.value = '';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-lg bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="mb-6">
-          <Link href="/" className="text-sm text-blue-600 hover:underline">
-            &larr; Back to home
+    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-6 dark:bg-zinc-950">
+      <div className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-10">
+        <div className="mb-8">
+          <Link
+            href="/domains"
+            className="text-base font-medium text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+          >
+            ← Back to domains
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-gray-900">Import Questions</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Import questions</h1>
+          <p className="mt-2 text-base text-zinc-600 dark:text-zinc-400">
             Upload a JSON file exported from this app to import questions in bulk.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              JSON file
-            </label>
+            <label className="mb-2 block text-base font-medium text-zinc-800 dark:text-zinc-200">JSON file</label>
             <input
               ref={fileRef}
               type="file"
               accept=".json,application/json"
               onChange={handleFileChange}
-              className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border file:border-gray-300 file:text-sm file:font-medium file:bg-gray-50 hover:file:bg-gray-100 cursor-pointer"
+              className="block w-full cursor-pointer text-base text-zinc-800 file:mr-4 file:rounded-lg file:border file:border-zinc-300 file:bg-zinc-50 file:px-4 file:py-2.5 file:text-base file:font-medium file:text-zinc-800 hover:file:bg-zinc-100 dark:text-zinc-200 dark:file:border-zinc-600 dark:file:bg-zinc-800 dark:file:text-zinc-100 dark:hover:file:bg-zinc-700"
             />
             {file && (
-              <p className="mt-1.5 text-xs text-gray-500">
-                {file.name} &mdash; {(file.size / 1024).toFixed(1)} KB
+              <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                {file.name} — {(file.size / 1024).toFixed(1)} KB
               </p>
             )}
           </div>
@@ -83,42 +83,42 @@ export default function ImportPage() {
           <button
             type="submit"
             disabled={!file || loading}
-            className="w-full py-2.5 px-4 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="min-h-11 w-full rounded-lg bg-zinc-900 py-2.5 text-base font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
             {loading ? 'Importing…' : 'Import'}
           </button>
         </form>
 
         {error && (
-          <div className="mt-5 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-base text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
             {error}
           </div>
         )}
 
         {result && (
-          <div className="mt-5 p-4 rounded-lg bg-green-50 border border-green-200">
-            <p className="text-sm font-medium text-green-800 mb-2">Import complete</p>
-            <ul className="space-y-1 text-sm text-green-700">
+          <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+            <p className="mb-3 text-base font-semibold text-emerald-900 dark:text-emerald-200">Import complete</p>
+            <ul className="space-y-2 text-base text-emerald-800 dark:text-emerald-300">
               <li>
-                <span className="font-semibold">{result.imported}</span> question
+                <span className="font-semibold tabular-nums">{result.imported}</span> question
                 {result.imported !== 1 ? 's' : ''} imported
               </li>
               <li>
-                <span className="font-semibold">{result.duplicates}</span> duplicate
+                <span className="font-semibold tabular-nums">{result.duplicates}</span> duplicate
                 {result.duplicates !== 1 ? 's' : ''} skipped
               </li>
               {result.errors > 0 && (
-                <li className="text-orange-600">
-                  <span className="font-semibold">{result.errors}</span> record
+                <li className="text-amber-800 dark:text-amber-300">
+                  <span className="font-semibold tabular-nums">{result.errors}</span> record
                   {result.errors !== 1 ? 's' : ''} failed validation
                 </li>
               )}
             </ul>
             <Link
-              href="/"
-              className="mt-3 inline-block text-sm text-green-700 underline hover:text-green-900"
+              href="/domains"
+              className="mt-4 inline-block text-base font-medium text-emerald-800 underline-offset-4 hover:underline dark:text-emerald-200"
             >
-              View questions &rarr;
+              View domains →
             </Link>
           </div>
         )}
