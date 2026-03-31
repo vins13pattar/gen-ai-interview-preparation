@@ -43,13 +43,16 @@ export async function POST(req: NextRequest) {
   const provider = raw.provider;
 
   const existing = await getAPIKeyConfig();
-  const apiKeyToUse = apiKeyIn || existing?.apiKey || '';
+  const apiKeyToUse =
+    provider === 'ollama'
+      ? apiKeyIn || 'ollama'
+      : apiKeyIn || existing?.apiKey || '';
 
   if (provider !== 'ollama' && !apiKeyToUse) {
     return NextResponse.json({ error: 'apiKey is required' }, { status: 400 });
   }
 
-  if (existing && existing.provider !== provider && !apiKeyIn) {
+  if (existing && existing.provider !== provider && !apiKeyIn && provider !== 'ollama') {
     return NextResponse.json(
       { error: 'New API key is required when changing provider.' },
       { status: 400 },
