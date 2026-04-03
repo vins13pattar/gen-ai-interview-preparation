@@ -10,7 +10,6 @@ import path from 'path';
 
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 12;  // 96 bits for GCM
-const TAG_LENGTH = 16; // 128 bits auth tag
 const ALGORITHM = 'aes-256-gcm';
 
 function getKeyfilePath(): string {
