@@ -22,7 +22,7 @@ export interface LLMConfig {
   model?: string;
 }
 
-function normalizeOpenAICompatibleBaseUrl(baseUrl?: string): string {
+export function normalizeOpenAICompatibleBaseUrl(baseUrl?: string): string {
   const fallback = 'http://localhost:11434/v1';
   const raw = baseUrl?.trim();
   if (!raw) return fallback;
@@ -181,9 +181,12 @@ class OllamaAdapter implements LLMAdapter {
 
   async generate({ systemPrompt, userPrompt, model, maxTokens, responseFormat }: Parameters<LLMAdapter['generate']>[0]): Promise<string> {
     const { default: OpenAI } = await import('openai');
+    const baseURL = this.config.baseUrl
+      ? normalizeOpenAICompatibleBaseUrl(this.config.baseUrl)
+      : 'http://localhost:11434/v1';
     const client = new OpenAI({
       apiKey: this.config.apiKey || 'ollama',
-      baseURL: normalizeOpenAICompatibleBaseUrl(this.config.baseUrl),
+      baseURL,
     });
     // LM Studio and other OpenAI-compatible locals often reject `json_object` (same 400 as
     // api.openai.com: only `json_schema` or `text`). We use plain text + prompts and normalize below.

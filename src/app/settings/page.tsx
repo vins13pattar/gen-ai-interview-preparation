@@ -8,7 +8,7 @@ type Provider = 'openai' | 'anthropic' | 'ollama';
 const PROVIDERS = [
   { value: 'openai' as Provider, label: 'OpenAI (GPT-4o)', defaultModel: 'gpt-4o' },
   { value: 'anthropic' as Provider, label: 'Anthropic (Claude)', defaultModel: 'claude-opus-4-6' },
-  { value: 'ollama' as Provider, label: 'Ollama / Custom', defaultModel: 'llama3.2' },
+  { value: 'ollama' as Provider, label: 'Ollama / LM Studio', defaultModel: 'llama3.2' },
 ];
 
 export default function SettingsPage() {
@@ -115,11 +115,13 @@ export default function SettingsPage() {
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                required={!configured}
+                required={!configured && provider !== 'ollama'}
                 placeholder={
                   configured
                     ? 'Leave blank to keep current key'
-                    : 'Enter new key to replace existing'
+                    : provider === 'ollama'
+                      ? 'Optional for local Ollama / LM Studio'
+                      : 'Your API key'
                 }
                 className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400/20"
               />
@@ -140,7 +142,7 @@ export default function SettingsPage() {
                   type="url"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://localhost:11434/v1"
+                  placeholder="http://192.168.x.x:1234 or http://localhost:11434"
                   className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400/20"
                 />
               </div>
