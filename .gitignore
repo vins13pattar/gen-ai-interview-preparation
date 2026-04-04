@@ -46,5 +46,5 @@ prisma/local.db
 *.tsbuildinfo
 next-env.d.ts
 
-# sensitive planning docs
+# Sensitive planning / product docs — keep local only
 PRD_AI_Interview_Prep_App.md
