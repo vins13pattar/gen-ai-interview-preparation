@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 type Provider = 'openai' | 'anthropic' | 'ollama';
@@ -55,6 +56,12 @@ export default function SettingsPage() {
     router.push('/setup');
   };
 
+  const handleAppLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -82,8 +89,14 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <div className="mx-auto max-w-xl px-4 pb-12 pt-6 sm:px-6 sm:pb-16 sm:pt-8">
+        <Link
+          href="/domains"
+          className="mb-6 inline-block text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+        >
+          ← Back to Domains
+        </Link>
         <h1 className="mb-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Settings</h1>
         <p className="mb-8 text-base text-zinc-600 dark:text-zinc-400">
           Update your BYOK provider, model, or rotate the API key. Keys stay encrypted locally. Before anything is
@@ -159,12 +172,29 @@ export default function SettingsPage() {
           </form>
         </div>
 
+        <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+          <h2 className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">App session</h2>
+          <p className="mb-4 text-base text-zinc-600 dark:text-zinc-400">
+            If this deployment uses{' '}
+            <code className="text-zinc-800 dark:text-zinc-300">APP_ACCESS_PASSWORD</code>, sign out here to clear your
+            browser session on this device.
+          </p>
+          <button
+            type="button"
+            onClick={handleAppLogout}
+            className="min-h-10 rounded-lg border border-zinc-300 px-4 py-2.5 text-base font-medium text-zinc-800 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800/50"
+          >
+            End app session
+          </button>
+        </div>
+
         <div className="rounded-xl border border-red-200 bg-white p-6 dark:border-red-900/50 dark:bg-zinc-900 sm:p-8">
           <h2 className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">Remove API Key</h2>
           <p className="mb-4 text-base text-zinc-600 dark:text-zinc-400">
             Removes the encrypted key from local storage. Question browsing will still work, but regeneration will be disabled.
           </p>
           <button
+            type="button"
             onClick={handleDelete}
             className="min-h-10 rounded-lg border border-red-300 px-4 py-2.5 text-base font-medium text-red-700 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50"
           >

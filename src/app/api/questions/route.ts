@@ -21,6 +21,22 @@ type QuestionRow = {
   bookmark_updatedAt: Date | null;
 };
 
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
+const MAX_OFFSET = 1_000_000;
+
+function parseLimitOffset(searchParams: URLSearchParams): { limit: number; offset: number } {
+  const rawLimit = Number.parseInt(searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10);
+  const rawOffset = Number.parseInt(searchParams.get('offset') ?? '0', 10);
+  const limit = Number.isFinite(rawLimit)
+    ? Math.min(Math.max(1, Math.trunc(rawLimit)), MAX_LIMIT)
+    : DEFAULT_LIMIT;
+  const offset = Number.isFinite(rawOffset)
+    ? Math.min(Math.max(0, Math.trunc(rawOffset)), MAX_OFFSET)
+    : 0;
+  return { limit, offset };
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const domainId = searchParams.get('domainId');
@@ -28,8 +44,7 @@ export async function GET(req: NextRequest) {
   const bookmark = searchParams.get('bookmark'); // 'studied' | 'needs_review'
   const search = searchParams.get('q');
   const random = searchParams.get('random') === 'true';
-  const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 200);
-  const offset = parseInt(searchParams.get('offset') ?? '0');
+  const { limit, offset } = parseLimitOffset(searchParams);
 
   // Use FTS5 when a search query is provided
   if (search) {

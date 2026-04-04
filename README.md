@@ -89,6 +89,7 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll be p
 - API keys are encrypted with AES-256-GCM using a randomly generated local key stored in `.keyfile`
 - The `.keyfile` and database (`local.db`) are gitignored and never committed
 - No telemetry, no analytics, no external requests except user-initiated LLM calls
+- **Network deployments:** If the app is reachable beyond your machine, set **`APP_ACCESS_PASSWORD`** in the environment. Users must sign in at `/login`; the session is an **httpOnly** signed cookie (no bearer token in the browser bundle). Optionally set **`APP_SESSION_SECRET`** to a long random string so session verification avoids a slow key derivation on every request. Failed login attempts are **rate-limited in memory** per client IP (trust `X-Forwarded-For` only from your proxy). For maximum isolation, put the app behind a reverse proxy with SSO or Basic Auth instead.
 
 ## Contributing
 

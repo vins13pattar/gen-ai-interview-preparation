@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+/** Max JSON / file size for import (protects SQLite + Node heap on self-hosted instances). */
+const MAX_IMPORT_BYTES = 15 * 1024 * 1024;
+
+function payloadTooLarge() {
+  return NextResponse.json(
+    { error: `Import payload too large (max ${MAX_IMPORT_BYTES} bytes)` },
+    { status: 413 },
+  );
+}
+
 interface ImportQuestion {
   domain: string;
   difficulty: string;
@@ -38,6 +48,11 @@ export async function POST(req: NextRequest) {
   let payload: ImportPayload;
 
   const contentType = req.headers.get('content-type') ?? '';
+  const contentLength = req.headers.get('content-length');
+  const declaredLen = contentLength ? Number.parseInt(contentLength, 10) : NaN;
+  if (Number.isFinite(declaredLen) && declaredLen > MAX_IMPORT_BYTES) {
+    return payloadTooLarge();
+  }
 
   if (contentType.includes('multipart/form-data')) {
     const formData = await req.formData();
@@ -45,15 +60,23 @@ export async function POST(req: NextRequest) {
     if (!file || typeof file === 'string') {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
-    const text = await (file as File).text();
+    const blob = file as File;
+    if (blob.size > MAX_IMPORT_BYTES) {
+      return payloadTooLarge();
+    }
+    const text = await blob.text();
     try {
       payload = JSON.parse(text);
     } catch {
       return NextResponse.json({ error: 'Invalid JSON file' }, { status: 400 });
     }
   } else {
+    const buf = await req.arrayBuffer();
+    if (buf.byteLength > MAX_IMPORT_BYTES) {
+      return payloadTooLarge();
+    }
     try {
-      payload = await req.json();
+      payload = JSON.parse(new TextDecoder().decode(buf));
     } catch {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
