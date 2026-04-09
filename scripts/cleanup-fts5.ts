@@ -1,34 +1,34 @@
 /**
  * Drops FTS5 artifacts if they exist.
- * This keeps `prisma db push` idempotent because Prisma doesn't manage
- * virtual-table shadow tables and custom triggers.
+ * Uses `prisma db execute` so it does not depend on generated Prisma Client.
  */
-import { PrismaClient } from '@prisma/client';
+import { spawnSync } from 'node:child_process';
 
-const db = new PrismaClient();
+const cleanupSql = `
+DROP TRIGGER IF EXISTS questions_ai;
+DROP TRIGGER IF EXISTS questions_ad;
+DROP TRIGGER IF EXISTS questions_au;
+DROP TABLE IF EXISTS questions_fts;
+DROP TABLE IF EXISTS questions_fts_config;
+DROP TABLE IF EXISTS questions_fts_data;
+DROP TABLE IF EXISTS questions_fts_docsize;
+DROP TABLE IF EXISTS questions_fts_idx;
+`;
 
-async function main() {
-  console.log('Cleaning existing FTS5 objects (if any)...');
+console.log('Cleaning existing FTS5 objects (if any)...');
 
-  await db.$executeRawUnsafe(`DROP TRIGGER IF EXISTS questions_ai`);
-  await db.$executeRawUnsafe(`DROP TRIGGER IF EXISTS questions_ad`);
-  await db.$executeRawUnsafe(`DROP TRIGGER IF EXISTS questions_au`);
+const result = spawnSync(
+  'pnpm',
+  ['exec', 'prisma', 'db', 'execute', '--schema', 'prisma/schema.prisma', '--stdin'],
+  {
+    input: cleanupSql,
+    stdio: ['pipe', 'inherit', 'inherit'],
+    env: process.env,
+  },
+);
 
-  // Drop the virtual table and any leftover shadow tables.
-  await db.$executeRawUnsafe(`DROP TABLE IF EXISTS questions_fts`);
-  await db.$executeRawUnsafe(`DROP TABLE IF EXISTS questions_fts_config`);
-  await db.$executeRawUnsafe(`DROP TABLE IF EXISTS questions_fts_data`);
-  await db.$executeRawUnsafe(`DROP TABLE IF EXISTS questions_fts_docsize`);
-  await db.$executeRawUnsafe(`DROP TABLE IF EXISTS questions_fts_idx`);
-
-  console.log('FTS5 cleanup complete.');
+if (result.status !== 0) {
+  process.exit(result.status ?? 1);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await db.$disconnect();
-  });
+console.log('FTS5 cleanup complete.');
