@@ -27,7 +27,7 @@
     "id": "agentic-systems",
     "slug": "agentic-systems",
     "name": "Agentic Systems & Tool Use",
-    "description": "Function calling, Model Context Protocol (MCP), ReAct, Plan-and-Execute, multi-agent orchestration, and agent memory architectures."
+    "description": "Function calling, Model Context Protocol (MCP 2026-07-28 stateless spec, tools/resources/prompts), ReAct, Plan-and-Execute, multi-agent orchestration, and agent memory architectures."
   },
   {
     "id": "mlops",
@@ -46,5 +46,47 @@
     "slug": "behavioral",
     "name": "Behavioral & Situational",
     "description": "STAR method, technical trade-off reasoning, communicating AI limitations, cross-functional collaboration, and production incident debugging."
+  },
+  {
+    "id": "evals",
+    "slug": "evals",
+    "name": "LLM Evaluation & Quality",
+    "description": "Offline and online evals, golden sets, LLM-as-judge, regression testing, RAG/agent metrics, and eval-driven development for GenAI products."
+  },
+  {
+    "id": "security-guardrails",
+    "slug": "security-guardrails",
+    "name": "Security & Guardrails",
+    "description": "OWASP LLM risks, prompt-injection defenses, output filtering, PII handling, tool-use security, and layered application guardrails."
+  },
+  {
+    "id": "fault-tolerance",
+    "slug": "fault-tolerance",
+    "name": "Fault Tolerance & Reliability",
+    "description": "Retries, timeouts, circuit breakers, provider failover, graceful degradation, streaming failures, and SLOs for LLM applications."
+  },
+  {
+    "id": "production-apps",
+    "slug": "production-apps",
+    "name": "Production GenAI Applications",
+    "description": "Cost control, caching, streaming UX, observability, context management, structured output, and shipping reliable GenAI features."
+  },
+  {
+    "id": "reasoning-models",
+    "slug": "reasoning-models",
+    "name": "Reasoning Models & Test-Time Compute",
+    "description": "o-series and R1-style models, inference-time scaling, thinking budgets, process vs outcome rewards, when to skip reasoning models, and distillation of traces."
+  },
+  {
+    "id": "context-engineering",
+    "slug": "context-engineering",
+    "name": "Context Engineering",
+    "description": "What goes in the window, compaction, tool-result management, memory vs RAG vs long context, context rot, and prefix-cache-friendly layouts."
+  },
+  {
+    "id": "genai-system-design",
+    "slug": "genai-system-design",
+    "name": "GenAI System Design",
+    "description": "End-to-end design interviews: copilots, support agents, document QA, voice, and cost/latency/safety trade-offs at product scale."
   }
 ]

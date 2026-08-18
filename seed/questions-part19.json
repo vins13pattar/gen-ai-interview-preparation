@@ -1,0 +1,727 @@
+[
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "What is a typical production architecture for a GenAI application beyond 'call the LLM'?",
+    "idealAnswerCore": "A production stack includes an API gateway, auth, prompt/versioned templates, retrieval or tools, model gateway with routing/retries, guardrails, observability/traces, evals, and a product UX for streaming and feedback — the LLM is one dependency, not the architecture.",
+    "idealAnswerFraming": "Draw the boxes verbally. Interviewers want to see product engineering, not only prompting.",
+    "idealAnswerKeyPoints": [
+      "Client: streaming, optimistic UI, feedback widgets",
+      "Orchestration: RAG, tools, memory, policy",
+      "Model gateway: providers, timeouts, fallbacks, cost accounting",
+      "Data: indexes, ACLs, object storage for uploads",
+      "Control plane: prompt registry, flags, evals, analytics"
+    ],
+    "idealAnswerFollowups": [
+      "Which box would you build first for an MVP vs a bank?",
+      "Where do evals sit in this diagram?"
+    ],
+    "tags": [
+      "architecture",
+      "production",
+      "gateway",
+      "orchestration"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "How do you manage prompt and configuration versions in production?",
+    "idealAnswerCore": "Store prompts as versioned artifacts (git or a registry) with metadata (author, eval scores, model pin), deploy via feature flags, and record the version on every trace so you can reproduce and rollback.",
+    "idealAnswerFraming": "Prompts are code. Treat them that way.",
+    "idealAnswerKeyPoints": [
+      "No silent edits on the live system prompt in a dashboard without review",
+      "Pin model IDs; record temperature and tool schemas",
+      "CI evals on prompt PRs",
+      "Rollback is a flag flip, not a archaeology exercise",
+      "Separate 'draft' vs 'production' prompt environments"
+    ],
+    "idealAnswerFollowups": [
+      "How do you A/B two prompt versions safely?",
+      "Should non-engineers edit production prompts?"
+    ],
+    "tags": [
+      "prompt-versioning",
+      "feature-flags",
+      "registry",
+      "rollback"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "Why is streaming the default UX for chat-style GenAI, and what product details matter?",
+    "idealAnswerCore": "Streaming reduces perceived latency by showing TTFT quickly; product details include cancel, retry, markdown rendering of partial tokens, and not executing tools until the call is complete.",
+    "idealAnswerFraming": "UX engineering. Mention that streaming does not reduce total token time.",
+    "idealAnswerKeyPoints": [
+      "Show a thinking/working state before the first token if TTFT is slow",
+      "Allow stop; abort the server work to save cost",
+      "Buffer markdown/code fences to avoid flicker when possible",
+      "Accessibility: screen readers and reduced-motion",
+      "Mobile: reconnect and battery — do not spin forever"
+    ],
+    "idealAnswerFollowups": [
+      "When would you not stream (e.g. JSON tools)?",
+      "How do you handle citations that only exist at the end?"
+    ],
+    "tags": [
+      "streaming",
+      "ux",
+      "ttft",
+      "product"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "How do you estimate and control cost for a GenAI feature?",
+    "idealAnswerCore": "Cost is roughly tokens × price × calls, plus embeddings, rerankers, and retries; control it with caching, smaller models for easy tasks, max tokens, prompt compression, and per-tenant budgets with attribution in finance dashboards.",
+    "idealAnswerFraming": "Be able to do a back-of-envelope. Mention output tokens often dominate chat.",
+    "idealAnswerKeyPoints": [
+      "Instrument: prompt tokens, completion tokens, cached tokens, tool tokens",
+      "Unit: $ per successful task, not only $ per 1k tokens",
+      "Budgets and alerts before the invoice surprise",
+      "Prompt size is a product decision (history length, RAG k)",
+      "Retries, evals, and hedges must be in the cost model"
+    ],
+    "idealAnswerFollowups": [
+      "How would you cost a RAG chat with rerank + GPT-4o + embeddings?",
+      "What lever usually saves more money: model downgrade or caching?"
+    ],
+    "tags": [
+      "cost",
+      "tokens",
+      "budgets",
+      "finops"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "What observability do you need for LLM apps beyond standard HTTP metrics?",
+    "idealAnswerCore": "You need traces that stitch retrieval, prompts, model IDs, token counts, tool I/O (redacted), guardrail decisions, and user feedback — so a bad answer is debuggable without reproducing from memory.",
+    "idealAnswerFraming": "LangSmith/Langfuse/OpenTelemetry concepts without requiring a vendor.",
+    "idealAnswerKeyPoints": [
+      "OpenTelemetry spans per stage with consistent trace IDs",
+      "Store prompt template ID, not necessarily full raw prompts in the hot path",
+      "User feedback joined to traces for eval mining",
+      "Privacy: redaction and access control on traces",
+      "Quality sampling: log all failures, sample successes"
+    ],
+    "idealAnswerFollowups": [
+      "How do you debug 'it was wrong yesterday' with traces?",
+      "What is too much to put in a span attribute?"
+    ],
+    "tags": [
+      "observability",
+      "tracing",
+      "tokens",
+      "feedback"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How should conversation memory and RAG interact in a product?",
+    "idealAnswerCore": "Use short-term conversation state for references ('the second one') and RAG for durable knowledge; compact history, do not dump entire chats into the vector store by default, and keep ACLs on anything you persist.",
+    "idealAnswerFraming": "Product architecture. Memory is not a substitute for retrieval or vice versa.",
+    "idealAnswerKeyPoints": [
+      "Coreference: rewrite follow-ups into standalone queries before RAG",
+      "Long-term memory: user preferences, not raw secrets",
+      "Avoid double-counting: do not retrieve the same message you already have in the window",
+      "Let users see and delete memories",
+      "Eval follow-up questions as a first-class slice"
+    ],
+    "idealAnswerFollowups": [
+      "When does summarizing history destroy a constraint the user stated?",
+      "Should memory live in the prompt or a database?"
+    ],
+    "tags": [
+      "memory",
+      "rag",
+      "conversation",
+      "product"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How do you implement structured output in production (JSON schema, tool calling, constrained decoding)?",
+    "idealAnswerCore": "Prefer provider tool-calling or JSON-schema modes, validate on the server, and keep a bounded repair path — do not regex your way through free-form chat if the product needs an object.",
+    "idealAnswerFraming": "This is how you connect LLMs to software.",
+    "idealAnswerKeyPoints": [
+      "Schema is a contract with the rest of the stack",
+      "Tool calling is often more reliable than 'reply in JSON' in the prompt",
+      "Validate types, ranges, and IDs against the database",
+      "Version schemas; old clients may still send old shapes",
+      "Measure parse-success as a SLO"
+    ],
+    "idealAnswerFollowups": [
+      "When would you use a grammar/constrained decoder vs a prompt?",
+      "How do you evolve a schema without breaking traces/evals?"
+    ],
+    "tags": [
+      "structured-output",
+      "json-schema",
+      "tool-calling",
+      "validation"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "What is semantic caching and when should you not use it?",
+    "idealAnswerCore": "Semantic caching returns a previous answer for a sufficiently similar query to save latency and cost; skip it when answers must be fresh, personalized, authorized per user, or when similarity would collapse distinct intents (different account IDs).",
+    "idealAnswerFraming": "Give a threshold and an eval plan.",
+    "idealAnswerKeyPoints": [
+      "Key must include tenant, locale, prompt version, and model",
+      "Threshold too low: cache misses; too high: wrong answers",
+      "Never cache across users for private data",
+      "Invalidate on knowledge-base updates",
+      "Eval cache-hit answers with the same golden set"
+    ],
+    "idealAnswerFollowups": [
+      "How would you cache 'what's my order status'?",
+      "Is embedding-only similarity enough for legal queries?"
+    ],
+    "tags": [
+      "semantic-cache",
+      "cost",
+      "latency",
+      "correctness"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How do you A/B test prompts or models when outputs are stochastic and sessions are multi-turn?",
+    "idealAnswerCore": "Assign users or sessions stickily, measure task-level online metrics plus offline evals, run long enough for power, and avoid mid-session switching that confuses both users and attribution.",
+    "idealAnswerFraming": "Experimentation design. Mention SRM (sample ratio mismatch).",
+    "idealAnswerKeyPoints": [
+      "Unit of randomization: user or workspace, not every request",
+      "Guardrail metrics: safety, latency, cost must not tank",
+      "CUPED or pre-period covariates if available",
+      "Log the variant on every trace",
+      "Stop rules: harm spikes beat waiting for significance on a vanity metric"
+    ],
+    "idealAnswerFollowups": [
+      "Why is request-level randomization bad for chat?",
+      "How do you handle users who refresh and get the other prompt?"
+    ],
+    "tags": [
+      "ab-testing",
+      "experimentation",
+      "product",
+      "metrics"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How should user feedback (thumbs, edits, regenerations) flow back into quality improvement?",
+    "idealAnswerCore": "Capture feedback with the trace, cluster it, label a sample, promote durable bugs to golden evals, and only then change prompts/data — do not fine-tune weekly on raw thumbs.",
+    "idealAnswerFraming": "Closed loop. Thumbs are noisy.",
+    "idealAnswerKeyPoints": [
+      "Instrument implicit feedback: copy, regenerate, abandon",
+      "Route toxic/safety reports to a higher-priority queue",
+      "Do not train on unredacted PII",
+      "Weekly review of top clusters with PM + eng",
+      "Track whether each cluster's rate drops after a fix"
+    ],
+    "idealAnswerFollowups": [
+      "How do you use 'regenerate' as a signal?",
+      "When is fine-tuning justified vs a prompt/RAG fix?"
+    ],
+    "tags": [
+      "feedback",
+      "product",
+      "evals",
+      "loop"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "advanced",
+    "question": "How do you design a model gateway that multiple product teams can share?",
+    "idealAnswerCore": "A gateway centralizes auth to providers, quotas, routing, retries, tracing, and policy, exposing an internal API so teams do not each embed keys and divergent retry logic — with self-serve config and chargeback.",
+    "idealAnswerFraming": "Platform engineering for GenAI.",
+    "idealAnswerKeyPoints": [
+      "Per-team keys and budgets; noisy neighbor protection",
+      "Standard error model and streaming protocol",
+      "Policy hooks: DLP, allowlisted models",
+      "Self-serve prompt registry integration",
+      "SLOs of the gateway itself, distinct from model SLOs"
+    ],
+    "idealAnswerFollowups": [
+      "When should a team bypass the gateway?",
+      "How do you roll out a new provider behind the gateway?"
+    ],
+    "tags": [
+      "platform",
+      "gateway",
+      "multi-tenant",
+      "quotas"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "advanced",
+    "question": "How do you handle model deprecation and provider breaking changes?",
+    "idealAnswerCore": "Pin versions, subscribe to vendor notices, keep a tested fallback, and run evals on the replacement before the sunset date — aliases like 'gpt-4o-latest' are a reliability risk.",
+    "idealAnswerFraming": "This is an operational reality. Have a calendar.",
+    "idealAnswerKeyPoints": [
+      "Inventory every model ID in prod",
+      "Budget time for prompt retuning; quality will change",
+      "Feature-flag the new model with a bake-off",
+      "Communicate UX/personality changes to support",
+      "Have a self-hosted or second-vendor emergency path for critical flows"
+    ],
+    "idealAnswerFollowups": [
+      "What is your 30-day plan if a model is deprecated in 60 days?",
+      "How do you test a replacement for tool-calling diffs?"
+    ],
+    "tags": [
+      "deprecation",
+      "providers",
+      "migration",
+      "pinning"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "What product patterns reduce hallucination impact even before the model gets better?",
+    "idealAnswerCore": "Ground answers in retrieved evidence with citations, allow 'I don't know', constrain to extractive answers for high-stakes fields, and add human review — UX and retrieval often beat another prompt adjective.",
+    "idealAnswerFraming": "Product thinking. Honesty over bravado.",
+    "idealAnswerKeyPoints": [
+      "Show sources; make them clickable",
+      "Extractive highlighting for numbers and names",
+      "Confidence or abstain when retrieval is empty",
+      "Edit-in-place for internal tools so humans correct and you learn",
+      "Avoid anthropomorphic 'I'm sure' copy"
+    ],
+    "idealAnswerFollowups": [
+      "When is abstaining better than a best-effort answer?",
+      "How do citations fail as a UX affordance?"
+    ],
+    "tags": [
+      "hallucination",
+      "ux",
+      "citations",
+      "product"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How do you implement rate limits and fairness for a multi-tenant SaaS LLM feature?",
+    "idealAnswerCore": "Limit by tokens and concurrency per tenant/plan, isolate noisy neighbors, and provide burst capacity without letting one tenant queue-block others — expose usage dashboards so customers can predict bills.",
+    "idealAnswerFraming": "SaaS packaging meets LLM cost.",
+    "idealAnswerKeyPoints": [
+      "Plan entitlements: model tiers, RPM, TPM, tool access",
+      "Soft vs hard limits with warning emails",
+      "Fair queuing under saturation",
+      "Attribute cost for your own COGS and for customer invoices",
+      "Abuse: block credential stuffing that burns completions"
+    ],
+    "idealAnswerFollowups": [
+      "Would you sell 'unlimited GPT-4'?",
+      "How do you handle a sudden legitimate spike (a webinar)?"
+    ],
+    "tags": [
+      "multi-tenant",
+      "rate-limit",
+      "saas",
+      "fairness"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "What is eval-in-production (online evaluators) and how do you keep it cheap and private?",
+    "idealAnswerCore": "Online evaluators score a sample of live traces with contracts and judges to detect drift; keep them cheap with sampling and small models, and private with redaction and in-boundary judges when needed.",
+    "idealAnswerFraming": "Complements offline golden sets.",
+    "idealAnswerKeyPoints": [
+      "Sample 1% or all failures plus a stratified success sample",
+      "Never block the user on a slow judge",
+      "Alert on slice regressions (e.g. one tenant, one language)",
+      "Store scores next to traces for later training of cheaper graders",
+      "Legal review if traces leave the region"
+    ],
+    "idealAnswerFollowups": [
+      "How fast should an online evaluator page someone?",
+      "What drift is not visible to a judge (missing new product SKUs)?"
+    ],
+    "tags": [
+      "online-eval",
+      "drift",
+      "privacy",
+      "sampling"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "advanced",
+    "question": "How do you build a citation-first RAG UX that engineers and lawyers will trust?",
+    "idealAnswerCore": "Retrieve with stable chunk IDs, require claim-level citations, highlight supporting spans in the source viewer, and fail closed when you cannot ground a regulated claim — trust is a product surface, not a footnote.",
+    "idealAnswerFraming": "Enterprise RAG product design.",
+    "idealAnswerKeyPoints": [
+      "Clicking a citation should open the exact passage, not the document home",
+      "Handle PDF page numbers and slide decks",
+      "Show recency and document title; stale policy docs should be visually marked",
+      "Conflicting sources: present both rather than averaging",
+      "Eval: citation precision at the claim level"
+    ],
+    "idealAnswerFollowups": [
+      "What if the best evidence is a table the chunker split badly?",
+      "How do you UX 'not in the knowledge base'?"
+    ],
+    "tags": [
+      "citations",
+      "rag",
+      "ux",
+      "enterprise"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "How do you think about latency budgets for an interactive RAG chat?",
+    "idealAnswerCore": "Split the budget across retrieval, rerank, TTFT, and decode; stream as soon as generation starts, parallelize independent calls, and cut RAG k or skip rerank before you sacrifice the first token.",
+    "idealAnswerFraming": "Give example numbers: 200ms retrieval, 150ms rerank, 800ms TTFT, rest streaming.",
+    "idealAnswerKeyPoints": [
+      "Users feel TTFT more than total time for long answers",
+      "Prefetch retrieval on keystroke debounce if appropriate",
+      "Cache embeddings of the query rewrite",
+      "Do not sequentially call three LLMs if two can be parallel",
+      "Measure P95 per stage; optimize the largest slice"
+    ],
+    "idealAnswerFollowups": [
+      "Where would you spend 300ms if you had to add a guardrail classifier?",
+      "How does network distance to the provider affect the budget?"
+    ],
+    "tags": [
+      "latency",
+      "ttft",
+      "rag",
+      "budgets"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "What is prompt caching (provider prefix cache) and how do you design prompts to benefit from it?",
+    "idealAnswerCore": "Many providers cache a stable prefix (system prompt, large tools, static RAG headers) so repeated calls are cheaper/faster; put static content first and keep it byte-stable, putting variable user text at the end.",
+    "idealAnswerFraming": "Practical cost win. Mention cache invalidation when the system prompt changes.",
+    "idealAnswerKeyPoints": [
+      "Stability: avoid timestamps or random IDs in the cached prefix",
+      "Order: static instructions + tools, then user-specific content",
+      "Measure cache hit rate from provider usage reports",
+      "Huge system prompts can pay off if reused",
+      "Changing one character in the prefix busts the cache"
+    ],
+    "idealAnswerFollowups": [
+      "How does this interact with per-user personalization in the system prompt?",
+      "Is prefix cache a security boundary?"
+    ],
+    "tags": [
+      "prompt-cache",
+      "cost",
+      "latency",
+      "prompt-design"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "advanced",
+    "question": "How would you ship an internal coding assistant that cannot train on company code and cannot leak repos?",
+    "idealAnswerCore": "Use a zero-retention enterprise endpoint or self-host, disable training, scope context to authorized repos, DLP on outputs, no public plugins, and log access — product settings should make 'send this file to a public model' hard.",
+    "idealAnswerFraming": "Security + product. Mention IDE telemetry.",
+    "idealAnswerKeyPoints": [
+      "Repo ACL: the assistant only sees what the user can already clone",
+      "Secret scanning on prompts (don't send .env)",
+      "Local-only mode for the most sensitive repos",
+      "Legal: DPAs, subprocessors, region",
+      "Eval: attempts to exfiltrate another team's code must fail"
+    ],
+    "idealAnswerFollowups": [
+      "Would you allow web search in this assistant?",
+      "How do you handle stack traces that contain customer data?"
+    ],
+    "tags": [
+      "coding-assistant",
+      "privacy",
+      "enterprise",
+      "dlp"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How do you design background vs interactive GenAI jobs (summarize this 200-page pack, batch classify tickets)?",
+    "idealAnswerCore": "Interactive paths optimize TTFT and streaming; background jobs use queues, progress events, idempotent writes, and cheaper models — do not run a 10-minute summarization on the chat HTTP request.",
+    "idealAnswerFraming": "Product + architecture split.",
+    "idealAnswerKeyPoints": [
+      "Job API: create, status, cancel, result location",
+      "Progress: pages processed, not a fake spinner",
+      "Notify on completion; store artifacts in object storage",
+      "Priority: user-initiated jobs vs nightly batch",
+      "Partial results if the job fails at page 180"
+    ],
+    "idealAnswerFollowups": [
+      "How do you cancel a running batch completion at the provider?",
+      "When do you still stream a background job?"
+    ],
+    "tags": [
+      "async",
+      "jobs",
+      "batch",
+      "product"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "What should be in an LLM application runbook for on-call?",
+    "idealAnswerCore": "The runbook lists dashboards, error classes, kill switches, provider status pages, fallback flags, spend caps, and who to call for safety vs infra — plus 'do not' items like retrying policy blocks or pasting traces into public Slack.",
+    "idealAnswerFraming": "Operational maturity.",
+    "idealAnswerKeyPoints": [
+      "Symptoms → likely cause → first actions",
+      "How to enable degraded mode",
+      "How to pin/rollback a prompt or model",
+      "How to raise a vendor ticket with request IDs",
+      "Safety incident vs availability incident paths"
+    ],
+    "idealAnswerFollowups": [
+      "What is the first thing you check when TTFT explodes?",
+      "Who owns a sudden toxicity spike?"
+    ],
+    "tags": [
+      "runbook",
+      "on-call",
+      "operations",
+      "incident"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "advanced",
+    "question": "How do you measure whether a GenAI feature is worth its COGS and support load?",
+    "idealAnswerCore": "Compare incremental business outcomes (time saved, conversion, containment) against model cost, eval cost, and support burden from wrong answers — a loved demo with high edit rates may have negative ROI.",
+    "idealAnswerFraming": "Staff+ product sense. Include hidden costs.",
+    "idealAnswerKeyPoints": [
+      "COGS: tokens, retrieval, humans in the loop",
+      "Value: minutes saved, tickets deflected, revenue",
+      "Support: incident rate, trust erosion, legal review",
+      "Opportunity cost of GPU/quota used by this feature vs another",
+      "Kill criteria agreed before launch"
+    ],
+    "idealAnswerFollowups": [
+      "How would you ROI an internal meeting summarizer?",
+      "What if users love it but legal hates the risk?"
+    ],
+    "tags": [
+      "roi",
+      "cogs",
+      "product",
+      "metrics"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How do you keep tool schemas and product UI in sync with what the model can do?",
+    "idealAnswerCore": "Treat tools as a versioned API: the UI should not offer 'refund' if the tool is flagged off, and the model should not see tools the user is not allowed to invoke — one capability registry drives both.",
+    "idealAnswerFraming": "Capability mismatch causes hallucinated buttons and failed calls.",
+    "idealAnswerKeyPoints": [
+      "Registry: name, schema, permissions, flag, docs snippet for the model",
+      "Hide unavailable tools from the prompt entirely",
+      "UI affordances generated from the same registry",
+      "Eval tool-choice when flags change",
+      "Deprecate tools with a sunset and a prompt note"
+    ],
+    "idealAnswerFollowups": [
+      "What happens if the model calls a disabled tool?",
+      "How do you document a tool so the model uses it correctly?"
+    ],
+    "tags": [
+      "tools",
+      "schema",
+      "feature-flags",
+      "ux"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "What privacy settings and vendor terms matter when picking an LLM provider for production?",
+    "idealAnswerCore": "Check training-on-your-data defaults, retention, subprocessors, region, DPA/SOC2, abuse-monitoring access to prompts, and whether zero-data-retention is actually in the contract — a checkbox in a UI is not enough.",
+    "idealAnswerFraming": "Procurement-aware engineer. Mention that APIs differ from ChatGPT consumer terms.",
+    "idealAnswerKeyPoints": [
+      "Enterprise API ≠ consumer chat privacy",
+      "Logging for abuse vs training — understand both",
+      "Data residency and who can see traces at the vendor",
+      "Incident history and status transparency",
+      "Exit plan: can you switch if terms change?"
+    ],
+    "idealAnswerFollowups": [
+      "What question do you ask a vendor about eval traces?",
+      "How do you explain retention to a CISO?"
+    ],
+    "tags": [
+      "privacy",
+      "vendors",
+      "compliance",
+      "dpa"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How do you prevent prompt sprawl when many teams ship GenAI features?",
+    "idealAnswerCore": "A platform prompt registry, shared guardrail libraries, and golden eval templates stop every team from forking slightly different unsafe prompts — governance with paved roads, not a central bottleneck on every comma.",
+    "idealAnswerFraming": "Org design. Paved road vs police.",
+    "idealAnswerKeyPoints": [
+      "Starter templates with approved safety sections",
+      "Shared output validators and DLP",
+      "Office hours + design review for high-risk tools",
+      "Discoverability so teams reuse instead of rebuild",
+      "Metrics: % of traffic on blessed templates"
+    ],
+    "idealAnswerFollowups": [
+      "When is a central prompt team a bottleneck?",
+      "How do you handle a team that needs a genuinely different policy?"
+    ],
+    "tags": [
+      "platform",
+      "governance",
+      "prompts",
+      "org"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "advanced",
+    "question": "How would you design an 'abort and refund' user experience when generation is paid per token?",
+    "idealAnswerCore": "Users need a visible stop, immediate billing freeze for unused work, and a fair policy for partial answers — technically abort the stream, cancel where the API allows, and attribute only delivered tokens with a clear receipt.",
+    "idealAnswerFraming": "Fintech-ish product detail that shows maturity.",
+    "idealAnswerKeyPoints": [
+      "Stop button aborts server-side, not only UI hide",
+      "If the provider still bills in-flight tokens, eat the cost or disclose it",
+      "Show estimated cost before huge jobs",
+      "Idempotent stop: double-click should not double-charge",
+      "Support playbook for disputed charges"
+    ],
+    "idealAnswerFollowups": [
+      "What if stop is clicked after a tool already refunded a customer?",
+      "How do you estimate cost before generation?"
+    ],
+    "tags": [
+      "billing",
+      "abort",
+      "ux",
+      "tokens"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "foundational",
+    "question": "What makes a GenAI feature ready to launch versus stuck in demo-ware?",
+    "idealAnswerCore": "Launch readiness is eval contracts green, guardrails and authz in place, SLOs and runbooks, cost caps, feedback loop, and a known degraded mode — a polished demo on golden prompts is not readiness.",
+    "idealAnswerFraming": "Use as a checklist in interviews when asked 'how would you ship this'.",
+    "idealAnswerKeyPoints": [
+      "Offline evals + canary plan",
+      "Security review for tools and data flows",
+      "Observability and on-call ownership",
+      "Support macros for common failures",
+      "Kill switch and rollback"
+    ],
+    "idealAnswerFollowups": [
+      "What is the smallest responsible launch for a support bot?",
+      "Which item is most often skipped and then causes the incident?"
+    ],
+    "tags": [
+      "launch",
+      "readiness",
+      "evals",
+      "reliability"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How do you handle multilingual users in a production GenAI app?",
+    "idealAnswerCore": "Detect or respect language settings, eval per-language slices, avoid translating away legal meaning, and do not assume English guardrails work on other languages — retrieval corpora and tokenizers also change quality and cost.",
+    "idealAnswerFraming": "Global product. Token cost can be higher for some languages.",
+    "idealAnswerKeyPoints": [
+      "Golden sets per major language, not English-only",
+      "Safety classifiers often weaker off-English — extra review",
+      "RAG: language-aware embeddings or filters",
+      "UX: match the user's language; don't reply English to a Spanish query without asking",
+      "Cost: some languages tokenize less efficiently"
+    ],
+    "idealAnswerFollowups": [
+      "How do you eval a language you cannot read?",
+      "What is code-switching as a failure mode?"
+    ],
+    "tags": [
+      "i18n",
+      "evals",
+      "safety",
+      "product"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "advanced",
+    "question": "How should an LLM-powered search or assistant expose uncertainty and provenance without destroying UX?",
+    "idealAnswerCore": "Use progressive disclosure: a concise answer, visible sources, and an optional 'how we got this' trail; reserve strong uncertainty language for low retrieval confidence or conflicting evidence rather than hedging every sentence.",
+    "idealAnswerFraming": "UX of trust. Too much hedging is useless; too little is dangerous.",
+    "idealAnswerKeyPoints": [
+      "Confidence from retrieval scores + claim checks, not from the model's self-praise",
+      "Conflicting sources UI",
+      "Expert mode: show the query rewrite and top chunks",
+      "Novice mode: answer + two citations",
+      "Never fake a confidence meter you cannot calibrate"
+    ],
+    "idealAnswerFollowups": [
+      "How do you calibrate a confidence score?",
+      "When do you force a 'see sources' click before showing the answer?"
+    ],
+    "tags": [
+      "uncertainty",
+      "provenance",
+      "ux",
+      "trust"
+    ],
+    "source": "seed"
+  }
+]

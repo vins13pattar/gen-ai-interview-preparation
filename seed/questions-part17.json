@@ -1,0 +1,752 @@
+[
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "What is a layered guardrail architecture for a GenAI application, and why is one filter not enough?",
+    "idealAnswerCore": "Layered guardrails combine input checks, isolation of untrusted content, model/policy constraints, output filters, and tool/permission gates so a single bypass (a jailbreak string or a classifier miss) cannot reach a high-impact action.",
+    "idealAnswerFraming": "Use defense-in-depth language from application security. Stress that model-only safety is not an application security boundary.",
+    "idealAnswerKeyPoints": [
+      "Ingress: authn/z, rate limits, size limits, malware scanning on uploads",
+      "Prompt assembly: separate trusted instructions from untrusted user/RAG/tool text with clear delimiters",
+      "Model: safety-tuned model + system policy; never the only control for money/PII/tools",
+      "Egress: output classifiers, PII redaction, schema validation, citation checks",
+      "Actions: least-privilege tools, human approval for irreversible operations"
+    ],
+    "idealAnswerFollowups": [
+      "Where would you place a Llama Guard-style classifier in this stack?",
+      "Which layer still holds if the model is fully jailbroken?"
+    ],
+    "tags": [
+      "guardrails",
+      "defense-in-depth",
+      "security",
+      "architecture"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "What is the OWASP Top 10 for LLM applications at a high level, and which items show up most in production apps?",
+    "idealAnswerCore": "OWASP's LLM list highlights prompt injection, insecure output handling, supply-chain/plugin risks, data leakage, excessive agency, and related app-layer failures — in production, injection plus over-privileged tools and logging of secrets cause most incidents.",
+    "idealAnswerFraming": "Do not recite all ten from memory; group them and map to controls. Interviewers care about application impact, not trivia.",
+    "idealAnswerKeyPoints": [
+      "Prompt injection (direct and indirect) remains the distinctive LLM risk",
+      "Insecure output handling: treating model text as trusted HTML, SQL, or shell",
+      "Sensitive information disclosure via prompts, logs, traces, or training data",
+      "Excessive agency: agents with write access and weak confirmation",
+      "Unbounded consumption: cost/DoS via huge contexts or recursive tool loops"
+    ],
+    "idealAnswerFollowups": [
+      "Which OWASP LLM risk maps most closely to XSS?",
+      "How would you use the list in a design review?"
+    ],
+    "tags": [
+      "owasp",
+      "llm-security",
+      "threat-model",
+      "guardrails"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "What is the difference between direct prompt injection, indirect prompt injection, and jailbreaking in product terms?",
+    "idealAnswerCore": "Direct injection is the user trying to override instructions in the chat; indirect injection is hostile text arriving via documents, email, or websites the app retrieves; jailbreaking is trying to disable safety policy — products must treat retrieved content as hostile even when users are trusted.",
+    "idealAnswerFraming": "Keep this high-level and defensive. Focus on trust boundaries, not attack recipes.",
+    "idealAnswerKeyPoints": [
+      "Trust boundary: system prompt and tool allowlists are trusted; user text and retrieved text are not",
+      "Indirect injection is the RAG/email-agent nightmare: the attacker never uses your UI",
+      "Jailbreak success against the model is not a full compromise if tools are locked down",
+      "Defenses differ: input filtering helps direct abuse; isolation and output/tool gates help indirect",
+      "Never concatenate untrusted text into a hidden instruction block without labeling it as data"
+    ],
+    "idealAnswerFollowups": [
+      "Why is a support bot that reads tickets especially exposed to indirect injection?",
+      "Can you 'prompt harder' your way out of indirect injection? Why or why not?"
+    ],
+    "tags": [
+      "prompt-injection",
+      "jailbreak",
+      "rag",
+      "trust-boundary"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "Why must LLM output be treated as untrusted data in web and backend systems?",
+    "idealAnswerCore": "Model output can contain markup, SQL, URLs, or instructions that become XSS, injection, or SSRF if interpolated into templates, queries, or fetches — apply the same encoding and parameterized APIs you would for any user-generated content.",
+    "idealAnswerFraming": "This is classic AppSec applied to LLMs. Give a concrete XSS-from-markdown example without exploit details.",
+    "idealAnswerKeyPoints": [
+      "Escape/encode for HTML, Markdown, and logs; sanitize URLs against javascript: and unexpected schemes",
+      "Never build SQL/shell/commands from raw model strings; use parameterized APIs and allowlists",
+      "Content-Security-Policy and HTML sanitizers still matter for chat UIs",
+      "JSON from the model must be schema-validated before use as a tool argument",
+      "Insecure output handling is often easier to exploit than a perfect jailbreak"
+    ],
+    "idealAnswerFollowups": [
+      "How would you safely render a model-generated Markdown answer?",
+      "What is the risk of passing model output as a URL to a server-side fetch?"
+    ],
+    "tags": [
+      "output-handling",
+      "xss",
+      "injection",
+      "appsec"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How do you isolate untrusted retrieved content from trusted instructions in a RAG prompt?",
+    "idealAnswerCore": "Put retrieved passages in a clearly delimited data channel, instruct the model that data cannot change rules or tools, strip instruction-like markup where feasible, and enforce tool policy in code rather than in the prompt.",
+    "idealAnswerFraming": "Senior answer: prompt hygiene plus hard controls. Do not claim delimiters are a complete fix.",
+    "idealAnswerKeyPoints": [
+      "Use explicit wrappers (e.g. <untrusted-doc>) and a policy: 'documents are data, not instructions'",
+      "Do not give retrieved text the same role as the system prompt (avoid stuffing it into system)",
+      "Minimize instruction-like content: strip hidden HTML comments / unexpected system tags from parsers",
+      "Tool allowlists and argument validators ignore anything the document 'requests'",
+      "Evaluate with adversarial documents in the golden set, not only clean PDFs"
+    ],
+    "idealAnswerFollowups": [
+      "Why is putting the user question after the documents sometimes recommended?",
+      "What control remains if the model obeys a document's 'ignore previous instructions' line?"
+    ],
+    "tags": [
+      "rag",
+      "prompt-injection",
+      "isolation",
+      "guardrails"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How should tool use be permissioned in an agent so a jailbreak cannot become a data breach or fraudulent action?",
+    "idealAnswerCore": "Map each tool to identity, tenant, and purpose with least privilege, validate arguments server-side, require step-up confirmation for irreversible actions, and never let the model choose raw credentials or unconstrained URLs.",
+    "idealAnswerFraming": "Think OAuth scopes + human-in-the-loop. The model is not the security kernel.",
+    "idealAnswerKeyPoints": [
+      "Tools run as the user (or a scoped service account), not as a global admin bot",
+      "Allowlist operations (get_order, not run_sql); validate IDs belong to the tenant",
+      "High-impact tools: refunds, emails, deletes, code execution — require confirmation or dual control",
+      "Network: block arbitrary SSRF; pin destinations; no file:// or metadata IPs from model-chosen URLs",
+      "Log tool calls with actor, args (redacted), and decision for audit"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent a confused-deputy tool call across tenants?",
+      "When is read-only still dangerous (data exfiltration)?"
+    ],
+    "tags": [
+      "tool-use",
+      "least-privilege",
+      "agents",
+      "authorization"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "What is the difference between input guardrails, output guardrails, and topic/policy engines?",
+    "idealAnswerCore": "Input guardrails screen user (and document) text before the model; output guardrails screen what you return or act on; policy engines encode allow/deny topics and business rules that may use classifiers, regex, or structured decisioning — they solve different misses.",
+    "idealAnswerFraming": "Give examples: injection/PII on input, toxicity/secrets on output, 'no medical dosage' as policy.",
+    "idealAnswerKeyPoints": [
+      "Input: prompt-injection heuristics, jailbreak classifiers, PII minimization, malware, length",
+      "Output: toxicity, self-harm, secret patterns, competitor policy, schema",
+      "Policy engines (e.g. NVIDIA NeMo Guardrails-style flows): dialog state and topical rails, not just a bag of regexes",
+      "Classifiers (Llama Guard, Perspective, custom) are probabilistic — tune thresholds per risk",
+      "Fail closed on high-risk intents; fail open only where false positives wreck UX and impact is low"
+    ],
+    "idealAnswerFollowups": [
+      "When would you block on input vs rewrite on output?",
+      "How do you evaluate false positive rate of a toxicity filter?"
+    ],
+    "tags": [
+      "guardrails",
+      "nemo",
+      "llama-guard",
+      "policy"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How do you handle PII and secrets in prompts, vector stores, logs, and traces?",
+    "idealAnswerCore": "Minimize collection, detect and redact before embedding/logging, encrypt stores, apply retention limits, and keep traces out of third-party trainers unless you have a contractual zero-retention path — assume anything sent to a model provider may be in scope for leakage.",
+    "idealAnswerFraming": "Cover GDPR-ish concerns without being a lawyer. Mention embeddings as personal data when they encode PII.",
+    "idealAnswerKeyPoints": [
+      "Detect PAN, SSNs, API keys before they hit the model or the index; tokenize or drop",
+      "Vector DBs need the same access control as the source documents (tenant filters)",
+      "Logs/traces: redact prompts by default; sample carefully; never log Authorization headers",
+      "Right to delete: you must be able to delete source docs and derived chunks/embeddings",
+      "Provider settings: disable training on your data; choose regional endpoints if required"
+    ],
+    "idealAnswerFollowups": [
+      "Are embeddings personal data if the source text was PII?",
+      "How do you debug a production failure if prompts are redacted?"
+    ],
+    "tags": [
+      "pii",
+      "privacy",
+      "logging",
+      "gdpr"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "What is excessive agency, and how do you design human-in-the-loop controls for high-impact GenAI actions?",
+    "idealAnswerCore": "Excessive agency is giving an LLM authority to take consequential actions with weak checks; HITL means the model proposes, software enforces policy, and a human (or second system) approves above a risk threshold.",
+    "idealAnswerFraming": "Use refunds, production deploys, or customer emails as examples.",
+    "idealAnswerKeyPoints": [
+      "Risk-tier actions: read (auto), draft (auto with review queue), execute (approval)",
+      "Show the human the tool args and the evidence, not just 'the model is confident'",
+      "Time-box pending actions; never let a queued email send after policy change without revalidation",
+      "Shadow mode is a launch step: proposals only, then partial autonomy",
+      "Measure override rate — high overrides mean the agent is not ready"
+    ],
+    "idealAnswerFollowups": [
+      "How do you avoid rubber-stamp fatigue for reviewers?",
+      "When is a second model review an acceptable stand-in for a human?"
+    ],
+    "tags": [
+      "excessive-agency",
+      "hitl",
+      "agents",
+      "governance"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How can GenAI applications leak the system prompt, secrets, or other users' data, and what controls reduce that risk?",
+    "idealAnswerCore": "Leakage happens via user extraction, verbose errors, overly broad retrieval, shared caches, and logs; reduce it by not putting secrets in prompts, tenant-scoped retrieval, cache keys that include identity, and output filters for secret-shaped strings.",
+    "idealAnswerFraming": "Separate 'prompt leaking' (usually low impact if no secrets) from cross-tenant data leakage (high impact).",
+    "idealAnswerKeyPoints": [
+      "Never place API keys or internal URLs in the system prompt; inject credentials only in the tool runtime",
+      "Retrieval must filter by ACL before the model sees chunks",
+      "Semantic caches must not return another tenant's completion",
+      "Disable detailed provider error bodies in the client",
+      "Canary strings in prompts help detect extraction in evals; they are not a complete defense"
+    ],
+    "idealAnswerFollowups": [
+      "Is system-prompt leaking always a security incident?",
+      "How do you tenant-isolate a semantic cache?"
+    ],
+    "tags": [
+      "data-leakage",
+      "system-prompt",
+      "multi-tenant",
+      "caching"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "What unique denial-of-service and cost-abuse risks exist for LLM apps, and how do you mitigate them?",
+    "idealAnswerCore": "Attackers (or buggy agents) can explode cost and latency with huge prompts, recursive tools, image bombs, or uncached retries — mitigate with auth, quotas, max tokens, timeouts, circuit breakers, and per-tenant budgets.",
+    "idealAnswerFraming": "Tie security to reliability. Mention that unauthenticated demos are magnets for abuse.",
+    "idealAnswerKeyPoints": [
+      "Limit input size, upload pages, and max output tokens per request",
+      "Cap agent steps and tool fan-out; detect loops",
+      "Per-user and per-tenant token budgets with hard stops",
+      "WAF/rate limits at the edge; extra strictness on expensive models",
+      "Alert on spend anomalies the same day, not at the monthly invoice"
+    ],
+    "idealAnswerFollowups": [
+      "How do you distinguish a legitimate long document from an abuse attempt?",
+      "What is the risk of retrying a timed-out 32k-token request automatically?"
+    ],
+    "tags": [
+      "dos",
+      "cost-abuse",
+      "rate-limit",
+      "quotas"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How should you threat-model MCP servers, plugins, and third-party tools connected to an LLM?",
+    "idealAnswerCore": "Treat each MCP server as a supply-chain dependency: least privilege, reviewed/pinned versions, egress controls, user consent, and isolation so a compromised server cannot use another tool's credentials — going stateless in 2026-07-28 does not reduce this risk.",
+    "idealAnswerFraming": "MCP/plugin ecosystems expand the attack surface beyond the model. Stay at architecture level; do not walk through exploits.",
+    "idealAnswerKeyPoints": [
+      "Inventory servers: data they can read, actions they can take, where data is sent, and whether they are local stdio vs remote HTTP",
+      "Pin versions and review updates; disable unused tools; treat tool descriptions as untrusted unless the server is trusted",
+      "Sandbox: separate processes, no ambient cloud credentials, allowlisted hosts; gateways can route on Mcp-Method/Mcp-Name without parsing bodies",
+      "Auth: OAuth with issuer validation (RFC 9207) and CIMD over deprecated Dynamic Client Registration; never reuse client credentials across issuers",
+      "Assume tool output is untrusted (indirect injection); validate arguments in your host, not only in the model"
+    ],
+    "idealAnswerFollowups": [
+      "How is a malicious MCP server similar to a malicious browser extension?",
+      "What logging do you need after a tool is revoked?"
+    ],
+    "tags": [
+      "mcp",
+      "supply-chain",
+      "plugins",
+      "threat-model"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How do you safely allow an agent to execute code or generate files?",
+    "idealAnswerCore": "Run untrusted code in a locked-down sandbox with no secrets, limited CPU/memory/time, no sensitive filesystem or network, and treat generated files as untrusted downloads — the LLM is a source of untrusted programs, not an admin shell.",
+    "idealAnswerFraming": "Be defensive; no exploit details. Emphasize isolation.",
+    "idealAnswerKeyPoints": [
+      "Ephemeral containers or WASM with seccomp/network off by default",
+      "Pass only the data the task needs; never mount production databases",
+      "Resource quotas to stop fork bombs and infinite loops",
+      "Scan or sandbox-open generated Office/PDF files; they can contain macros",
+      "Prefer structured tools (chart API) over 'run arbitrary Python' when possible"
+    ],
+    "idealAnswerFollowups": [
+      "When is a REPL tool not worth the risk?",
+      "How do you handle packages the generated code wants to pip-install?"
+    ],
+    "tags": [
+      "sandbox",
+      "code-execution",
+      "agents",
+      "isolation"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "How would you design guardrails for a multi-tenant enterprise RAG assistant over confidential documents?",
+    "idealAnswerCore": "Enforce authorization at retrieval time (not only in the prompt), isolate indexes or metadata filters per tenant, prevent cache cross-talk, log access, and add output DLP — the model must never see unauthorized chunks even if the user asks.",
+    "idealAnswerFraming": "System design: identity → ACL-aware retrieval → generation → DLP. Mention legal holds and deletion.",
+    "idealAnswerKeyPoints": [
+      "AuthN/Z from the host app SSO; impersonation tokens for retrieval",
+      "Row-level security on chunks; test with a user from tenant A querying tenant B IDs",
+      "Separate encryption keys per tenant if contractually required",
+      "DLP on outputs for source-code, customer lists, unreleased finances",
+      "Eval: authorization bypass cases in the golden set every release"
+    ],
+    "idealAnswerFollowups": [
+      "Where do you put ACLs: vector metadata, a document store join, or both?",
+      "How do you handle a document that is visible to only some groups inside one tenant?"
+    ],
+    "tags": [
+      "multi-tenant",
+      "rag",
+      "authorization",
+      "dlp"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "How do you evaluate guardrail effectiveness without turning the eval into an attack cookbook?",
+    "idealAnswerCore": "Use an internal, access-controlled red-team set covering harm categories and injection via documents/tools, report pass/fail by category, and keep payloads in a private repo — publish only high-level coverage, not working jailbreaks.",
+    "idealAnswerFraming": "This respects responsible disclosure. Focus on measurement and process.",
+    "idealAnswerKeyPoints": [
+      "Taxonomy-driven coverage: violence, fraud, privacy, injection, excessive agency — not random insults only",
+      "Include indirect injection fixtures (poisoned docs) and tool-abuse attempts with fake tools",
+      "Track bypass rate over time as you change models; a new model can weaken rails",
+      "Separate safety evals from quality evals so you do not trade them accidentally",
+      "Limit who can access the corpus; treat it like exploit tests in AppSec"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent your public blog from becoming a jailbreak tutorial?",
+      "Should CI fail if a known jailbreak starts working after a model bump?"
+    ],
+    "tags": [
+      "red-team",
+      "evals",
+      "guardrails",
+      "responsible-disclosure"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "What is insecure output handling when the model generates URLs, HTML, or workflow payloads for other systems?",
+    "idealAnswerCore": "If downstream systems trust model-generated links, HTML, or JSON as if they were internal, you get phishing, SSRF, and workflow injection — validate against allowlists, sign internal payloads, and show users the actual destination before they click.",
+    "idealAnswerFraming": "Think 'LLM as an open redirect and HTML generator'. Keep it defensive.",
+    "idealAnswerKeyPoints": [
+      "Rewrite or block non-https and non-allowlisted domains",
+      "Do not fetch model-supplied URLs from your servers without SSRF protections",
+      "Sign or HMAC internal action tokens; do not accept raw model JSON as a ticket update",
+      "UI: display link hosts clearly; beware homograph domains",
+      "Sanitize HTML; prefer a strict Markdown subset"
+    ],
+    "idealAnswerFollowups": [
+      "How would you safely implement 'the assistant added a link to the knowledge base'?",
+      "Why is markdown image syntax a risk in chat UIs?"
+    ],
+    "tags": [
+      "ssrf",
+      "html",
+      "output-handling",
+      "phishing"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "Why are safety-trained models insufficient as the only security control in an application?",
+    "idealAnswerCore": "Safety training reduces some harmful completions but is probabilistic, jailbreakable, and unaware of your ACLs, tenancy, and business policy — application security still needs auth, validation, and least-privilege tools.",
+    "idealAnswerFraming": "Clear a common misconception: 'we use GPT-4 so we are secure'.",
+    "idealAnswerKeyPoints": [
+      "Alignment is not authorization: the model does not know who owns a record",
+      "New jailbreaks and indirect injection appear after your model snapshot",
+      "Business rules (discount limits) belong in code, not in a paragraph of English",
+      "Regulated industries cannot point to a model card as a control",
+      "Use the model's safety as a layer, then enforce invariants in software"
+    ],
+    "idealAnswerFollowups": [
+      "What invariant would you enforce in code for a banking chatbot?",
+      "Does a more aligned model let you give it more tool permissions?"
+    ],
+    "tags": [
+      "alignment",
+      "authorization",
+      "guardrails",
+      "misconception"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "What should an incident response plan include for a GenAI application?",
+    "idealAnswerCore": "Cover prompt-injection/data-leak events, toxic output, runaway spend, and compromised tools: kill switches, key rotation, cache purge, user notification, trace preservation, and a post-incident eval case so the same failure is tested forever.",
+    "idealAnswerFraming": "Map to classic IR: detect, contain, eradicate, recover, learn — with LLM-specific artifacts.",
+    "idealAnswerKeyPoints": [
+      "Kill switch: disable tools, fall back to retrieval-only or human support",
+      "Preserve traces with legal hold; redact before sharing vendors",
+      "Rotate keys if they appeared in prompts or tickets",
+      "Purge poisoned documents and embeddings",
+      "Comms: legal/comms templates for leaked PII vs. offensive output"
+    ],
+    "idealAnswerFollowups": [
+      "How is a model-provider outage different from a security incident?",
+      "What is your one-hour containment checklist?"
+    ],
+    "tags": [
+      "incident-response",
+      "kill-switch",
+      "security",
+      "operations"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How do content classifiers (toxicity, jailbreak, prompt-injection detectors) fail, and how do you set thresholds?",
+    "idealAnswerCore": "Classifiers miss novel phrasings (false negatives) and block legitimate domain language (false positives); set thresholds by risk, measure both rates on a labeled set, and combine with deterministic rules for the cases that must never miss.",
+    "idealAnswerFraming": "Talk precision/recall and product UX. Medical and security terms often false-positive.",
+    "idealAnswerKeyPoints": [
+      "Tune per surface: public child-facing vs internal engineering assistant",
+      "Use a second layer (human or stricter model) near the threshold, not only a hard cut",
+      "Adversaries will paraphrase; detectors should not be your only control for tools",
+      "Monitor production blocks and user appeals to catch drift",
+      "Document known blind spots for the risk committee"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle a security engineer asking about 'SQL injection' in an internal bot?",
+      "What is threshold hacking in a dual-classifier setup?"
+    ],
+    "tags": [
+      "classifiers",
+      "thresholds",
+      "false-positives",
+      "safety"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How should authentication and rate limiting differ for GenAI endpoints versus ordinary REST APIs?",
+    "idealAnswerCore": "GenAI endpoints are expensive, stateful, and abuse-prone, so they need stronger identity, tighter quotas in tokens not only requests, abuse detection on prompt size/complexity, and often step-up auth for tools — request-count limits alone are not enough.",
+    "idealAnswerFraming": "Connect to cost and DoS. Mention unauthenticated playgrounds.",
+    "idealAnswerKeyPoints": [
+      "Quota in tokens, images, and tool calls per user/tenant/day",
+      "Authenticate before you spend GPU; no anonymous expensive models on the public internet",
+      "Per-session concurrency limits to stop one user filling the batcher",
+      "Bot detection for signup that exists only to drain credits",
+      "Separate limits for cheap vs frontier models"
+    ],
+    "idealAnswerFollowups": [
+      "Would you rate-limit by IP or by account for an LLM API?",
+      "How do you handle a legitimate batch job that looks like abuse?"
+    ],
+    "tags": [
+      "auth",
+      "rate-limiting",
+      "tokens",
+      "abuse"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "How do you prevent cross-user data leakage via KV-cache, batching, or provider-side bugs — and what can you actually control?",
+    "idealAnswerCore": "You cannot fully audit a closed provider's batching, so you control identity in requests, avoid putting foreign secrets in shared prompts, prefer providers with isolation commitments, and for high-sensitivity data use dedicated endpoints or self-host — plus never mix tenants in one prompt.",
+    "idealAnswerFraming": "Be honest about shared-GPU realities without fearmongering. Application-level isolation is still mandatory.",
+    "idealAnswerKeyPoints": [
+      "Never concatenate two customers' data in one inference call",
+      "Use separate API keys/projects per environment and sometimes per tenant tier",
+      "For secrets, prefer tools that fetch data after inference, not in the prompt",
+      "Self-host or VPC endpoints when contracts require it",
+      "Add canary tokens per tenant in evals to detect mix-ups"
+    ],
+    "idealAnswerFollowups": [
+      "What isolation guarantees would you ask a model vendor?",
+      "When is a dedicated instance worth the cost?"
+    ],
+    "tags": [
+      "isolation",
+      "multi-tenant",
+      "inference",
+      "privacy"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "How should you apply data-loss-prevention (DLP) to streaming LLM responses?",
+    "idealAnswerCore": "Streaming requires incremental scanning with a buffer so secret patterns that span tokens are not flushed to the client, plus a last-mile hold for high-risk matches — you trade a little TTFT/tail latency for not leaking an API key on token 3 of 4.",
+    "idealAnswerFraming": "This is a practical engineering question. Mention false positives freezing the stream.",
+    "idealAnswerKeyPoints": [
+      "Maintain a rolling window for regex/secret detectors before forwarding chunks",
+      "On match: halt stream, replace with a redacted message, log an incident breadcrumb",
+      "Do not stream tool arguments that contain PII to unprivileged UIs",
+      "Tune patterns to reduce UX stalls; allowlist known-safe formats",
+      "Re-scan the full assembled message for a final check"
+    ],
+    "idealAnswerFollowups": [
+      "How large a buffer do you need for a 4096-bit PEM key detector?",
+      "What do you show the user when a stream is cut mid-sentence?"
+    ],
+    "tags": [
+      "dlp",
+      "streaming",
+      "pii",
+      "guardrails"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "What is a allowlist vs denylist approach for topics and tools, and when does each fail?",
+    "idealAnswerCore": "Allowlists permit only known-safe tools/topics and fail closed; denylists block known-bad strings and fail open on novelty — for high-impact actions prefer allowlists; denylists are extra friction for obvious abuse, not a complete policy.",
+    "idealAnswerFraming": "Classic security tradeoff applied to LLM policy.",
+    "idealAnswerKeyPoints": [
+      "Tool allowlists: the agent cannot invent a send_wire_transfer tool",
+      "Topic denylists miss paraphrases and other languages",
+      "Hybrid: allowlist capabilities, denylist content categories with classifiers",
+      "Review the allowlist as a change-controlled artifact",
+      "User-facing refusals should be consistent and non-instructive"
+    ],
+    "idealAnswerFollowups": [
+      "Why do denylists rot?",
+      "How would you allowlist retrieval corpora?"
+    ],
+    "tags": [
+      "allowlist",
+      "policy",
+      "tools",
+      "guardrails"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "How do you keep prompt templates and eval traces from becoming a secret-sprawl problem?",
+    "idealAnswerCore": "Templates and traces often accumulate credentials, customer data, and internal URLs; use secret scanning in CI, templating that injects secrets at runtime, and trace stores with encryption, ACLs, and TTLs.",
+    "idealAnswerFraming": "Developer hygiene is part of LLM security.",
+    "idealAnswerKeyPoints": [
+      "Secret scanning on the prompt repo (gitleaks) and on trace exports",
+      "Configuration: secrets from a vault, not from Jinja defaults",
+      "Trace backends: SSO, field-level redaction, tenant partitions",
+      "Local debug dumps should be gitignored and auto-expired",
+      "Treat few-shot examples as data — they may contain real PII copied from prod"
+    ],
+    "idealAnswerFollowups": [
+      "What is the risk of pasting a LangSmith trace into a ticket?",
+      "How do you give contractors debug access without full prompt dumps?"
+    ],
+    "tags": [
+      "secrets",
+      "traces",
+      "prompt-templates",
+      "hygiene"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "How would you secure a retrieval pipeline against poisoned documents that try to influence answers or exfiltrate data?",
+    "idealAnswerCore": "Assume some documents are hostile: isolate them in the prompt, restrict tools while documents are in context, detect exfil patterns (requests to dump the system prompt or call webhooks), and use provenance/ACLs so untrusted sources cannot override trusted policies.",
+    "idealAnswerFraming": "Stay high-level. Poisoned RAG is a major 2024–2026 interview topic.",
+    "idealAnswerKeyPoints": [
+      "Source trust tiers: internal wiki > vendor PDF > open web",
+      "Disable or freeze high-risk tools when context includes untrusted tiers",
+      "Output DLP for 'send this to attacker-controlled URL' style completions",
+      "Monitor sudden retrieval of rarely used docs as an anomaly signal",
+      "Human review for knowledge-base publishes; malware scan uploads"
+    ],
+    "idealAnswerFollowups": [
+      "Should public web search be on by default in an enterprise assistant?",
+      "How do trust tiers interact with citation UX?"
+    ],
+    "tags": [
+      "data-poisoning",
+      "rag",
+      "exfiltration",
+      "provenance"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "What logging is necessary for security audits of an LLM app, and what must you avoid logging?",
+    "idealAnswerCore": "Log identity, tenant, prompt template version, model, tool names, decision (allow/deny), and hashes or redacted snippets — avoid raw secrets, full documents with PII, and other users' content in shared debug channels.",
+    "idealAnswerFraming": "Balance forensics vs privacy. Mention legal discovery.",
+    "idealAnswerKeyPoints": [
+      "Immutable audit log for tool executions and admin prompt changes",
+      "Correlation IDs across gateway → retriever → model → tools",
+      "Redaction pipeline before logs leave the trust boundary",
+      "Access to raw traces is privileged and time-limited",
+      "Retention aligned with policy; security incidents may need longer holds"
+    ],
+    "idealAnswerFollowups": [
+      "How do you investigate a suspected injection with redacted logs?",
+      "Should you log sampled raw prompts in production?"
+    ],
+    "tags": [
+      "audit-log",
+      "privacy",
+      "observability",
+      "compliance"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "How does structured output (JSON schema / constrained decoding) help security and how does it not?",
+    "idealAnswerCore": "Schemas prevent free-form tool arguments and some injection into downstream parsers, but they do not stop malicious values that still match the schema (valid URLs, valid IDs) — validation of values and authz remains mandatory.",
+    "idealAnswerFraming": "Good 'security control vs. not a control' distinction.",
+    "idealAnswerKeyPoints": [
+      "Constrained decoding reduces 'JSON + prose' parser exploits",
+      "Enums and max lengths cut overflow and unexpected keys",
+      "A schema-valid refund of $1,000,000 is still a business logic bug",
+      "Do not assume the model cannot put HTML inside a string field",
+      "Combine schema + allowlists + authz checks"
+    ],
+    "idealAnswerFollowups": [
+      "Where would you still regex-check a schema-valid string field?",
+      "Can constrained decoding stop prompt injection?"
+    ],
+    "tags": [
+      "structured-output",
+      "json-schema",
+      "validation",
+      "guardrails"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "How do you apply least privilege to embeddings, caches, and conversation memory stores?",
+    "idealAnswerCore": "Memory is just another database: encrypt it, key it by user/tenant/session, expire it, and never retrieve another user's memories because the model 'thought the names were similar'.",
+    "idealAnswerFraming": "People forget that memory features are retrieval features with ACL needs.",
+    "idealAnswerKeyPoints": [
+      "Session memory vs long-term memory should have different TTLs and consent",
+      "Similarity search must include mandatory metadata filters for identity",
+      "Users need a way to view and delete memories",
+      "Do not write raw credentials the user pasted into long-term memory",
+      "Eval for memory exfil: 'what did the previous customer say?' must fail"
+    ],
+    "idealAnswerFollowups": [
+      "How is conversation memory different from RAG over a knowledge base?",
+      "What is the blast radius of a leaked Redis memory store?"
+    ],
+    "tags": [
+      "memory",
+      "embeddings",
+      "least-privilege",
+      "privacy"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "intermediate",
+    "question": "What is a kill switch and a model/provider feature flag strategy for safety regressions?",
+    "idealAnswerCore": "A kill switch instantly disables risky tools or the whole assistant; feature flags let you pin prompts/models and roll back when a provider update or prompt change spikes jailbreak or toxicity rates.",
+    "idealAnswerFraming": "Operational security. Mention that providers can change models behind aliases.",
+    "idealAnswerKeyPoints": [
+      "Pin model IDs; do not auto-follow 'latest' in production",
+      "Flags for: tools on/off, web browse on/off, image upload on/off",
+      "Auto-trigger kill on safety-metric spike or spend spike",
+      "Practice the switch in game days so on-call knows it",
+      "Communicate degraded mode to users (search-only, human queue)"
+    ],
+    "idealAnswerFollowups": [
+      "What is the difference between a kill switch and a circuit breaker?",
+      "How fast must a safety kill switch be?"
+    ],
+    "tags": [
+      "kill-switch",
+      "feature-flags",
+      "rollback",
+      "operations"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "foundational",
+    "question": "How should you talk about 'red teaming' in an interview without providing attack instructions?",
+    "idealAnswerCore": "Describe process, coverage, and controls: who tests, what categories you cover, how findings are severity-rated and retested, and how results feed evals — skip payload details unless you are in a closed red-team role discussion.",
+    "idealAnswerFraming": "This is both a content and a professionalism signal. Matches the existing prompt-engineering guidance.",
+    "idealAnswerKeyPoints": [
+      "Focus on goals: find failures before attackers and customers do",
+      "Report: category, impact, likelihood, residual risk, owner",
+      "Retest after mitigations; add a golden case",
+      "Coordinate with legal for dual-use features",
+      "Refuse to share working jailbreaks in public channels"
+    ],
+    "idealAnswerFollowups": [
+      "How is a product red team different from a research jailbreak paper?",
+      "Who should be in the readout meeting?"
+    ],
+    "tags": [
+      "red-teaming",
+      "process",
+      "responsible-disclosure",
+      "interviews"
+    ],
+    "source": "seed"
+  }
+]

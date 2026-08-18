@@ -1,0 +1,283 @@
+[
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "foundational",
+    "question": "Is there an official 'MCP 2.0', and what is the MCP 2026-07-28 specification?",
+    "idealAnswerCore": "There is no spec titled 'MCP 2.0'. The breaking release is protocol version 2026-07-28, which made the core stateless; some SDKs and blogs nicknamed that era 'v2' because it dropped the initialize handshake and session ID.",
+    "idealAnswerFraming": "Interviewers often say 'MCP 2.0' loosely. Correct them politely: cite the date version, then list the headline changes. That shows you read the spec, not a tweet.",
+    "idealAnswerKeyPoints": [
+      "Official versions are dates: 2024-11-05, 2025-03-26, 2025-11-25, then 2026-07-28",
+      "2026-07-28 retired initialize/initialized and Mcp-Session-Id; requests carry protocol version, client info, and capabilities in _meta",
+      "Optional server/discover replaces the old handshake for capability lookup; it is not required before tools/call",
+      "Ecosystem 'v2' names (TypeScript SDK v2, FastMCP 4, etc.) track the spec but are product versions, not the protocol name",
+      "Legacy HTTP+SSE, Roots, Sampling, and Logging are deprecated with a minimum 12-month removal window (not earlier than July 2027)"
+    ],
+    "idealAnswerFollowups": [
+      "Why did MCP remove protocol-level sessions?",
+      "How do you pin MCP-Protocol-Version in a gateway?"
+    ],
+    "tags": ["mcp", "mcp-2026-07-28", "versioning", "spec"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "Why did the MCP 2026-07-28 spec make the protocol core stateless, and what still can be stateful?",
+    "idealAnswerCore": "Protocol-level sessions fought load balancers, serverless, and gateways: sticky Mcp-Session-Id pinned clients to one instance. Stateless requests can hit any replica. Application state is still allowed — you mint an explicit handle from a tool and pass it back as an argument so the model can see it.",
+    "idealAnswerFraming": "This is an infrastructure interview question. Contrast transport state vs business state. Hidden session maps in server memory are the anti-pattern.",
+    "idealAnswerKeyPoints": [
+      "Old flow: initialize → initialized + session header → every call must return to the same process or a shared session store",
+      "New flow: each JSON-RPC request is self-contained; round-robin HTTP works without Redis-for-sessions",
+      "stdio local servers still exist; the change matters most for remote Streamable HTTP at scale",
+      "If a checkout MCP needs a cart, return cartId from a tool and require it on later calls — do not hide the cart in a session cookie the model cannot name",
+      "Breaking: servers that still require initialize as the first message fail against current SDKs"
+    ],
+    "idealAnswerFollowups": [
+      "How would you migrate a server that stored user prefs in a Map keyed by session ID?",
+      "Does stateless MCP mean you cannot have long-running tasks?"
+    ],
+    "tags": ["mcp", "stateless", "sessions", "scalability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is server/discover in MCP 2026-07-28, and how did capability negotiation move off initialize?",
+    "idealAnswerCore": "Capability and identity data now ride on every request in _meta. Clients that want a catalog up front call the optional server/discover RPC; they are not required to handshake before tools/call.",
+    "idealAnswerFraming": "Show you know discovery is an optimization for hosts, not a connection ritual. Mention cache hints on list results.",
+    "idealAnswerKeyPoints": [
+      "_meta carries protocol version, clientInfo, and client capabilities per request",
+      "server/discover is optional; a tools/call can be the first message a replica ever sees",
+      "tools/list, prompts/list, resources/list, and resources/read responses include ttlMs and cacheScope so reconnects do not thrash catalogs or bust prompt caches",
+      "List order is deterministic to keep prefix caches stable",
+      "Hosts should still pin MCP-Protocol-Version (header and/or meta) so mixed-version fleets fail clearly"
+    ],
+    "idealAnswerFollowups": [
+      "When would you skip server/discover on the hot path?",
+      "How do cacheScope values change a multi-tenant catalog?"
+    ],
+    "tags": ["mcp", "discovery", "capabilities", "_meta"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What are Multi Round-Trip Requests (MRTR) in MCP, and what did they replace?",
+    "idealAnswerCore": "MRTR lets a server pause a tool call by returning resultType input_required plus the questions it needs; the client retries the original method with inputResponses instead of holding an open bidirectional stream for elicitation or sampling.",
+    "idealAnswerFraming": "This is how confirmations and missing fields work on a stateless transport. Compare to the old server-initiated elicitation/create over SSE.",
+    "idealAnswerKeyPoints": [
+      "Old model: server pushed elicitation/create, sampling/createMessage, or roots/list on a held-open stream",
+      "New model (SEP-2322): HTTP-style retry with answers attached; any replica can continue if state is in the payload/handle",
+      "Use for 'confirm destructive query' or 'need project id' without a websocket session",
+      "Sampling and Roots themselves are deprecated — do not design new features on them; MRTR is the pattern for remaining interactive needs",
+      "Hosts must bound retries so an input_required loop cannot become a cost/DoS path"
+    ],
+    "idealAnswerFollowups": [
+      "How would you implement a delete-table confirmation with MRTR?",
+      "Why is MRTR better for serverless than a long SSE connection?"
+    ],
+    "tags": ["mcp", "mrtr", "elicitation", "streamable-http"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "Why must Streamable HTTP MCP requests include Mcp-Method and Mcp-Name headers?",
+    "idealAnswerCore": "SEP-2243 requires Mcp-Method and Mcp-Name so gateways, WAFs, and rate limiters can route and meter without parsing JSON-RPC bodies — replacing session-id sticky routing.",
+    "idealAnswerFraming": "This is a platform/gateway question. Tie it to least-privilege routing: you can allow tools/list broadly and restrict tools/call by name.",
+    "idealAnswerKeyPoints": [
+      "Example: Mcp-Method: tools/call and Mcp-Name: search plus MCP-Protocol-Version: 2026-07-28",
+      "Body inspection at the edge was slow, brittle, and hostile to encryption/middleware",
+      "Use headers for per-tool quotas, authz, and observability labels",
+      "Clients that omit headers fail spec-compliant servers/gateways",
+      "Does not replace argument validation — a header can lie; the host still must authz the call"
+    ],
+    "idealAnswerFollowups": [
+      "How would you rate-limit only expensive MCP tools at an API gateway?",
+      "What header would you log for an audit trail besides Mcp-Name?"
+    ],
+    "tags": ["mcp", "streamable-http", "headers", "gateways"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "advanced",
+    "question": "How did MCP authorization change in 2026-07-28 (RFC 9207, DCR vs CIMD)?",
+    "idealAnswerCore": "Auth hardened around OAuth: clients must validate the iss parameter (RFC 9207) before redeeming a code, client credentials are bound to the issuing authorization server, and Dynamic Client Registration is deprecated in favor of Client ID Metadata Documents (CIMD).",
+    "idealAnswerFraming": "Authorization is where teams burn integration time. Name mix-up attacks at a high level and the control (issuer check), not exploit steps.",
+    "idealAnswerKeyPoints": [
+      "RFC 9207 iss on the authorization response closes authorization-server mix-up if the client actually validates it",
+      "DCR still works for a 12-month window but new designs should publish CIMD instead of registering ad hoc clients",
+      "application_type in DCR helps desktop/CLI localhost redirect URIs that used to fail OAuth checks",
+      "Enterprise Managed Authorization (EMA) is an extension for company-controlled identity, not a reason to skip per-tool consent",
+      "MCP still cannot enforce consent at the protocol layer — hosts must prompt users before powerful tools"
+    ],
+    "idealAnswerFollowups": [
+      "Why bind client credentials to a single issuer?",
+      "When is EMA the right extension vs. a simple API key for an internal server?"
+    ],
+    "tags": ["mcp", "oauth", "cimd", "rfc-9207", "authorization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "advanced",
+    "question": "What happened to MCP Tasks, and how do you run long-running work on a stateless core?",
+    "idealAnswerCore": "Tasks left experimental core and became the io.modelcontextprotocol/tasks extension: poll with tasks/get, mutate with tasks/update, cancel with tasks/cancel, and listen via subscriptions/listen instead of a dedicated GET/SSE task stream.",
+    "idealAnswerFraming": "Long-running agents need durable handles, not session affinity. Mention AWS's contribution of Tasks and that extensions are opt-in.",
+    "idealAnswerKeyPoints": [
+      "Core protocol stays request/response; Tasks is negotiated as an extension, not assumed",
+      "Poll-based status is load-balancer friendly; old experimental subscribe loops are gone",
+      "Store task state in your DB keyed by a server-minted id the model can pass around",
+      "subscriptions/listen is an opt-in stream for notifications, not a substitute for session IDs",
+      "2025-11-25 experimental Tasks callers must migrate; error/subscription shapes changed"
+    ],
+    "idealAnswerFollowups": [
+      "How do Tasks interact with MRTR if a job needs extra user input mid-run?",
+      "What do you persist so a crashed replica can resume a task?"
+    ],
+    "tags": ["mcp", "tasks", "extensions", "async"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "Which MCP features were deprecated in 2026-07-28, and what should new servers use instead?",
+    "idealAnswerCore": "Roots, Sampling, Logging, and legacy HTTP+SSE transport are deprecated under a formal 12-month policy. New work should use explicit tool args or resource URIs instead of Roots, provider LLM APIs instead of Sampling, stderr/platform logs instead of protocol Logging, and Streamable HTTP instead of HTTP+SSE.",
+    "idealAnswerFraming": "Deprecation policy is a maturity signal. Say they still work today, must not be the default in new designs, and earliest removal is about July 2027.",
+    "idealAnswerKeyPoints": [
+      "Roots → pass workspace/file URIs as tool arguments or resources",
+      "Sampling (server asking the client to run an LLM) → call the host's model API; avoids hidden nested-LLM sessions",
+      "Logging → stderr for stdio, and your APM for HTTP",
+      "HTTP+SSE → Streamable HTTP with method/name headers",
+      "Plan upgrades; do not wait for a hard cut that breaks production hosts"
+    ],
+    "idealAnswerFollowups": [
+      "Why is server-side sampling a problematic abstraction at scale?",
+      "How do you dual-run Streamable HTTP and SSE during migration?"
+    ],
+    "tags": ["mcp", "deprecation", "sampling", "http-sse"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "advanced",
+    "question": "How do you migrate a production MCP server from the 2025-11-25 session model to 2026-07-28?",
+    "idealAnswerCore": "Upgrade Tier-1 SDKs, delete initialize handlers and session maps, put per-request identity in _meta, emit Mcp-Method/Mcp-Name, and replace hidden session state with explicit handles; already-stateless wrappers are a small patch, stateful carts/workflows are the real work.",
+    "idealAnswerFraming": "Walk a migration plan: inventory state, dual-run if needed, eval tools, then cut the handshake. Mention error code shifts such as missing-resource moving toward standard -32602.",
+    "idealAnswerKeyPoints": [
+      "Already-stateless API wrappers: drop initialize, add headers, regression-test tool schemas",
+      "Stateful servers: persist context server-side under a handle returned to the client/model",
+      "Gateways: stop routing on Mcp-Session-Id; start routing on Mcp-Method/Mcp-Name",
+      "Tasks users: move to the tasks extension poll APIs",
+      "Auth: validate iss; stop designing new DCR-only clients",
+      "Test with current SDKs that no longer send initialize — old servers fail closed"
+    ],
+    "idealAnswerFollowups": [
+      "How would you canary a new MCP protocol version in a host that still has old servers?",
+      "What observability do you add around protocol-version mismatches?"
+    ],
+    "tags": ["mcp", "migration", "2026-07-28", "production"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is the MCP extensions framework, and what are MCP Apps versus Tasks versus EMA?",
+    "idealAnswerCore": "Extensions are opt-in modules so the core can stay small: Tasks cover durable async work, MCP Apps let hosts render sandboxed UI (forms, charts) from the server, and Enterprise Managed Authorization plugs corporate identity — clients and servers must both advertise support.",
+    "idealAnswerFraming": "This is the 'how does MCP grow without another breaking core' question. Contrast with stuffing features into initialize.",
+    "idealAnswerKeyPoints": [
+      "Core: JSON-RPC, tools, resources, prompts, stateless HTTP/stdio",
+      "Tasks: long-running operations with poll/update/cancel",
+      "MCP Apps: interactive UI in the host, sandboxed, not raw HTML execution in the model",
+      "EMA: enterprise identity/governance overlay for MCP",
+      "Skills-over-MCP (working group) is about structured agent instructions discovered via MCP, still evolving"
+    ],
+    "idealAnswerFollowups": [
+      "When is an MCP App better than returning Markdown from a tool?",
+      "What happens if a host ignores an extension the server requires?"
+    ],
+    "tags": ["mcp", "extensions", "mcp-apps", "ema", "tasks"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How did MCP 2026-07-28 change reliability and load balancing for remote tool servers?",
+    "idealAnswerCore": "Without session affinity, any healthy replica can serve tools/call; you still need idempotent tools, timeouts, and explicit handles for in-flight work — plus header-based admission control instead of sticky-session failover.",
+    "idealAnswerFraming": "Connect the spec to SRE: round-robin, retries, and no Redis session cache as a SPOF. Mention MRTR retries are application-level, not TCP retries.",
+    "idealAnswerKeyPoints": [
+      "Health checks can hit any instance; no session store to warm",
+      "Retries after 503 must not double-execute side effects — use idempotency keys on writes",
+      "input_required retries should carry enough state to resume on another replica",
+      "Gateways shed load using Mcp-Name when one tool is hot",
+      "stdio local MCP is still a single process — do not assume the stateless benefits there"
+    ],
+    "idealAnswerFollowups": [
+      "How do you retry a tools/call that already started a refund?",
+      "What breaks if a client still sends Mcp-Session-Id and no Mcp-Method?"
+    ],
+    "tags": ["mcp", "load-balancing", "retries", "reliability"],
+    "source": "seed"
+  },
+  {
+    "domainId": "security-guardrails",
+    "difficulty": "advanced",
+    "question": "Did making MCP stateless fix prompt injection or malicious-server risk?",
+    "idealAnswerCore": "No. Statelessness is a scaling and routing change. Third-party servers can still exfiltrate data, confused-deputy tools can still fire, and tool results can still inject instructions — hosts still need consent, allowlists, argument authz, and untrusted-output handling.",
+    "idealAnswerFraming": "Do not let infrastructure news replace threat modeling. Keep the answer defensive and high-level.",
+    "idealAnswerKeyPoints": [
+      "Removing sessions even reduces one class of session-fixation bugs, but that is not the main MCP threat",
+      "OAuth/CIMD/iss checks harden client registration mix-up, not tool abuse",
+      "Header routing helps enforce per-tool policy at the gateway",
+      "Tool descriptions remain untrusted unless the server is trusted",
+      "Elicitation/MRTR can social-engineer users — confirm UX must show what will execute"
+    ],
+    "idealAnswerFollowups": [
+      "What host control still matters if every MCP call is independently authenticated?",
+      "How do MCP Apps change the sandbox story?"
+    ],
+    "tags": ["mcp", "security", "stateless", "supply-chain"],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "How should a production host (IDE, desktop agent, or SaaS copilot) pin and roll out MCP protocol versions?",
+    "idealAnswerCore": "Pin MCP-Protocol-Version, dual-run 2025-11-25 and 2026-07-28 only with an adapter, catalog servers that still need initialize, and treat a spec bump like a dependency upgrade: eval tools, auth, and headers before flipping the default SDK.",
+    "idealAnswerFraming": "Platform ownership. New SDKs stop sending initialize, so an unplanned upgrade is an outage for lagging servers.",
+    "idealAnswerKeyPoints": [
+      "Inventory: local stdio vs remote HTTP, protocol version, whether the server is stateful",
+      "Feature-flag the new client; canary internal servers first",
+      "Reject mixed headers (session id without method name) in your gateway logs",
+      "Keep a compatibility layer only as a time-boxed exception",
+      "Document user impact: some community servers will break until they upgrade"
+    ],
+    "idealAnswerFollowups": [
+      "What is your rollback if a popular MCP server is not 2026-07-28 ready?",
+      "How do you communicate a breaking MCP upgrade to extension authors?"
+    ],
+    "tags": ["mcp", "production", "versioning", "rollout"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "foundational",
+    "question": "How do MCP Host, Client, and Server differ, and who talks to the LLM?",
+    "idealAnswerCore": "The Host is the application (Cursor, Claude Desktop, your agent service). The Client is the MCP connector inside that host. The Server exposes tools/resources/prompts. The LLM only sees tool schemas and results that the host puts in the model API — it does not speak MCP on the wire.",
+    "idealAnswerFraming": "This misconception shows up constantly. Draw the three boxes. Function calling sits between host and model; MCP sits between host client and server.",
+    "idealAnswerKeyPoints": [
+      "One host can run many clients, each connected to a different server",
+      "stdio servers are child processes of the host; HTTP servers are remote",
+      "The model never receives Mcp-Method headers; the host translates tool_calls ↔ tools/call",
+      "Security consent belongs in the host UI, not in the model weights",
+      "Getting this wrong leads people to 'prompt the MCP server' as if it were the model"
+    ],
+    "idealAnswerFollowups": [
+      "Can two hosts share one remote MCP server? What authz is required?",
+      "Where does OpenAI/Anthropic tool calling sit in this diagram?"
+    ],
+    "tags": ["mcp", "architecture", "host", "client", "server"],
+    "source": "seed"
+  }
+]

@@ -2,7 +2,7 @@
 
 **A free, open-source, self-hosted tool for Gen AI developer interview preparation.**
 
-Browse 500+ realistic interview questions across 8 Gen AI domains, each paired with a curated ideal answer — the kind of answer that would impress a senior interviewer. No timers, no scores, no pressure.
+Browse 690+ realistic interview questions across 15 Gen AI domains, each paired with a curated ideal answer — the kind of answer that would impress a senior interviewer. No timers, no scores, no pressure.
 
 **Bring Your Own Key (BYOK):** Supply your own OpenAI, Anthropic, or Ollama API key. Keys are encrypted with AES-256 and stored locally — never sent anywhere except your configured LLM provider.
 
@@ -12,9 +12,16 @@ Browse 500+ realistic interview questions across 8 Gen AI domains, each paired w
 - Retrieval-Augmented Generation (vector DBs, chunking, reranking, RAGAS evaluation)
 - Fine-tuning & Alignment (LoRA, QLoRA, RLHF, DPO, dataset curation)
 - Prompt Engineering (CoT, structured output, adversarial prompting)
-- Agentic Systems & Tool Use (MCP, ReAct, multi-agent, memory architectures)
+- Agentic Systems & Tool Use (MCP 2026-07-28, ReAct, multi-agent, memory architectures)
 - MLOps for LLMs (vLLM, TGI, observability, cost optimization)
 - AI Safety & Ethics (hallucination mitigation, red-teaming, EU AI Act)
+- LLM Evaluation & Quality (golden sets, LLM-as-judge, regression evals, online metrics)
+- Security & Guardrails (OWASP LLM risks, injection defenses, output filters, tool isolation)
+- Fault Tolerance & Reliability (retries, circuit breakers, failover, graceful degradation)
+- Production GenAI Applications (cost, caching, streaming, observability, structured output)
+- Reasoning Models & Test-Time Compute (o-series, R1, thinking budgets, distillation)
+- Context Engineering (compaction, memory vs RAG, context rot, prefix cache)
+- GenAI System Design (copilots, support agents, document QA, cost/latency/safety)
 - Behavioral & Situational (STAR method, trade-off reasoning, production incidents)
 
 ## Quick Start (< 5 minutes)
@@ -40,7 +47,7 @@ cp .env.example .env
 pnpm setup
 ```
 
-This creates a local SQLite database and seeds it with 500+ questions. No API key needed for this step.
+This creates a local SQLite database and seeds it with 690+ questions. No API key needed for this step.
 
 ### 3. Start the app
 

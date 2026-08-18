@@ -183,18 +183,18 @@
     "domainId": "agentic-systems",
     "difficulty": "intermediate",
     "question": "What is the Model Context Protocol (MCP) and how does it benefit agentic systems?",
-    "idealAnswerCore": "MCP (Anthropic's Model Context Protocol) is an open standard for connecting LLMs to external tools and data sources via a unified server/client interface — it eliminates the need for custom integrations by standardizing how agents discover and call tools.",
-    "idealAnswerFraming": "MCP is to LLM tool integration what USB is to hardware peripherals — instead of every application building custom connectors to every tool, MCP provides a standard interface that works across models and frameworks.",
+    "idealAnswerCore": "MCP is the open JSON-RPC standard for connecting agent hosts to external tools and data: a server implements tools/resources/prompts once, and any compatible host can discover and call them — the 2026-07-28 spec made that core stateless so remote MCP can run like ordinary HTTP.",
+    "idealAnswerFraming": "Keep the USB-C analogy, then mention production: reusable servers, runtime discovery, and (after 2026-07-28) round-robin scale-out without sticky sessions. Do not claim the LLM itself speaks MCP; the host/client does.",
     "idealAnswerKeyPoints": [
-      "Architecture: MCP servers expose tools, resources (file access, database reads), and prompts; MCP clients (LLMs/agents) discover and call these via a standard JSON-RPC-based protocol",
-      "Discovery: agents can query an MCP server for its available tools and their schemas at runtime — tools are self-documenting, reducing prompt engineering overhead",
-      "Benefits: reusable server implementations (one Postgres MCP server works with any compatible LLM/agent framework), reduced integration code, standardized error handling",
-      "Resource types: tools (callable functions), resources (readable data like files, database rows), prompts (reusable prompt templates the agent can invoke)",
-      "Ecosystem: growing library of MCP servers for common services (GitHub, Slack, databases, web search, file systems) — agents can be composed from existing MCP servers without custom integration code"
+      "Servers expose tools, resources, and prompts; the host's MCP client discovers schemas at runtime (tools/list or server/discover) so agents are not hardcoded to one vendor SDK",
+      "Benefits: one Postgres/GitHub/Slack server works across Claude, Cursor, custom agents; less glue code; consistent errors and auth patterns",
+      "Remote MCP is now Streamable HTTP with required Mcp-Method/Mcp-Name headers; stdio remains the local-dev transport",
+      "Stateless core: protocol version, client info, and capabilities travel in _meta on every request — application state should be explicit handles, not a hidden session",
+      "Ecosystem: registry of servers plus extensions (Tasks, MCP Apps, enterprise auth) without bloating the core spec"
     ],
     "idealAnswerFollowups": [
-      "How does MCP handle authentication and authorization for accessing sensitive resources?",
-      "When would you build a custom MCP server vs. using an existing one for your agent's tool needs?"
+      "How does MCP authorization change with RFC 9207 issuer checks and Client ID Metadata Documents?",
+      "When would you still run a local stdio MCP server instead of remote Streamable HTTP?"
     ],
     "tags": ["agentic-systems", "mcp", "tool-calling", "standards", "integration"],
     "source": "seed"

@@ -1,0 +1,202 @@
+[
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "intermediate",
+    "question": "What is the Agent-to-Agent (A2A) protocol, and how does it differ from MCP?",
+    "idealAnswerCore": "MCP standardizes how a host talks to tools/resources (model-to-context). A2A (and similar agent-network proposals) standardizes how autonomous agents discover, auth, and delegate to other agents as peers — complementary layers, not replacements.",
+    "idealAnswerFraming": "2026 interviews love this comparison. MCP is USB-C for tools; A2A is more like service-to-service for agents. Stay high-level on evolving specs.",
+    "idealAnswerKeyPoints": [
+      "MCP: host client ↔ server tools/prompts/resources, now stateless HTTP/stdio",
+      "A2A: agent cards, task delegation, cross-vendor agent collaboration",
+      "A product may use MCP internally and A2A at the org boundary",
+      "Both need identity, least privilege, and untrusted-output handling",
+      "Do not implement two protocols for the same local database wrapper"
+    ],
+    "idealAnswerFollowups": [
+      "When would you wrap an agent as an MCP tool instead of exposing A2A?",
+      "What new confused-deputy risks appear when agents call agents?"
+    ],
+    "tags": ["a2a", "mcp", "protocols", "multi-agent"],
+    "source": "seed"
+  },
+  {
+    "domainId": "agentic-systems",
+    "difficulty": "advanced",
+    "question": "How do you design a computer-use or browser agent that is actually operable in production?",
+    "idealAnswerCore": "Constrain the environment (allowlisted domains, disposable VM/browser), observe via screenshots/DOM with a tight loop budget, require confirmation on purchases and auth walls, and eval on your own task set — demo GIFs are not a control plane.",
+    "idealAnswerFraming": "There is already a 'browser agent' question in the bank; this is the production bar: sandbox, determinism, cost.",
+    "idealAnswerKeyPoints": [
+      "Sandbox: no host filesystem, no SSO cookies from the user's bank",
+      "Prefer APIs/MCP tools over clicking when they exist",
+      "Bbox/DOM actions need retries; UIs change",
+      "Record traces for replay; they contain PII",
+      "Kill switch and domain allowlist"
+    ],
+    "idealAnswerFollowups": [
+      "Why is computer use a poor default vs first-party APIs?",
+      "How do you eval a booking flow without charging a real card?"
+    ],
+    "tags": ["computer-use", "browser-agents", "sandbox", "evals"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "advanced",
+    "question": "What is prefill/decode disaggregation (Splitwise, Mooncake-style), and when do you need it?",
+    "idealAnswerCore": "Prefill is compute-heavy and decode is memory-bandwidth/KV-heavy; at scale you split them across GPU pools and ship KV caches over the datacenter network so neither pool is stranded — overkill until you are GPU-bound on mixed long-prompt chat.",
+    "idealAnswerFraming": "Serving architecture 2025–2026. Mention KV transfer and tail latency.",
+    "idealAnswerKeyPoints": [
+      "Prefill likes high FLOPs utilization; decode likes KV capacity and batching",
+      "Disaggregation adds network hop and failure modes for KV transfer",
+      "Helps long-context RAG (huge prefill) plus many short decodes",
+      "Not your first optimization — continuous batching and PagedAttention come first",
+      "Observe TTFT vs TPOT separately after the split"
+    ],
+    "idealAnswerFollowups": [
+      "How do you keep prefix cache useful across disaggregated pools?",
+      "What happens if KV transfer fails mid-request?"
+    ],
+    "tags": ["prefill", "decode", "disaggregation", "kv-cache", "serving"],
+    "source": "seed"
+  },
+  {
+    "domainId": "mlops",
+    "difficulty": "intermediate",
+    "question": "When do you deploy an SLM on-device or at the edge instead of calling a frontier API?",
+    "idealAnswerCore": "Choose local/edge when privacy, offline, or per-token cost at huge QPS dominate, and the task fits a 1–8B quantized model (classification, autocomplete, rewrite); keep a cloud fallback for hard reasoning and tools that need the network.",
+    "idealAnswerFraming": "llama.cpp/vLLM/MLX class discussion. Quality cliff is the point.",
+    "idealAnswerKeyPoints": [
+      "INT4 GGUF on CPU/NPU can be 'good enough' for constrained tasks",
+      "You now own updates, evals, and jailbreak regressions",
+      "Battery, thermals, and RAM are your new SLOs",
+      "Distill from a teacher rather than expecting 7B = GPT-4",
+      "Hybrid router: local first, cloud on low confidence"
+    ],
+    "idealAnswerFollowups": [
+      "How do you ship weight updates safely to millions of devices?",
+      "What tasks still require the cloud even if the SLM is 'smart'?"
+    ],
+    "tags": ["slm", "on-device", "quantization", "edge"],
+    "source": "seed"
+  },
+  {
+    "domainId": "ai-safety",
+    "difficulty": "intermediate",
+    "question": "What intellectual-property and training-data issues should a GenAI product engineer be ready to discuss?",
+    "idealAnswerCore": "Know where your weights and RAG corpus come from, whether the provider trains on your prompts, how outputs might overlap copyrighted material, and that 'the model wrote it' is not a complete legal defense — engineering controls are licenses, filters, citation, and human review for publishable media.",
+    "idealAnswerFraming": "Not legal advice. Show you will involve counsel and still own technical controls.",
+    "idealAnswerKeyPoints": [
+      "Provider terms: training on customer data, retention, output ownership",
+      "RAG: you can still leak a licensed PDF to the wrong tenant",
+      "Image/code gen: style and copy-alike risk; keep provenance",
+      "EU GPAI-style training-data summaries and opt-outs may apply if you train",
+      "Product: attribution UX and takedown process"
+    ],
+    "idealAnswerFollowups": [
+      "How does RAG citation help — and fail — as an IP control?",
+      "What do you log if a rights holder sends a complaint?"
+    ],
+    "tags": ["copyright", "ip", "training-data", "compliance"],
+    "source": "seed"
+  },
+  {
+    "domainId": "fine-tuning",
+    "difficulty": "intermediate",
+    "question": "How do you build a synthetic-data flywheel that does not collapse model diversity?",
+    "idealAnswerCore": "Generate with a teacher, filter with verifiers and diversity clustering, mix in real traces, and periodically inject new human seeds — recursive self-training on unfiltered model output tends toward bland, self-agreeing text.",
+    "idealAnswerFraming": "Model collapse is the buzzword; the fix is filtering and mixing.",
+    "idealAnswerKeyPoints": [
+      "Verifier first: unit tests, schema, entailment, toxicity",
+      "Dedup and cluster so you do not 10× the same intent",
+      "Keep a real-data floor (even 10–20%)",
+      "Watch evals on out-of-template phrasing",
+      "Document lineage of every synthetic shard"
+    ],
+    "idealAnswerFollowups": [
+      "How is this different from distilling a reasoner?",
+      "What collapse looks like on a classification head vs a chat model?"
+    ],
+    "tags": ["synthetic-data", "model-collapse", "distillation", "data-quality"],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How should you evaluate multimodal (VLM) features differently from text-only LLM apps?",
+    "idealAnswerCore": "You need perception gold (OCR/table cells, UI states) plus grounded generation; a text judge that never sees the image will miss invented buttons and misread charts — use multimodal judges or extractors and include blurry/rotated real scans.",
+    "idealAnswerFraming": "Extends the evals domain. Perception vs language errors.",
+    "idealAnswerKeyPoints": [
+      "Separate: did it see the number vs did it explain it well",
+      "Bbox/page citations for documents",
+      "Adversarial: tiny font, dark mode screenshots, memes",
+      "Safety: unallowed visual content, PII on IDs",
+      "Cost: images dominate tokens; sample evals carefully"
+    ],
+    "idealAnswerFollowups": [
+      "How do you gold-label a 200-page scanned binder?",
+      "When is OCR+LLM better than a native VLM?"
+    ],
+    "tags": ["multimodal", "vlm", "evals", "ocr"],
+    "source": "seed"
+  },
+  {
+    "domainId": "production-apps",
+    "difficulty": "intermediate",
+    "question": "What product and infra choices differ for a streaming voice/video avatar versus a text chat box?",
+    "idealAnswerCore": "Voice needs barge-in, endpointing, first-audio SLO, STT error recovery, and recording consent; video adds lip-sync and GPU for avatars — you cannot reuse a 60s HTTP chat timeout or a long reasoner as the default turn model.",
+    "idealAnswerFraming": "Product + infra. Tie to the voice system-design question without duplicating the whole architecture.",
+    "idealAnswerKeyPoints": [
+      "State machine for turns; LLM is not the VAD",
+      "Partial transcripts will be wrong; confirm critical slots",
+      "Store audio with the same DLP rules as text, usually stricter",
+      "Fallback to keypad/IVR when STT fails",
+      "Eval with real call recordings (consented), not only text transcripts"
+    ],
+    "idealAnswerFollowups": [
+      "How do you test barge-in in CI?",
+      "Should the LLM see the full audio or only text?"
+    ],
+    "tags": ["voice", "streaming", "product", "realtime"],
+    "source": "seed"
+  },
+  {
+    "domainId": "llm-internals",
+    "difficulty": "advanced",
+    "question": "What is prefix caching (KV reuse) at the serving layer, and how is it different from application semantic cache?",
+    "idealAnswerCore": "Serving-layer prefix cache reuses KV tensors for a shared prompt prefix across requests on the same model replica; semantic cache returns a previous completion for a similar user question. One saves prefill FLOPs; the other may skip the model entirely — they compose.",
+    "idealAnswerFraming": "Internals + production. Automatic prefix cache vs Redis GPTCache.",
+    "idealAnswerKeyPoints": [
+      "Requires identical token prefix on the same model/quant",
+      "Helps system prompts and shared RAG headers if packing is stable",
+      "Does not make answers tenant-safe by itself — still isolate requests",
+      "Semantic cache can be wrong; prefix cache is exact compute reuse",
+      "Disaggregated serving must attach KV to the decode replica"
+    ],
+    "idealAnswerFollowups": [
+      "Why does a per-user date in the system prompt destroy prefix cache?",
+      "How does paged KV memory interact with prefix cache eviction?"
+    ],
+    "tags": ["prefix-cache", "kv-cache", "serving", "semantic-cache"],
+    "source": "seed"
+  },
+  {
+    "domainId": "behavioral",
+    "difficulty": "intermediate",
+    "question": "Tell me about a time you killed or narrowly scoped a GenAI feature. What signaled it was not ready?",
+    "idealAnswerCore": "Use STAR: name the eval or incident (faithfulness, cost, safety, ACL), the decision to delay or cut scope, the communication with PM/legal, and the follow-up eval cases so it could not silently return.",
+    "idealAnswerFraming": "They want judgment, not hero shipping. Concrete metrics beat 'we needed more time'.",
+    "idealAnswerKeyPoints": [
+      "Situation: a specific metric or incident, not vibes",
+      "Task: protect users/brand while keeping a path to launch",
+      "Action: kill switch, HITL, or retrieval-only mode",
+      "Result: numbers and the golden cases you added",
+      "Avoid blaming 'the model' without a control you owned"
+    ],
+    "idealAnswerFollowups": [
+      "How did you convince a PM who wanted to ship the demo?",
+      "What would you do differently in the next launch review?"
+    ],
+    "tags": ["behavioral", "star", "launch", "judgment"],
+    "source": "seed"
+  }
+]
