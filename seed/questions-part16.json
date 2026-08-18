@@ -1,0 +1,752 @@
+[
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "Why are evaluations the bottleneck for shipping a GenAI product, more than model choice?",
+    "idealAnswerCore": "GenAI product quality is non-deterministic and prompt/model/data changes can regress silently, so a reliable eval loop is what lets you ship, compare, and rollback — model choice is secondary once you can measure the job-to-be-done.",
+    "idealAnswerFraming": "Interviewers want to hear that you treat evals as a product system, not a one-off benchmark run. Lead with: without evals you cannot tell if a new prompt, retriever, or model is actually better for users.",
+    "idealAnswerKeyPoints": [
+      "LLM outputs vary with temperature, context, and retrieval; unit tests on code do not catch 'answers look plausible but are wrong'",
+      "Most production failures are task-specific (wrong citation, missed policy, bad JSON) — public leaderboards rarely measure those",
+      "Evals unlock comparison: prompt A vs B, GPT vs Claude, RAG k=5 vs k=10, with a decision threshold",
+      "They also unlock CI: block merges that drop faithfulness, schema validity, or safety pass-rate",
+      "A small, high-quality golden set (50–200 cases) beats a huge noisy benchmark for product decisions"
+    ],
+    "idealAnswerFollowups": [
+      "How would you convince a PM to invest in evals before adding another model?",
+      "What happens to velocity if you only use production thumbs-up as your eval?"
+    ],
+    "tags": [
+      "evals",
+      "product",
+      "golden-set",
+      "regression"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "What is the difference between offline evals, online evals, and human evals for an LLM application?",
+    "idealAnswerCore": "Offline evals score a frozen dataset before deploy; online evals measure live user and system metrics after deploy; human evals are periodic labeled reviews that calibrate automated scores — you need all three because they catch different failure modes.",
+    "idealAnswerFraming": "Structure the answer as a pipeline: offline as a gate, online as a monitor, human as ground truth. Mention lag, cost, and statistical power of each.",
+    "idealAnswerKeyPoints": [
+      "Offline: golden set + automated metrics (exact match, schema validity, LLM-as-judge); cheap, repeatable, no user risk; can overfit the set",
+      "Online: task completion, deflection, latency, cost, thumbs, escalation rate; measures real distribution but is noisy and lagged",
+      "Human: expert or crowd labels on sampled traces; expensive but required to validate judges and catch novel failures",
+      "Use offline to prevent known regressions, online to detect drift and new query types, human to recalibrate",
+      "Do not treat online thumbs as a faithfulness metric — users upvote tone as often as correctness"
+    ],
+    "idealAnswerFollowups": [
+      "When would you skip offline evals and go straight to a canary?",
+      "How large does an online experiment need to be to detect a 3% quality drop?"
+    ],
+    "tags": [
+      "evals",
+      "offline",
+      "online",
+      "human-eval"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "How do you build a golden evaluation set for a GenAI feature?",
+    "idealAnswerCore": "A golden set is a versioned collection of representative inputs with expected properties (reference answers, required citations, must-not-say rules, or rubrics) that you run on every prompt/model/retriever change.",
+    "idealAnswerFraming": "Emphasize sampling from real traffic, covering failure slices, and keeping labels maintainable. Interviewers ding answers that only say 'use MMLU'.",
+    "idealAnswerKeyPoints": [
+      "Start from production traces and support tickets, not synthetic trivia; include easy, typical, and adversarial cases",
+      "Stratify by intent, language, document type, risk level, and known failure modes (empty retrieval, conflicting sources)",
+      "Label what you can check automatically (JSON schema, citation IDs, refusal) plus a short rubric for open-ended quality",
+      "Version the set like code; when product policy changes, update labels rather than silently scoring against stale gold",
+      "50 well-labeled cases with error analysis beat 5,000 unlabeled prompts; grow the set from production misses"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent the golden set from leaking into prompt few-shots?",
+      "How often should you refresh labels as the product evolves?"
+    ],
+    "tags": [
+      "evals",
+      "golden-set",
+      "dataset",
+      "labeling"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "What should you measure at the component level vs end-to-end in a RAG or agent application?",
+    "idealAnswerCore": "Component evals isolate retriever, ranker, tool calls, and generator; end-to-end evals score the user-visible answer or task outcome — you debug with components and ship with end-to-end.",
+    "idealAnswerFraming": "This is the classic 'unit vs integration test' analogy. Show you would not tune chunk size using only thumbs-up, and would not ship using only Recall@k.",
+    "idealAnswerKeyPoints": [
+      "Retrieval: Recall@k, MRR, nDCG, hit rate on gold passages",
+      "Generation: faithfulness/groundedness, answer relevance, completeness, toxicity",
+      "Agents: tool selection accuracy, argument validity, trajectory success, loop/timeout rate",
+      "End-to-end: task success, citation correctness, schema validity, latency/cost SLOs",
+      "A retrieval win can still be an E2E loss if the generator ignores context ('lost in the middle')"
+    ],
+    "idealAnswerFollowups": [
+      "How would you attribute an E2E failure to retrieval vs generation?",
+      "What component metric would you watch during a vector-index migration?"
+    ],
+    "tags": [
+      "evals",
+      "rag",
+      "agents",
+      "component-eval"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "When are deterministic metrics (exact match, F1, BLEU, ROUGE, JSON schema) sufficient, and when do they fail for LLM apps?",
+    "idealAnswerCore": "Deterministic metrics work when the output is constrained (classification, extraction, SQL, JSON, citations); they fail for open-ended answers where many phrasings are correct and n-gram overlap rewards verbosity or punishes valid paraphrases.",
+    "idealAnswerFraming": "Show judgment: start with cheap checks as CI gates, then add semantic or judge metrics only where needed.",
+    "idealAnswerKeyPoints": [
+      "Great fits: structured extraction, tool-call JSON, regex policy, must-include facts, citation IDs",
+      "BLEU/ROUGE correlate poorly with helpfulness for chat; they punish concise correct answers",
+      "Exact match is brittle to punctuation, ordering, and equivalent SQL",
+      "Combine: schema valid AND key facts present AND judge score for remaining quality",
+      "Never let a fluency metric be the only ship gate for factual products"
+    ],
+    "idealAnswerFollowups": [
+      "How would you score a SQL-generation feature without executing the query?",
+      "Why might ROUGE go up while user trust goes down?"
+    ],
+    "tags": [
+      "evals",
+      "metrics",
+      "bleu",
+      "structured-output"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "How does LLM-as-judge evaluation work in a production eval harness, and what biases must you control?",
+    "idealAnswerCore": "LLM-as-judge prompts a strong model with a rubric (and optionally a reference) to score or rank outputs; it scales cheaper than humans but inherits verbosity, position, self-preference, and scale-calibration biases that you mitigate with swap tests, rubrics, and human calibration.",
+    "idealAnswerFraming": "Assume the interviewer has heard of LLM-as-judge. Go deeper: pairwise vs pointwise, judge model choice, and how you detect that the judge is gaming itself.",
+    "idealAnswerKeyPoints": [
+      "Pointwise: score 1–5 against a rubric; pairwise: choose A vs B (often more stable for ranking changes)",
+      "Mitigations: swap position and average, hide model names, use a different judge family than the candidate",
+      "Require structured judge output (score + evidence span) so you can audit false convictions",
+      "Calibrate against a human-labeled subset; report judge–human agreement (kappa/correlation), not only mean score",
+      "Pin judge model/version; a silent judge upgrade can look like a product regression or win"
+    ],
+    "idealAnswerFollowups": [
+      "When would you prefer a small specialized classifier over a frontier judge?",
+      "How do you stop the candidate model from writing 'judge bait' that inflates scores?"
+    ],
+    "tags": [
+      "evals",
+      "llm-as-judge",
+      "bias",
+      "rubric"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "What is G-Eval and how does it differ from a naive 'rate this 1-5' judge prompt?",
+    "idealAnswerCore": "G-Eval (Liu et al.) uses chain-of-thought scoring against explicit criteria, often with form-filling and probability-weighted scores, to make LLM judges more aligned with human ratings than a single unconstrained score.",
+    "idealAnswerFraming": "Name the paper-level idea without being pedantic: structured criteria + reasoning + aggregation beat a vibe score.",
+    "idealAnswerKeyPoints": [
+      "Define criteria (coherence, faithfulness, fluency) separately rather than one overall vibe",
+      "Ask the judge to reason, then emit a score; optionally weight token probabilities of score tokens",
+      "Reduces some noise vs. a one-shot integer, but still needs human calibration",
+      "Cost/latency is higher than a tiny classifier — batch offline, not on every live request unless necessary",
+      "Pair with deterministic checks so the judge is not the only gate"
+    ],
+    "idealAnswerFollowups": [
+      "Would you run G-Eval online on 100% of traffic? Why or why not?",
+      "How do you version criteria when product policy changes?"
+    ],
+    "tags": [
+      "evals",
+      "g-eval",
+      "llm-as-judge",
+      "criteria"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "How do RAGAS-style metrics (faithfulness, answer relevance, context precision/recall) map to product decisions?",
+    "idealAnswerCore": "RAGAS decomposes RAG quality into retrieval and generation axes so you can decide whether to fix the index, the prompt, or the model — faithfulness dropping with stable context recall points at the generator; the reverse points at retrieval.",
+    "idealAnswerFraming": "Walk through a debugging tree. Interviewers love 'metric → action'.",
+    "idealAnswerKeyPoints": [
+      "Faithfulness: claims supported by retrieved context — low means hallucination or ignored context",
+      "Answer relevance: addresses the user question — low means off-topic or incomplete even if grounded",
+      "Context recall: gold facts appeared in retrieved chunks — low means chunking/index/query issues",
+      "Context precision: retrieved chunks are actually useful — low means noisy k or bad ranking",
+      "Do not optimize RAGAS blindly: a judge can mark hedging as unfaithful; spot-check disagreements"
+    ],
+    "idealAnswerFollowups": [
+      "If faithfulness is high but users still complain, what else could be wrong?",
+      "How do you compute context recall without gold passages?"
+    ],
+    "tags": [
+      "evals",
+      "ragas",
+      "rag",
+      "faithfulness"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "How do you put LLM evals into CI/CD so prompt and model changes cannot silently regress?",
+    "idealAnswerCore": "Treat prompts, tools, and retrieval configs as code: on every PR, run a fast eval subset as a gate and a larger suite nightly, fail the build on statistically meaningful drops in contract metrics, and store traces for failed cases.",
+    "idealAnswerFraming": "Connect this to software engineering: fixtures, flakes, and flake quarantine. Mention cost control so CI does not bankrupt you.",
+    "idealAnswerKeyPoints": [
+      "Split suites: smoke (schema, refusals, 20 critical cases) vs full (golden set + judges)",
+      "Pin models, judge versions, and temperature; record git SHA of prompts/templates",
+      "Define contract metrics (e.g. JSON validity ≥ 99%, faithfulness ≥ 0.85, P95 latency SLO)",
+      "Budget: cache embeddings, use cheaper models for smoke, sample traces rather than 100% judge",
+      "On failure, dump the worst cases into review — a red number without examples is unusable"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle an eval that flakes because the judge is non-deterministic?",
+      "Should a 1% drop in a vanity metric block a security fix?"
+    ],
+    "tags": [
+      "evals",
+      "ci-cd",
+      "regression",
+      "prompt-versioning"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "How do you detect whether a quality score change is real versus noise?",
+    "idealAnswerCore": "Treat eval scores as experiments: use paired tests on the same cases, report confidence intervals, and require a minimum effect size plus case-level error analysis before declaring a win.",
+    "idealAnswerFraming": "This separates senior candidates. Mention McNemar/bootstrap/paired t and the danger of peeking at 30 examples.",
+    "idealAnswerKeyPoints": [
+      "Always compare on the same frozen set; shuffling or adding cases mid-experiment confounds results",
+      "For binary pass/fail, use paired tests (McNemar); for scores, bootstrap the mean difference",
+      "LLM judges add extra variance — run swap tests or average two judge passes if the delta is small",
+      "Look at slices: an overall +2% can hide a −15% on a high-risk subset",
+      "Never ship on a leaderboard bump without reading failures that flipped"
+    ],
+    "idealAnswerFollowups": [
+      "How many examples do you need to detect a 5% absolute drop in pass rate?",
+      "What is peeking and why does it inflate false wins?"
+    ],
+    "tags": [
+      "evals",
+      "statistics",
+      "significance",
+      "experimentation"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "What is eval-driven development for GenAI, and how does it differ from demo-driven development?",
+    "idealAnswerCore": "Eval-driven development writes the failure cases and metrics first, then changes prompts/models until the suite improves without breaking contracts — demo-driven development cherry-picks impressive outputs and discovers regressions in production.",
+    "idealAnswerFraming": "Frame it as TDD for non-deterministic systems. Mention that evals must include 'do not' cases, not only happy paths.",
+    "idealAnswerKeyPoints": [
+      "Capture each production bug as a golden case with an assertion or rubric",
+      "Define done as metric movement on slices that matter to the business, not a single viral demo",
+      "Include safety and schema contracts alongside helpfulness so you cannot 'win' by being reckless",
+      "Review diffs of outputs, not only aggregate scores",
+      "Resist adding few-shot examples copied from the eval set — that is overfitting, not learning"
+    ],
+    "idealAnswerFollowups": [
+      "How do you keep the team from overfitting prompts to the golden set?",
+      "Where do product analytics fit in this loop?"
+    ],
+    "tags": [
+      "evals",
+      "eval-driven-development",
+      "process",
+      "quality"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "How should you evaluate tool-using agents differently from single-shot chat completions?",
+    "idealAnswerCore": "Agent evals must score the trajectory, not only the final string: correct tool choice, valid arguments, termination, side-effect safety, and task success under timeouts — a fluent final answer can hide a dangerous or looping tool path.",
+    "idealAnswerFraming": "Use a travel-booking or refund example. Interviewers want tool correctness and process metrics.",
+    "idealAnswerKeyPoints": [
+      "Process metrics: tool precision/recall, argument schema validity, steps-to-success, retry loops",
+      "Outcome metrics: task success, user-visible correctness, cost/tokens, wall-clock",
+      "Safety: unauthorized tool calls, writes without confirmation, leaking secrets into tools",
+      "Use simulated tools with fixtures so evals are deterministic and cheap",
+      "Grade partial credit: right retrieval but failed write vs. hallucinated success"
+    ],
+    "idealAnswerFollowups": [
+      "How do you eval an agent whose tools hit live APIs?",
+      "What is a 'reward hack' in an agent eval?"
+    ],
+    "tags": [
+      "evals",
+      "agents",
+      "tool-use",
+      "trajectory"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "What online product metrics complement model-quality evals for a GenAI application?",
+    "idealAnswerCore": "Online metrics capture whether the feature actually helps users: task completion, time-to-resolution, deflection, edit distance on suggested text, escalation to humans, retention, and cost per successful task — they complement but do not replace groundedness evals.",
+    "idealAnswerFraming": "Show you can talk to PMs. Warn against optimizing thumbs at the expense of truthfulness.",
+    "idealAnswerKeyPoints": [
+      "Leading indicators: empty-state rate, regenerate clicks, copy/insert rate, follow-up 'that's wrong'",
+      "Lagging: CSAT, retention, ticket volume, containment rate for support bots",
+      "Operational: P95 TTFT, error rate, $ per session, cache hit rate",
+      "Join traces to tickets: a quality drop often shows up in support before in thumbs",
+      "Instrument the action (accepted suggestion) not just the impression (shown suggestion)"
+    ],
+    "idealAnswerFollowups": [
+      "Which online metric would you pick as the north star for an internal coding assistant?",
+      "How do you attribute a metric move to a prompt change vs. a traffic mix shift?"
+    ],
+    "tags": [
+      "evals",
+      "online-metrics",
+      "product",
+      "observability"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "How do you use production traces as a living eval set without leaking private data or overfitting?",
+    "idealAnswerCore": "Sample traces, redact PII, cluster by intent, label a stratified subset, and promote only durable cases into the golden set — rotate examples and keep a holdout cluster that prompts never see.",
+    "idealAnswerFraming": "This is how real teams keep evals representative. Mention privacy and consent.",
+    "idealAnswerKeyPoints": [
+      "Continuous sampling with rate limits; overweight failures and low-confidence cases",
+      "Redact secrets, customer names, and unique identifiers before labeling or sending to a judge vendor",
+      "Cluster embeddings of queries so you do not label 200 duplicates of the same intent",
+      "Holdout: never put holdout text into system prompts or few-shots",
+      "Expire cases when the product behavior is supposed to change"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle traces that contain credentials accidentally pasted by users?",
+      "What sampling rate is reasonable for a 10M-request/day assistant?"
+    ],
+    "tags": [
+      "evals",
+      "production-traces",
+      "privacy",
+      "drift"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How do you evaluate faithfulness and citation quality when the model can paraphrase retrieved context?",
+    "idealAnswerCore": "Require atomic claims, check each claim against retrieved passages (NLI/judge/entailment), and score citations at claim-level rather than 'a source was attached somewhere' — paraphrase is allowed; unsupported numbers, names, and policies are not.",
+    "idealAnswerFraming": "Senior bar: claim decomposition + evidence. Mention that string overlap is insufficient.",
+    "idealAnswerKeyPoints": [
+      "Decompose the answer into claims; mark each as supported, contradicted, or not in context",
+      "Citation precision: cited chunk actually supports the claim; citation recall: claims that need sources have them",
+      "Numeric and named-entity checks are high-ROI automated filters",
+      "Allow paraphrase and synthesis across chunks but fail on merged facts that no single or combined source states",
+      "Human spot-check legal/medical claims even if the judge is green"
+    ],
+    "idealAnswerFollowups": [
+      "How do you treat a correct answer that used parametric knowledge not in the retrieved docs?",
+      "Would you fail an answer that cites a relevant doc but slightly misquotes a number?"
+    ],
+    "tags": [
+      "evals",
+      "faithfulness",
+      "citations",
+      "nli"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "What is benchmark contamination and how does it distort both public leaderboards and internal evals?",
+    "idealAnswerCore": "Contamination is when eval items (or close paraphrases) appeared in pretraining, fine-tuning, or your few-shot prompts, inflating scores without real generalization — it affects MMLU-style benches and also your golden set if you paste eval cases into prompts.",
+    "idealAnswerFraming": "Show practical defenses: canaries, paraphrase sets, and never training on the eval split.",
+    "idealAnswerKeyPoints": [
+      "Public benches leak into internet-scale crawls; a 90% MMLU may not mean your app is accurate",
+      "Internal contamination: engineers copy failing evals into the prompt until the suite is green",
+      "Detect: n-gram overlap, membership tests, or a secret canary item that should remain unknown",
+      "Mitigate: holdout sets, continually refreshed live tasks, execution-based evals (code/SQL)",
+      "Report contamination-aware results when claiming SOTA internally"
+    ],
+    "idealAnswerFollowups": [
+      "How would you design an eval that is hard to contaminate?",
+      "Is it contamination if the model saw the policy doc that the answer should cite?"
+    ],
+    "tags": [
+      "evals",
+      "contamination",
+      "benchmarks",
+      "generalization"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How would you design an eval program for a multi-step customer-support agent that can refund, retrieve orders, and escalate?",
+    "idealAnswerCore": "Build a scenario catalog with fixtures for tools, score both policy compliance and customer outcome, include adversarial and ambiguous tickets, and gate autonomy (refunds) on a higher bar than chat-only answers.",
+    "idealAnswerFraming": "This is a system-design eval question. Structure: scenarios → simulators → metrics → human review → online holdouts.",
+    "idealAnswerKeyPoints": [
+      "Scenarios: happy path, missing order, policy edge (out of window), angry user, injection in ticket text",
+      "Simulated tools with deterministic order/refund APIs and injected faults (timeouts, 409s)",
+      "Metrics: correct tool sequence, refund amount accuracy, escalation precision/recall, tone, leakage of PII",
+      "Separate 'can chat' vs 'can spend money' evals; require human review until refund accuracy is proven",
+      "Online: shadow mode (agent proposes, human acts) then canary percent of live tickets"
+    ],
+    "idealAnswerFollowups": [
+      "How do you eval empathy without letting it override policy?",
+      "What fixture design prevents the agent from memorizing order IDs?"
+    ],
+    "tags": [
+      "evals",
+      "agents",
+      "support",
+      "policy"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How do you choose between reference-based, reference-free, and pairwise evaluation?",
+    "idealAnswerCore": "Use reference-based when a gold answer exists and variation is limited; reference-free (rubric/judge/classifiers) when many answers are valid; pairwise when you are choosing between two systems and relative ranking is more stable than absolute scores.",
+    "idealAnswerFraming": "Give a decision table. Mention cost and label burden.",
+    "idealAnswerKeyPoints": [
+      "Reference-based: extraction, classification, constrained generation; cheap and auditable",
+      "Reference-free: open chat, summarization without a single gold; needs strong rubrics",
+      "Pairwise: prompt or model bake-offs; reduce position bias with swaps",
+      "Hybrid: reference checks for must-have facts + pairwise for style",
+      "If you cannot write a rubric an expert agrees on, you are not ready to automate the judge"
+    ],
+    "idealAnswerFollowups": [
+      "Why might pairwise say A>B while your north-star online metric disagrees?",
+      "When is a learned reward model better than a prompted judge?"
+    ],
+    "tags": [
+      "evals",
+      "pairwise",
+      "reference-free",
+      "methodology"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "What is slice-based evaluation and why can an overall score hide a launch-blocking failure?",
+    "idealAnswerCore": "Slice-based evals report metrics on subpopulations (language, tenant, query type, document recency, safety category) so a strong average cannot hide a catastrophic slice — launch decisions should use worst-slice gates for high-risk groups.",
+    "idealAnswerFraming": "Use an example: English accuracy 92% while Spanish legal queries are 40% hallucinated.",
+    "idealAnswerKeyPoints": [
+      "Define slices from product risk, not only from convenience (do not only slice by model version)",
+      "Minimum n per slice; merge rare slices rather than reporting noisy 3-example means",
+      "Gate on critical slices (safety, billing, medical) even if overall looks fine",
+      "Watch mix shift: a metric can rise because easy queries increased, not because the model improved",
+      "Dashboards should show slice trends over time, not a single global RAGAS number"
+    ],
+    "idealAnswerFollowups": [
+      "How would you slice a multi-tenant RAG system?",
+      "What do you do when a slice is too small for statistical confidence but legally important?"
+    ],
+    "tags": [
+      "evals",
+      "slices",
+      "fairness",
+      "risk"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How should evaluation cost and latency be budgeted in a GenAI platform team?",
+    "idealAnswerCore": "Separate always-on cheap contracts (schema, toxicity classifier, retrieval hit) from sampled expensive judges; cap judge tokens, batch offline, and treat eval spend as a percentage of serving spend so quality measurement stays affordable as traffic grows.",
+    "idealAnswerFraming": "Senior platform answer: unit economics of evals. Mention caching embeddings and reusing traces.",
+    "idealAnswerKeyPoints": [
+      "Budget heuristic: eval spend often 5–20% of inference during active development, less in steady state",
+      "Cascade: regex/schema → small classifier → LLM judge only on uncertain or sampled cases",
+      "Cache judge results keyed by (prompt_hash, model, input_hash) for unchanged cases",
+      "Nightly full suite vs PR smoke suite to keep developer latency low",
+      "If evals are too expensive, teams skip them — cheaper evals that run beat perfect evals that do not"
+    ],
+    "idealAnswerFollowups": [
+      "How would you eval a 100k-request/hour system with a frontier judge?",
+      "When is it worth paying for human labels instead of more judge calls?"
+    ],
+    "tags": [
+      "evals",
+      "cost",
+      "platform",
+      "sampling"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "What is the difference between model-centric benchmarks (MMLU, HumanEval, MT-Bench) and application evals?",
+    "idealAnswerCore": "Model-centric benchmarks compare general capabilities of foundation models; application evals measure whether your product completes a specific job on your data, policies, and UX constraints — a model can win MT-Bench and still fail your invoice-extraction SLA.",
+    "idealAnswerFraming": "Clear this confusion early in interviews. Application evals are the ones you own.",
+    "idealAnswerKeyPoints": [
+      "MMLU/GSM8K/HumanEval: research comparability, contamination risk, weak product correlation",
+      "MT-Bench/Arena: preference for chat style, not factuality on your corpus",
+      "Application evals: your schemas, your docs, your refusal policy, your latency budget",
+      "Use public benches to shortlist models; use application evals to select and ship",
+      "Never tell leadership 'we are GPT-4 level' based only on a public leaderboard"
+    ],
+    "idealAnswerFollowups": [
+      "When is a public benchmark still useful in a product meeting?",
+      "How do you eval a model upgrade with both types?"
+    ],
+    "tags": [
+      "evals",
+      "benchmarks",
+      "mmlu",
+      "product"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "What are contract tests for LLM outputs, and why should they run before any judge?",
+    "idealAnswerCore": "Contract tests are cheap, deterministic assertions — JSON schema, required fields, PII patterns, forbidden phrases, citation format, language, length — that fail fast in CI and production without a judge.",
+    "idealAnswerFraming": "Analogize to API contract tests. Judges are slow and fuzzy; contracts are the first safety net.",
+    "idealAnswerKeyPoints": [
+      "Examples: valid JSON, enum values, SQL parseable, markdown table shape, no raw stack traces",
+      "Safety contracts: no system-prompt leak markers, no secret-shaped strings, refusal on disallowed intents",
+      "Run on 100% of outputs in prod as well as in evals — they are both tests and guardrails",
+      "Keep contracts versioned with the product spec",
+      "If a contract is flaky, it is too vague — tighten it rather than adding a judge"
+    ],
+    "idealAnswerFollowups": [
+      "What contract would you write for a citations-required RAG answer?",
+      "How do contracts interact with streaming tokens?"
+    ],
+    "tags": [
+      "evals",
+      "contracts",
+      "schema",
+      "assertions"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "How do you evaluate summarization quality for long documents in a business setting?",
+    "idealAnswerCore": "Combine coverage of required entities/decisions, faithfulness to source, length/format constraints, and task usefulness (can a human act on it) — not ROUGE alone — and grade with source-grounded claim checks plus a small expert review panel.",
+    "idealAnswerFraming": "Use meeting notes or legal discovery as the example. Mention that abstractive summaries hallucinate entities.",
+    "idealAnswerKeyPoints": [
+      "Check must-include items (action items, amounts, parties) with entity-level recall",
+      "Faithfulness via claim-to-source alignment; fail on invented commitments",
+      "Format contracts: bullets, max length, audience (exec vs engineer)",
+      "Pairwise preference only after factual checks pass",
+      "Expert reviewers for a sampled set; domain jargon is where judges fail"
+    ],
+    "idealAnswerFollowups": [
+      "How would you eval a summary of a 200-page PDF that does not fit in context?",
+      "What failure is worse: omission or hallucination in an exec summary?"
+    ],
+    "tags": [
+      "evals",
+      "summarization",
+      "faithfulness",
+      "enterprise"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "What is a teacher/student or cheaper-model proxy eval, and when is it dangerous?",
+    "idealAnswerCore": "A cheaper model or distilled judge estimates quality at high volume; it is useful for smoke tests and trend detection but dangerous if it disagrees systematically with experts on the cases that matter (safety, numbers, rare languages).",
+    "idealAnswerFraming": "Show you would calibrate and monitor disagreement, not blindly trust the cheap judge.",
+    "idealAnswerKeyPoints": [
+      "Train or prompt a small grader on human-labeled traces",
+      "Use it for PR smoke and sampling; periodically re-label against humans/frontier judges",
+      "Danger: the proxy shares weaknesses with the candidate (both miss the same legal nuance)",
+      "Keep a gold panel the proxy never trains on",
+      "Watch score inflation as you optimize against the proxy (Goodhart's law)"
+    ],
+    "idealAnswerFollowups": [
+      "How is this different from using the same model as generator and judge?",
+      "What is Goodhart's law in eval design?"
+    ],
+    "tags": [
+      "evals",
+      "proxy-metrics",
+      "goodhart",
+      "calibration"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How do you evaluate multimodal GenAI (images, PDFs, screenshots) beyond text-only metrics?",
+    "idealAnswerCore": "Eval both perception (did the model read the chart/table/UI correctly?) and generation (is the answer grounded in the visual evidence?), using labeled regions, OCR/table gold, and visual QA cases — plus the same safety contracts as text.",
+    "idealAnswerFraming": "Call out that text judges cannot see the image unless you pass it to a multimodal judge.",
+    "idealAnswerKeyPoints": [
+      "Gold: key numbers from charts, checkbox states, table cells, UI labels",
+      "Use multimodal judges or specialized extractors; do not describe the image in text and then grade that description only",
+      "Include degraded inputs: blurry scans, rotated pages, tiny fonts",
+      "Measure grounding: the answer should refer to visible evidence, not invent UI that is not there",
+      "Safety: refuse disallowed visual content; do not extract PII from IDs unless allowed"
+    ],
+    "idealAnswerFollowups": [
+      "How would you eval a 'screenshot to ticket' assistant?",
+      "What unique hallucination modes do vision-language models have?"
+    ],
+    "tags": [
+      "evals",
+      "multimodal",
+      "vision",
+      "grounding"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "What role do inter-rater reliability and rubrics play in human evaluation?",
+    "idealAnswerCore": "Human eval is only trustworthy if raters share a rubric and you measure agreement (Cohen's/Fleiss' kappa, gold-standard audits); without that, score changes may be rater drift, not model change.",
+    "idealAnswerFraming": "Interviewers use this to see if you have run a real labeling program.",
+    "idealAnswerKeyPoints": [
+      "Write a rubric with examples of 1 vs 5, including borderline cases",
+      "Train raters and include hidden gold items to detect fatigue and bias",
+      "Double-label a subset; investigate systematic disagreements (often rubric holes)",
+      "Separate dimensions (correctness vs tone) so raters do not mix them",
+      "Pay for expertise on high-stakes domains rather than only cheap crowd ratings"
+    ],
+    "idealAnswerFollowups": [
+      "What kappa would you consider acceptable for a 5-point helpfulness scale?",
+      "How do you handle a task where even experts disagree?"
+    ],
+    "tags": [
+      "evals",
+      "human-eval",
+      "kappa",
+      "rubric"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How would you run a model or prompt bake-off for a production RAG assistant without wrecking the live user experience?",
+    "idealAnswerCore": "Use offline golden + shadow traffic (log what the candidate would have said) then a small canary with paired online metrics and kill criteria — never A/B 50% until offline contracts pass and shadow disagreement is understood.",
+    "idealAnswerFraming": "Sequence: offline gate → shadow → canary → ramp. Mention cost of double inference.",
+    "idealAnswerKeyPoints": [
+      "Offline: same retrieval snapshot so you isolate generator/prompt effects when needed",
+      "Shadow: run candidate on sampled live queries, store diffs, judge or human-review disagreements",
+      "Canary: 1–5% traffic, watch safety, latency, cost, and task metrics; auto-rollback on SLO breach",
+      "Control mix: sticky assignment so a user does not bounce between prompts mid-session",
+      "Document residual risks the evals cannot see (new doc types) as launch notes"
+    ],
+    "idealAnswerFollowups": [
+      "How do you shadow an agent that has side-effecting tools?",
+      "What kill criteria would you set for a canary?"
+    ],
+    "tags": [
+      "evals",
+      "experimentation",
+      "canary",
+      "shadow"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "intermediate",
+    "question": "What is error analysis in LLM evals and how should it feed the roadmap?",
+    "idealAnswerCore": "Error analysis is a structured review of failures grouped into a taxonomy (retrieval miss, ignored context, tool error, policy miss, format break) with frequency and severity — the top buckets become prompt, data, or product work, not a generic 'make the model smarter'.",
+    "idealAnswerFraming": "This is how evals become engineering tickets. Show a taxonomy.",
+    "idealAnswerKeyPoints": [
+      "Tag each failure with a primary cause; allow secondary tags",
+      "Plot volume × severity; fix high-severity rare events (wrong refund) before low-severity nits",
+      "Feed new tags back as slices and golden cases",
+      "Distinguish 'model cannot' vs 'we did not give the tool/docs' vs 'policy unclear'",
+      "Re-run analysis after each major change to confirm the bucket actually moved"
+    ],
+    "idealAnswerFollowups": [
+      "How large a sample do you need for a useful taxonomy?",
+      "What if 40% of errors are 'user asked something out of scope'?"
+    ],
+    "tags": [
+      "evals",
+      "error-analysis",
+      "taxonomy",
+      "roadmap"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "foundational",
+    "question": "Why is a single 'accuracy' number a poor summary of GenAI quality?",
+    "idealAnswerCore": "GenAI quality is multi-objective — correctness, grounding, safety, latency, cost, and UX — and accuracy usually hides the dimension that will cause the incident; report a small scorecard with contracts, not one vanity percentage.",
+    "idealAnswerFraming": "Push back on executives asking for one number, then offer a dashboard they can use.",
+    "idealAnswerKeyPoints": [
+      "A model can be accurate in tone and wrong on facts, or vice versa",
+      "Safety and helpfulness trade off; collapsing them invites reward hacking",
+      "Latency/cost are part of quality for interactive products",
+      "Present: pass-rate on contracts, faithfulness, safety, P95 latency, $ / success",
+      "Use one north-star for product (e.g. successful resolutions) but never as the only eval"
+    ],
+    "idealAnswerFollowups": [
+      "Which three numbers would you put on a weekly GenAI quality email?",
+      "How do you explain a quality drop that improved safety?"
+    ],
+    "tags": [
+      "evals",
+      "scorecard",
+      "metrics",
+      "product"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "evals",
+    "difficulty": "advanced",
+    "question": "How do you keep judges and reward models from being Goodharted as teams optimize against them?",
+    "idealAnswerCore": "Assume any metric used as a target will be gamed: rotate holdouts, mix human audits, keep multiple weakly correlated metrics, and change the judge/rubric periodically so prompt hacking the grader is unprofitable.",
+    "idealAnswerFraming": "Name Goodhart/Campbell's law. Give concrete gaming examples (verbose answers, fake citations).",
+    "idealAnswerKeyPoints": [
+      "Teams add 'as cited in the documentation' without real citations if judges reward that phrase",
+      "Use hidden holdout cases and live traffic samples the prompt authors do not see",
+      "Require evidence spans from judges; spot-check high scores",
+      "Optimize under constraints (length, citation precision) not a single scalar",
+      "Periodic human panels reset the target when automated scores decouple from trust"
+    ],
+    "idealAnswerFollowups": [
+      "How is this different from overfitting a golden set?",
+      "Would you show eval scores on a public leaderboard internally?"
+    ],
+    "tags": [
+      "evals",
+      "goodhart",
+      "reward-hacking",
+      "governance"
+    ],
+    "source": "seed"
+  }
+]

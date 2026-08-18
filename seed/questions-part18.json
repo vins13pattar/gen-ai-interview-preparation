@@ -1,0 +1,752 @@
+[
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "What failure modes are unique or especially common in LLM applications compared to typical HTTP microservices?",
+    "idealAnswerCore": "Besides 5xx and timeouts, LLM apps fail via rate limits, content filters, context overflow, partial streams, truncated JSON, provider model outages, and 'successful' 200s with unusable text — your error taxonomy must include quality and policy failures, not only network errors.",
+    "idealAnswerFraming": "Show you have operated a real LLM feature. List modes and what the user sees.",
+    "idealAnswerKeyPoints": [
+      "429s and token-per-minute caps are first-class; they are not rare edge cases",
+      "Content policy refusals may be 200 with a refusal or a specialized error — handle both",
+      "Streams can die after TTFT; the UI must not look 'successful'",
+      "Context length errors happen as conversations grow",
+      "Silent quality failure: 200 OK with hallucinated JSON that passes your HTTP layer"
+    ],
+    "idealAnswerFollowups": [
+      "How do you classify a provider 'overloaded' vs a bug in your prompt size?",
+      "Why is a truncated tool-call JSON worse than a 500?"
+    ],
+    "tags": [
+      "failures",
+      "llm-apis",
+      "reliability",
+      "error-taxonomy"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "How should retries work for LLM APIs, and when are retries dangerous?",
+    "idealAnswerCore": "Retry only idempotent, transient failures (429, 503, timeouts with no side effects) using exponential backoff and jitter; do not blindly retry non-idempotent tool calls, and cap attempts to avoid retry storms and duplicate spend.",
+    "idealAnswerFraming": "Classic distributed-systems answer tailored to token cost.",
+    "idealAnswerKeyPoints": [
+      "Honor Retry-After; add full jitter (AWS-style) to desynchronize clients",
+      "Do not retry 400s from invalid prompts; fix the request",
+      "Streaming: decide whether to retry the whole request or resume (usually whole request)",
+      "Budget: each retry multiplies cost; alert on retry rate",
+      "Idempotency keys for tools that might have already succeeded"
+    ],
+    "idealAnswerFollowups": [
+      "Should you retry a 200 that failed JSON parse?",
+      "What is a retry storm when the provider is overloaded?"
+    ],
+    "tags": [
+      "retries",
+      "backoff",
+      "idempotency",
+      "429"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "How do you set timeouts for LLM calls (connect, TTFT, total generation) and why is one timeout not enough?",
+    "idealAnswerCore": "Split timeouts: connection/TLS, time-to-first-token for interactivity, and a total/idle cap so a stuck stream cannot hold workers forever — a single 120s timeout either kills healthy long answers or leaves hung sockets.",
+    "idealAnswerFraming": "Tie to UX: users care about TTFT; ops cares about worker exhaustion.",
+    "idealAnswerKeyPoints": [
+      "TTFT SLO might be 2s; total generation for long docs might be 60s+",
+      "Idle timeout: if no chunk arrives for N seconds, abort",
+      "Gateway timeout must be > client timeout or users see generic 504s",
+      "Queue wait vs inference time should be measured separately",
+      "Different timeouts for interactive chat vs batch jobs"
+    ],
+    "idealAnswerFollowups": [
+      "What happens if the load balancer timeout is shorter than generation timeout?",
+      "How do you timeout a streaming response in a serverless function?"
+    ],
+    "tags": [
+      "timeouts",
+      "ttft",
+      "streaming",
+      "slo"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "What is graceful degradation for a GenAI feature when the model provider is down?",
+    "idealAnswerCore": "Degrade along a planned ladder: cheaper/backup model, cached answers, retrieval-only snippets, templates, or human queue — never a blank spinner — and tell the user the capability is reduced.",
+    "idealAnswerFraming": "Product + SRE thinking. Pre-negotiate the ladder with PM.",
+    "idealAnswerKeyPoints": [
+      "Fallback model with a known quality drop, still passing safety contracts",
+      "Semantic or exact cache for frequent questions",
+      "Search/browse the knowledge base without synthesis",
+      "Disable tools first (highest risk) before disabling chat",
+      "Status page + in-product banner; do not fail silently with worse answers"
+    ],
+    "idealAnswerFollowups": [
+      "What would you degrade first in a coding assistant vs a medical triage bot?",
+      "How do you avoid cache serving stale policy after a downtime?"
+    ],
+    "tags": [
+      "graceful-degradation",
+      "fallback",
+      "ux",
+      "outage"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do circuit breakers apply to LLM providers and tools?",
+    "idealAnswerCore": "A circuit breaker tracks error rate/latency to a dependency and trips to fail-fast (or fallback) instead of piling on; for LLMs, trip on 429/5xx/TTFT SLO, and for tools trip independently so a down CRM does not take down chat.",
+    "idealAnswerFraming": "Bulkheads + breakers. Mention half-open probes.",
+    "idealAnswerKeyPoints": [
+      "Per-provider and per-model breakers, not one global breaker",
+      "Do not count user 400s as breaker errors",
+      "Half-open: send a probe, not a full production flood",
+      "Tool breakers: if search is down, still answer from parametric policy with a disclaimer if allowed",
+      "Alert when a breaker opens; it is an incident, not a silent feature flag"
+    ],
+    "idealAnswerFollowups": [
+      "How do you size the error threshold for a spiky 429 pattern?",
+      "Should a content-filter spike trip a breaker?"
+    ],
+    "tags": [
+      "circuit-breaker",
+      "bulkhead",
+      "providers",
+      "tools"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "What is multi-provider failover for LLMs and what is hard about it?",
+    "idealAnswerCore": "Failover routes traffic to another vendor or model when the primary is unhealthy, but prompts, tokenization, tool schemas, safety, and output style are not portable — you need adapter tests and evals, not just a different base URL.",
+    "idealAnswerFraming": "This is where juniors say 'we will just switch to Claude'. Seniors mention prompt portability.",
+    "idealAnswerKeyPoints": [
+      "Normalize errors, streaming, and function-calling in an adapter layer",
+      "Keep a smaller prompt subset proven on the backup model",
+      "Safety filters differ; re-run guardrail evals on the backup",
+      "Cost and latency change; SLOs may need a degraded definition",
+      "Sticky routing during a session to avoid mid-thread personality swaps when possible"
+    ],
+    "idealAnswerFollowups": [
+      "Would you fail over a tool-using agent automatically?",
+      "How do you keep two providers' JSON schemas aligned?"
+    ],
+    "tags": [
+      "failover",
+      "multi-provider",
+      "portability",
+      "adapters"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do you handle streaming failures after some tokens have already been shown?",
+    "idealAnswerCore": "Decide a product policy: show a clear interruption, offer retry that replaces or continues, and never parse a partial tool call as success — for user-visible prose, keep the partial text but mark it incomplete.",
+    "idealAnswerFraming": "UX plus correctness. Tool calls are the dangerous case.",
+    "idealAnswerKeyPoints": [
+      "UI state: streaming | complete | interrupted | failed",
+      "If interrupted, do not auto-execute a half-built function call",
+      "Retries should use a new request; 'continue' prompts can duplicate content",
+      "Log bytes delivered vs. expected for SLO debugging",
+      "For voice/TTS, interruption needs a spoken error, not a hang"
+    ],
+    "idealAnswerFollowups": [
+      "Should you hide partial tokens until the JSON is valid?",
+      "How do you retry without doubling a side-effecting sentence like 'I refunded you'?"
+    ],
+    "tags": [
+      "streaming",
+      "partial-failure",
+      "ux",
+      "tool-calls"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do hedged requests and speculative fallbacks reduce tail latency for LLMs?",
+    "idealAnswerCore": "Hedging sends a second request to another replica/provider after a wait percentile so the user gets the first success — it cuts P99 at the cost of extra spend and must be capped to avoid doubling all traffic.",
+    "idealAnswerFraming": "Google hedging paper intuition applied to LLMs. Mention cost.",
+    "idealAnswerKeyPoints": [
+      "Hedge only after P50 wait, not immediately, unless the backup is cheap",
+      "Cancel the loser to save tokens when the API supports it (often it does not — budget accordingly)",
+      "Useful for interactive TTFT; wasteful for batch",
+      "Combine with idempotency if tools might run twice",
+      "Watch for both hedges hitting the same overloaded region"
+    ],
+    "idealAnswerFollowups": [
+      "When is hedging worse than a single request?",
+      "How do you hedge streaming TTFT?"
+    ],
+    "tags": [
+      "hedging",
+      "latency",
+      "p99",
+      "cost"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How should load shedding and queues work when LLM capacity is the bottleneck?",
+    "idealAnswerCore": "When GPUs or provider quotas are exhausted, shed or queue by priority: keep interactive and paid traffic, delay batch, return 429 with Retry-After, and never let unbounded queues turn into minute-long timeouts.",
+    "idealAnswerFraming": "SRE backpressure. Mention fairness across tenants.",
+    "idealAnswerKeyPoints": [
+      "Admission control: estimate tokens before enqueue",
+      "Priority queues: interactive > batch > eval traffic",
+      "Per-tenant fairness so one customer cannot starve others",
+      "Fail fast with a useful error rather than 60s queue then 504",
+      "Scale signals: queue depth, TTFT, 429 from provider"
+    ],
+    "idealAnswerFollowups": [
+      "Where should the queue live: client, API gateway, or worker pool?",
+      "How do you shed load in a streaming-first UX?"
+    ],
+    "tags": [
+      "load-shedding",
+      "queues",
+      "backpressure",
+      "fairness"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do you make multi-step agent workflows fault-tolerant (timeouts, tool failures, crashes)?",
+    "idealAnswerCore": "Treat the agent as a state machine with persisted checkpoints: after each tool, record state, use idempotent tools, compensate on failure, and resume instead of restarting from scratch with duplicate side effects.",
+    "idealAnswerFraming": "Saga/workflow pattern. Mention Temporal-like thinking without requiring a product name.",
+    "idealAnswerKeyPoints": [
+      "Persist: goal, scratchpad summary, tool results, step index",
+      "Idempotency keys on writes; detect already-refunded",
+      "Time-box the whole trajectory; do not loop until the user is billed into oblivion",
+      "On crash, resume from last checkpoint with a fresh model call",
+      "Dead-letter the workflow for human review after N failures"
+    ],
+    "idealAnswerFollowups": [
+      "How is this different from retrying a single LLM HTTP call?",
+      "What do you store if the scratchpad contains PII?"
+    ],
+    "tags": [
+      "agents",
+      "checkpoints",
+      "sagas",
+      "idempotency"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "What SLOs would you set for an interactive LLM API, and how do error budgets work when quality is also an SLO?",
+    "idealAnswerCore": "Set separate SLOs for availability, TTFT, total latency, and a quality/safety contract; error budgets prevent shipping prompt changes that burn reliability — a 99.9% HTTP SLO with a 5% hallucination rate is not a healthy system.",
+    "idealAnswerFraming": "SRE meets evals. Quality pages should page someone too if they are launch-blocking.",
+    "idealAnswerKeyPoints": [
+      "Availability: successful completions / attempts, excluding client 400s",
+      "Latency: P95 TTFT and P95 complete; streaming changes the definition of complete",
+      "Quality: faithfulness or task-success on sampled traffic with a budget",
+      "Safety: policy-violation rate budget near zero for high-risk categories",
+      "When the budget is burned, freeze feature launches (including prompt tweaks)"
+    ],
+    "idealAnswerFollowups": [
+      "Do content-policy refusals count as availability failures?",
+      "How do you error-budget a weekly prompt change?"
+    ],
+    "tags": [
+      "slo",
+      "error-budget",
+      "sre",
+      "quality"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do you handle context-window overflow in long conversations or RAG?",
+    "idealAnswerCore": "Detect token counts before calling the model, then compact (summarize older turns), drop low-ranking chunks, or start a new thread with a handoff summary — failing with a cryptic provider error is not an acceptable UX.",
+    "idealAnswerFraming": "Everyone hits this. Show a policy.",
+    "idealAnswerKeyPoints": [
+      "Always count tokens with the same tokenizer the model uses",
+      "Reserve budget for the system prompt, tools, and max output",
+      "Conversation compaction: rolling summary + last N turns",
+      "RAG: fewer/higher-quality chunks beats stuffing until overflow",
+      "Tell the user when history was summarized; they may need to restate a constraint"
+    ],
+    "idealAnswerFollowups": [
+      "What do you do if a single uploaded PDF exceeds the window?",
+      "How does compaction interact with citations?"
+    ],
+    "tags": [
+      "context-window",
+      "compaction",
+      "rag",
+      "ux"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "advanced",
+    "question": "How can retries and parallelism interact with LLM rate limits to cause a self-inflicted outage?",
+    "idealAnswerCore": "Synchronized retries, hedged duplicates, and fan-out agents multiply QPS just when the provider is least able to serve you — use jitter, global token budgets, and backoff that considers shared quotas, not only per-call errors.",
+    "idealAnswerFraming": "Retry amplification is a classic SRE topic. Make it LLM-specific with TPM/RPM.",
+    "idealAnswerKeyPoints": [
+      "A 429 is a signal to slow the whole fleet, not only that one thread",
+      "Centralized rate-limit tokens (leaky bucket) per API key",
+      "Disable hedging automatically when breakers open",
+      "Agent fan-out should have a process-wide concurrency cap",
+      "Load tests should include 429 behavior, not only happy-path QPS"
+    ],
+    "idealAnswerFollowups": [
+      "How do you coordinate two microservices sharing one OpenAI key?",
+      "What is a thundering herd after a provider recovery?"
+    ],
+    "tags": [
+      "rate-limits",
+      "retry-amplification",
+      "quotas",
+      "outage"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "advanced",
+    "question": "How would you design regional failover and data-residency constraints together for an LLM app?",
+    "idealAnswerCore": "Pin inference and retrieval to approved regions for residency, fail over only to regions in the contract, and if no legal region is healthy, degrade to cached/human rather than sending PII to a disallowed geography.",
+    "idealAnswerFraming": "Reliability vs compliance conflict. Interviewers love this.",
+    "idealAnswerKeyPoints": [
+      "Know where prompts and embeddings are processed, not only where your app runs",
+      "Active-active in two approved regions beats hoping the vendor has one region",
+      "Document a 'compliance over availability' decision for regulated data",
+      "Test failover with synthetic PII-like traffic in staging",
+      "Caches and logs must follow the same residency rules"
+    ],
+    "idealAnswerFollowups": [
+      "What do you do if the only approved region is down?",
+      "How do embeddings complicate residency?"
+    ],
+    "tags": [
+      "residency",
+      "failover",
+      "compliance",
+      "multi-region"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "advanced",
+    "question": "How do you test fault tolerance of a GenAI system (game days, chaos) without causing real harm?",
+    "idealAnswerCore": "Run staged chaos: inject 429s, slow streams, truncated JSON, tool timeouts, and poisoned-but-safe fixtures in a non-prod environment, then limited production game days on non-destructive paths — never chaos-test write tools against real customers.",
+    "idealAnswerFraming": "Chaos engineering with ethics. Mention feature flags.",
+    "idealAnswerKeyPoints": [
+      "Fault catalog: provider down, high TTFT, invalid JSON, empty retrieval, partial stream",
+      "Start in staging with recorded traffic replay",
+      "Production: inject latency on a canary shard or a fake tool",
+      "Success criteria: correct fallback, no duplicate refunds, user-visible error quality",
+      "Include on-call in the exercise; docs should match reality"
+    ],
+    "idealAnswerFollowups": [
+      "How do you chaos-test an agent with side effects?",
+      "What metric tells you the game day passed?"
+    ],
+    "tags": [
+      "chaos",
+      "game-day",
+      "testing",
+      "reliability"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "What is bulkheading in a GenAI service architecture?",
+    "idealAnswerCore": "Bulkheads isolate resources so a failure in one workload (batch embeddings, a noisy tenant, eval jobs) cannot exhaust the thread pool, GPU quota, or API key used by interactive traffic.",
+    "idealAnswerFraming": "Ship-compartment metaphor. Give concrete pools.",
+    "idealAnswerKeyPoints": [
+      "Separate API keys/quotas for prod interactive vs batch vs evals",
+      "Separate worker pools for retrieval vs generation vs tools",
+      "Tenant isolation: noisy-neighbor limits",
+      "Do not run the nightly eval suite on the same key as checkout chat",
+      "Observe saturation per bulkhead, not only global CPU"
+    ],
+    "idealAnswerFollowups": [
+      "How would you bulkhead a shared vector DB?",
+      "Is a separate model deployment a bulkhead?"
+    ],
+    "tags": [
+      "bulkhead",
+      "isolation",
+      "quotas",
+      "architecture"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "How should you handle provider content-filter or refusal responses in a fault-tolerance design?",
+    "idealAnswerCore": "Treat policy refusals as a distinct class: do not retry blindly (it burns tokens and can look like probing), map them to a safe user message, log for safety review, and only retry with a sanitized rewrite when you have a clear false-positive path.",
+    "idealAnswerFraming": "Retries that re-send the same blocked prompt are a bad loop.",
+    "idealAnswerKeyPoints": [
+      "Parse provider-specific refusal shapes into a canonical error",
+      "User message: explain limits without teaching bypasses",
+      "If RAG context triggered the filter, try a tighter snippet path only if policy allows",
+      "Track false-positive rate with human review",
+      "Do not fail over to a less-safe model to 'get around' the filter"
+    ],
+    "idealAnswerFollowups": [
+      "Is a refusal an SLO violation?",
+      "How do you distinguish a jailbreak attempt from a legitimate blocked term?"
+    ],
+    "tags": [
+      "content-filter",
+      "refusals",
+      "retries",
+      "safety"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do semantic caches improve resilience, and how can they hurt correctness during incidents?",
+    "idealAnswerCore": "Caches absorb provider outages and cut latency/cost for repeated questions, but serving a stale or cross-tenant hit during a failover can be worse than an error — key by tenant, prompt version, and freshness, and bypass cache for high-stakes queries.",
+    "idealAnswerFraming": "Cache as a resilience pattern with footguns.",
+    "idealAnswerKeyPoints": [
+      "Exact-match cache for identical prompts; semantic cache with a similarity threshold",
+      "Include model/prompt hashes in the key so deploys do not serve old policy",
+      "TTL and invalidation when docs change",
+      "On outage, you may relax TTL deliberately — log that degraded mode",
+      "Never semantic-match across tenants"
+    ],
+    "idealAnswerFollowups": [
+      "What similarity threshold would you start with and how would you eval it?",
+      "Should you cache tool-using answers?"
+    ],
+    "tags": [
+      "cache",
+      "semantic-cache",
+      "staleness",
+      "resilience"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do you keep a serverless or request-scoped worker from dying mid-generation?",
+    "idealAnswerCore": "Streaming LLM calls can exceed function timeouts; use platforms with longer streaming support, chunk work into async jobs with a result store, or run generation on workers whose timeout exceeds P99 generation time — plus client reconnect to a job ID.",
+    "idealAnswerFraming": "Practical Next.js/Lambda/Cloud Run issue.",
+    "idealAnswerKeyPoints": [
+      "Know hard limits (e.g. some serverless timeouts vs. long summaries)",
+      "Async pattern: enqueue, stream via websocket/SSE from a worker, persist tokens",
+      "Heartbeat the client so proxies do not idle-timeout",
+      "Idempotent job IDs so double-submit does not double-charge",
+      "For RAG, do retrieval in a short function and generation in a long worker if needed"
+    ],
+    "idealAnswerFollowups": [
+      "How would you design reconnect after a mobile client backgrounding?",
+      "What do you persist for a 2-minute stream?"
+    ],
+    "tags": [
+      "serverless",
+      "streaming",
+      "timeouts",
+      "async-jobs"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "advanced",
+    "question": "How should backpressure propagate from a GPU inference cluster up to the product API?",
+    "idealAnswerCore": "When vLLM/TGI queues grow, advertise load (queue depth, KV memory, TTFT) to the gateway so it can 429, shed, or reroute before the cluster OOMs — hiding saturation behind infinite client retries makes a worse outage.",
+    "idealAnswerFraming": "Closed-loop control. Mention KV cache memory as the real limiter.",
+    "idealAnswerKeyPoints": [
+      "Export: running/waiting sequences, KV utilization, prefix-cache hit rate",
+      "Gateway uses those signals for admission control",
+      "Autoscale on queue depth and KV, not only CPU",
+      "Prefer 429 over swapping/OOM kills",
+      "Protect prefill vs decode capacity if one starves the other"
+    ],
+    "idealAnswerFollowups": [
+      "What happens if you autoscale GPUs slowly relative to a traffic spike?",
+      "How does continuous batching change queueing behavior?"
+    ],
+    "tags": [
+      "vllm",
+      "backpressure",
+      "gpu",
+      "admission-control"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "What is a dead-letter queue for LLM workflows and what belongs in it?",
+    "idealAnswerCore": "A DLQ holds requests or agent runs that exhausted retries so humans or a later job can inspect and replay — include poison prompts that crash parsers, persistent 400s, and tool mismatches, not every transient 429 that will succeed on retry.",
+    "idealAnswerFraming": "Do not DLQ the entire internet. Be selective.",
+    "idealAnswerKeyPoints": [
+      "Store enough context to replay: template version, inputs (redacted), last error",
+      "Alert on DLQ depth; it is a hidden backlog of customer pain",
+      "Replay after a fix with idempotency",
+      "Separate safety-blocked items (review) from infra failures (replay)",
+      "TTL the DLQ so PII does not live forever"
+    ],
+    "idealAnswerFollowups": [
+      "Should a jailbreak attempt go to the DLQ?",
+      "How do you replay a time-sensitive 'cancel my order' job?"
+    ],
+    "tags": [
+      "dlq",
+      "replay",
+      "agents",
+      "operations"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "Why must health checks for an LLM service go beyond TCP/HTTP 200?",
+    "idealAnswerCore": "A process can be up while the model is swapping, the tokenizer is broken, or the provider key is invalid — use synthetic probes that run a tiny completion and check TTFT, schema, and a canary string.",
+    "idealAnswerFraming": "Deep health checks. Avoid expensive probes that themselves cause outages.",
+    "idealAnswerKeyPoints": [
+      "Liveness vs readiness: ready means you can meet SLO, not merely that the port is open",
+      "Probe a cheap model/path; do not generate 2k tokens in the health check",
+      "Check dependencies: vector DB, tool credentials, disk for models",
+      "If the probe uses the production quota, isolate it",
+      "Fail readiness when the circuit breaker to the provider is open"
+    ],
+    "idealAnswerFollowups": [
+      "How often should a completion probe run?",
+      "What is a flapping health check going to do to Kubernetes?"
+    ],
+    "tags": [
+      "health-checks",
+      "readiness",
+      "probes",
+      "slo"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "advanced",
+    "question": "How do you design idempotent tool execution when the model may emit the same action twice after a retry?",
+    "idealAnswerCore": "Give every side-effecting tool an idempotency key derived from user + intent + natural key (order ID), persist execution records, and return the original result on replay — never trust the model to 'remember it already refunded'.",
+    "idealAnswerFraming": "Payment-systems thinking. The model is a flaky client.",
+    "idealAnswerKeyPoints": [
+      "Natural keys: (customer, invoice_id, 'refund') rather than random UUIDs from the model",
+      "If the model invents a new UUID each time, the server must ignore it and use business keys",
+      "At-least-once LLM retries + at-most-once business effects",
+      "User-visible: 'refund already processed' not a second refund",
+      "Eval this with forced retries in staging"
+    ],
+    "idealAnswerFollowups": [
+      "What if the user legitimately wants two refunds on two orders?",
+      "How long do you retain idempotency records?"
+    ],
+    "tags": [
+      "idempotency",
+      "tools",
+      "retries",
+      "side-effects"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "How do you handle truncated or malformed structured outputs without looping forever?",
+    "idealAnswerCore": "Validate JSON/schema, retry with a repair prompt or constrained decoding a bounded number of times, then fail to a safe fallback — unbounded 'please fix the JSON' loops waste money and can still be wrong.",
+    "idealAnswerFraming": "Common production bug. Mention constrained decoding as the better fix.",
+    "idealAnswerKeyPoints": [
+      "Prefer JSON schema / grammar decoding to reduce parse failures",
+      "Repair path: one shot with the error message, not ten",
+      "If streaming, consider buffering structured payloads until valid",
+      "Fallback: ask the user to retry, or use a smaller dedicated extractor model",
+      "Metric: parse-fail rate should be on the quality dashboard"
+    ],
+    "idealAnswerFollowups": [
+      "When is repairing safer than re-generating from scratch?",
+      "How do parse failures interact with timeouts?"
+    ],
+    "tags": [
+      "json",
+      "validation",
+      "retries",
+      "structured-output"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "What is a fallback model router, and how do you avoid quality cliffs?",
+    "idealAnswerCore": "A router sends easy or degraded-mode traffic to smaller/cheaper models and hard or failed cases to a frontier model; to avoid cliffs, define task-based rules and eval both paths, and never route safety-critical tasks only to the cheapest model.",
+    "idealAnswerFraming": "Cost + reliability. Mention cascade: try small, escalate on low confidence.",
+    "idealAnswerKeyPoints": [
+      "Signals: intent classifier, prompt length, user tier, breaker state",
+      "Confidence: if the small model is uncertain or schema-invalid, escalate",
+      "Eval each route as its own product surface",
+      "Document quality cliffs in the SLO (degraded mode)",
+      "Do not route around safety filters by picking a weaker-aligned model"
+    ],
+    "idealAnswerFollowups": [
+      "How do you measure whether the router is saving money or just hurting quality?",
+      "Should the user know which model answered?"
+    ],
+    "tags": [
+      "routing",
+      "fallback",
+      "cost",
+      "quality"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "How should client apps distinguish retryable vs non-retryable LLM errors in the API you expose?",
+    "idealAnswerCore": "Your API should return stable error codes: RATE_LIMITED, TIMEOUT, UNAVAILABLE (retryable) vs VALIDATION, POLICY, UNAUTHORIZED (not retryable), plus Retry-After — leaking raw provider errors causes clients to retry the un-retryable and amplify load.",
+    "idealAnswerFraming": "API design for reliability. Hide provider details.",
+    "idealAnswerKeyPoints": [
+      "Normalize provider errors in your backend",
+      "Include a request ID for support",
+      "Do not recommend retry on POLICY",
+      "SDK should implement jittered backoff by default",
+      "Document idempotency requirements for POST /generate"
+    ],
+    "idealAnswerFollowups": [
+      "Would you expose provider 429s as your 429s?",
+      "How do you version error codes?"
+    ],
+    "tags": [
+      "api-design",
+      "errors",
+      "sdk",
+      "retries"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "advanced",
+    "question": "How do you keep conversation state consistent when a generate call fails after the UI already showed tokens?",
+    "idealAnswerCore": "Server remains the source of truth: persist messages only on confirmed completion (or persist as 'incomplete'), and on retry either replace the incomplete assistant message or continue from a stored prefix — avoid two conflicting assistant messages in history.",
+    "idealAnswerFraming": "State-sync bug that causes compounding context errors.",
+    "idealAnswerKeyPoints": [
+      "Message statuses: pending, streaming, complete, aborted",
+      "If aborted, either drop or mark so the next prompt does not treat it as canon",
+      "Optimistic UI must reconcile with server on reconnect",
+      "Tool calls associated with an aborted message must not execute",
+      "Tests: kill the stream at 50% and send a follow-up"
+    ],
+    "idealAnswerFollowups": [
+      "Should incomplete answers stay in context for the next turn?",
+      "How do multi-tab sessions complicate this?"
+    ],
+    "tags": [
+      "state",
+      "conversations",
+      "streaming",
+      "consistency"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "intermediate",
+    "question": "What operational dashboards would you build for LLM reliability?",
+    "idealAnswerCore": "A reliability dashboard shows request rate, success rate by error class, TTFT/TPOT, token usage, 429s, breaker state, cache hit rate, queue depth, and cost — plus a quality sample overlay so you do not celebrate an outage that 'fixed' latency by dropping traffic.",
+    "idealAnswerFraming": "On-call ready. Mention RED/USE plus LLM specifics.",
+    "idealAnswerKeyPoints": [
+      "Slice by model, route, tenant, and endpoint",
+      "Correlate deploys (prompt SHA) with error spikes",
+      "429 vs 5xx vs parse-fail as separate series",
+      "Cost burn per hour with anomaly alerts",
+      "Link to traces for one-click debug of a failed request ID"
+    ],
+    "idealAnswerFollowups": [
+      "What would you page on vs ticket on?",
+      "How do you detect a 'quality outage' that still returns 200?"
+    ],
+    "tags": [
+      "observability",
+      "dashboards",
+      "on-call",
+      "slo"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "foundational",
+    "question": "Why is 'just increase the timeout' a bad primary fix for LLM slowness?",
+    "idealAnswerCore": "Longer timeouts hide saturation, hold workers, and worsen user-perceived hangs; you should first fix batching, streaming, prompt size, routing, and capacity — then set timeouts to a bit above healthy P99, not to 15 minutes.",
+    "idealAnswerFraming": "SRE instinct. Timeouts are safety valves.",
+    "idealAnswerKeyPoints": [
+      "Timeouts protect the system from unbounded waits",
+      "Users abandon long spinners; TTFT fixes beat total-timeout increases",
+      "A 10-minute timeout on a 2s task still ties up connections when things go wrong",
+      "Investigate: prefill cost, cold starts, retrieval, huge histories",
+      "Use async jobs for inherently long work instead of stretching HTTP"
+    ],
+    "idealAnswerFollowups": [
+      "When is a long timeout actually appropriate?",
+      "How do timeouts interact with client-side abort?"
+    ],
+    "tags": [
+      "timeouts",
+      "performance",
+      "sre",
+      "anti-pattern"
+    ],
+    "source": "seed"
+  },
+  {
+    "domainId": "fault-tolerance",
+    "difficulty": "advanced",
+    "question": "How would you run a dual-write or shadow pipeline when migrating vector DBs or model providers without user-visible downtime?",
+    "idealAnswerCore": "Shadow the new path on sampled traffic, compare retrieval/generation diffs offline, then dual-read with a consistency checker, and finally cut over with a fast rollback — never flip 100% on a Friday without a proven revert.",
+    "idealAnswerFraming": "Migration reliability. Include evals as the compare function.",
+    "idealAnswerKeyPoints": [
+      "Replay historical queries against old vs new index",
+      "Shadow live: log disagreements, do not serve the new path yet",
+      "Canary tenants first",
+      "Keep the old index until quality and latency SLOs hold",
+      "Rollback plan: DNS/flag, not a 6-hour reindex"
+    ],
+    "idealAnswerFollowups": [
+      "How do you compare two retrievers that return different chunk IDs for the same text?",
+      "What freeze window do you need on document writes during cutover?"
+    ],
+    "tags": [
+      "migration",
+      "shadow",
+      "vector-db",
+      "cutover"
+    ],
+    "source": "seed"
+  }
+]

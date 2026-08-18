@@ -46,5 +46,29 @@
     "slug": "behavioral",
     "name": "Behavioral & Situational",
     "description": "STAR method, technical trade-off reasoning, communicating AI limitations, cross-functional collaboration, and production incident debugging."
+  },
+  {
+    "id": "evals",
+    "slug": "evals",
+    "name": "LLM Evaluation & Quality",
+    "description": "Offline and online evals, golden sets, LLM-as-judge, regression testing, RAG/agent metrics, and eval-driven development for GenAI products."
+  },
+  {
+    "id": "security-guardrails",
+    "slug": "security-guardrails",
+    "name": "Security & Guardrails",
+    "description": "OWASP LLM risks, prompt-injection defenses, output filtering, PII handling, tool-use security, and layered application guardrails."
+  },
+  {
+    "id": "fault-tolerance",
+    "slug": "fault-tolerance",
+    "name": "Fault Tolerance & Reliability",
+    "description": "Retries, timeouts, circuit breakers, provider failover, graceful degradation, streaming failures, and SLOs for LLM applications."
+  },
+  {
+    "id": "production-apps",
+    "slug": "production-apps",
+    "name": "Production GenAI Applications",
+    "description": "Cost control, caching, streaming UX, observability, context management, structured output, and shipping reliable GenAI features."
   }
 ]
