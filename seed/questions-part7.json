@@ -544,7 +544,7 @@
     "difficulty": "intermediate",
     "question": "What is IA3 (Infused Adapter by Inhibiting and Amplifying Inner Activations) and how does it differ from LoRA?",
     "idealAnswerCore": "IA3 rescales activations in attention (keys, values) and FFN using learned vectors, rather than adding low-rank weight matrices like LoRA — requiring only 3 vectors per transformer block and fewer parameters than LoRA.",
-    "idealAnswerFormating": "IA3 is extremely parameter-efficient (~0.01% of model parameters vs ~0.5% for LoRA r=16) and suited for few-shot and meta-learning scenarios. It underperforms LoRA on complex domain adaptation but excels at lightweight task specialization.",
+    "idealAnswerFraming": "IA3 is extremely parameter-efficient (~0.01% of model parameters vs ~0.5% for LoRA r=16) and suited for few-shot and meta-learning scenarios. It underperforms LoRA on complex domain adaptation but excels at lightweight task specialization.",
     "idealAnswerKeyPoints": [
       "IA3 introduces learned scale vectors l_k, l_v for keys and values in attention, and l_ff for the intermediate FFN activation",
       "Application: K' = l_k ⊙ K, V' = l_v ⊙ V, FFN' = (l_ff ⊙ FFN(x))",
