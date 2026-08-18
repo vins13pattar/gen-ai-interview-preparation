@@ -1,0 +1,302 @@
+[
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "foundational",
+    "question": "What is a reasoning model (o-series, DeepSeek-R1, etc.) and how does it differ from a standard chat model?",
+    "idealAnswerCore": "A reasoning model spends extra tokens on an internal chain of thought (often hidden) before answering, trading latency and cost for better performance on hard multi-step tasks; a standard chat model is optimized to answer immediately and cheaply.",
+    "idealAnswerFraming": "Lead with the product tradeoff: test-time compute vs. interactivity. Mention that prompting 'think step by step' on a reasoning model is often redundant or harmful.",
+    "idealAnswerKeyPoints": [
+      "Training: large-scale RL on verifiable rewards (math, code) plus SFT, not just next-token chat",
+      "Inference: a thinking or reasoning channel plus a final answer; APIs expose effort/budget knobs",
+      "Wins: contests, debugging, planning, hard STEM; loses: classification, extraction, tight TTFT chat",
+      "Cost: reasoning tokens are billed; a 'simple FAQ' can 10× spend if you default to a reasoner",
+      "UX: users wait through thinking; stream a status, not a fake answer"
+    ],
+    "idealAnswerFollowups": [
+      "When would you route away from a reasoning model automatically?",
+      "How do you debug a wrong answer if the trace is hidden?"
+    ],
+    "tags": ["reasoning-models", "o1", "r1", "test-time-compute"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "foundational",
+    "question": "What is test-time compute (inference-time scaling) and why did it become a first-class scaling axis?",
+    "idealAnswerCore": "Test-time compute means spending more FLOPs at inference — longer thoughts, more samples, search — to raise quality without training a bigger model; labs treat it as a scaling law alongside parameters and tokens.",
+    "idealAnswerFraming": "Contrast train-time vs test-time. Interviewers want: pass@k, majority vote, sequential thinking, and the diminishing-returns curve.",
+    "idealAnswerKeyPoints": [
+      "Parallel: sample N completions and vote or rerank (self-consistency, best-of-N)",
+      "Sequential: one longer chain (o1-style) that revises itself",
+      "Search: tree-of-thought / MCTS-like expansion for agents",
+      "You still need a verifier or reward; more tokens without a check can confidently ramble",
+      "Product: expose a quality slider that maps to budget, not a mysterious 'smart mode'"
+    ],
+    "idealAnswerFollowups": [
+      "How do you decide N for best-of-N under a latency SLO?",
+      "When does more test-time compute stop helping?"
+    ],
+    "tags": ["test-time-compute", "inference-scaling", "self-consistency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "intermediate",
+    "question": "How should you set thinking budgets or reasoning_effort in production?",
+    "idealAnswerCore": "Map effort to task hardness and SLO: low/off for extraction and chat, medium for coding, high only for contested or high-stakes problems — and cap max reasoning tokens so a stuck thought cannot blow the bill.",
+    "idealAnswerFraming": "Treat the knob like a timeout and a dollar amount. Show a routing table.",
+    "idealAnswerKeyPoints": [
+      "Default low; escalate on validator failure or user 'try harder'",
+      "Separate TTFT (maybe a short summary) from total thinking time",
+      "Log reasoning-token counts as a first-class cost metric",
+      "Eval: quality vs $ curve on a golden set; pick the knee",
+      "Do not give users an unbounded 'think forever' control on a shared tenant"
+    ],
+    "idealAnswerFollowups": [
+      "How would you A/B two effort defaults?",
+      "What happens if the model uses the full budget and still fails?"
+    ],
+    "tags": ["reasoning-effort", "cost", "routing", "slo"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "intermediate",
+    "question": "What is the difference between process rewards and outcome rewards for training reasoners?",
+    "idealAnswerCore": "Outcome rewards score only the final answer (unit test passed, boxed number correct); process rewards (or process reward models) score intermediate steps — outcome is cheaper and less hackable on verifiable tasks, process can credit good reasoning when the last step is wrong but is expensive to label and easy to game.",
+    "idealAnswerFraming": "Connect to PRM vs ORM and to GRPO on math. Mention reward hacking of 'looks like a proof'.",
+    "idealAnswerKeyPoints": [
+      "Verifiable domains (code, math, schema) favor outcome + group-relative RL (GRPO)",
+      "Open-ended writing needs learned judges or PRMs and more human audit",
+      "Process labels: human or LLM-as-judge on steps; noisy and biased toward verbosity",
+      "Hybrid: outcome gate plus a light process penalty for loops/tool spam",
+      "If you cannot verify, more RL often makes confident nonsense"
+    ],
+    "idealAnswerFollowups": [
+      "Why did DeepSeek-R1 lean on outcome rewards for math/code?",
+      "How would you reward a customer-support reasoner?"
+    ],
+    "tags": ["prm", "orm", "grpo", "rewards"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "intermediate",
+    "question": "When should you not use a reasoning model?",
+    "idealAnswerCore": "Skip reasoners for high-QPS cheap tasks, strict TTFT, structured extraction, classification, and anything where extra thinking does not change the decision — use a fast instruct model plus tools/RAG instead.",
+    "idealAnswerFraming": "This is the money question in 2026 interviews. Give counterexamples, not hype.",
+    "idealAnswerKeyPoints": [
+      "JSON extraction with a schema: constrained decode beats 2k thinking tokens",
+      "RAG FAQ: retrieval quality dominates; thinking cannot invent missing docs",
+      "Autocomplete and streaming chat: users punish 10s of silent thought",
+      "Safety classifiers: you want a calibrated small model, not a novel essay",
+      "Route: cheap model first, escalate to reasoner on low confidence or hard intents"
+    ],
+    "idealAnswerFollowups": [
+      "How do you detect 'this query is too easy for o3' online?",
+      "Can a reasoner still help RAG if retrieval failed?"
+    ],
+    "tags": ["routing", "cost", "reasoning-models", "product"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "intermediate",
+    "question": "How do you prompt reasoning models differently from GPT-4-class chat models?",
+    "idealAnswerCore": "Specify the problem, constraints, and output contract clearly; do not pile CoT slogans, few-shot reasoning traces, or 'let's think step by step' — those waste budget or fight the model's native planner.",
+    "idealAnswerFraming": "Cite the o1/R1 prompting guidance. Show you have actually shipped both.",
+    "idealAnswerKeyPoints": [
+      "Put requirements, edge cases, and success criteria in the user/system spec",
+      "Use tools for facts; do not ask the reasoner to memorize your wiki",
+      "For code: tests and repo context beat a hand-written reasoning demo",
+      "Hidden traces: you may not be able to few-shot the thought channel",
+      "If you need a visible proof, ask for a structured explanation in the answer, not in the private thought"
+    ],
+    "idealAnswerFollowups": [
+      "How would you prompt a reasoner to use tools instead of guessing APIs?",
+      "What goes wrong if you paste a long CoT few-shot into o3?"
+    ],
+    "tags": ["prompting", "o1", "r1", "reasoning-models"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "advanced",
+    "question": "How would you distill a reasoning model into a smaller, cheaper student?",
+    "idealAnswerCore": "Generate traces or answers from a teacher on a curated set, filter with verifiers, then SFT (and optionally a short RL stage) the student — you are transferring the policy, not the full search, so the student will be weaker on the tail unless you keep a teacher fallback.",
+    "idealAnswerFraming": "DeepSeek-R1-distill style. Talk data quality, leakage, and evals.",
+    "idealAnswerKeyPoints": [
+      "Prefer verified traces (unit tests, math checkers) over raw thoughts",
+      "Mix easy and hard; too much hard-only data can wreck general chat",
+      "Do not train on eval sets; watch contamination",
+      "Measure: student vs teacher on the same golden set plus latency/$",
+      "Production: cascade — student first, teacher on fail"
+    ],
+    "idealAnswerFollowups": [
+      "Should you distill hidden thoughts or only final answers?",
+      "How do you keep the student from becoming sycophantic?"
+    ],
+    "tags": ["distillation", "synthetic-data", "reasoning-models"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "advanced",
+    "question": "How do reasoning models change agent loops (ReAct, tools, step budgets)?",
+    "idealAnswerCore": "A reasoner can plan more in one call, so you often want fewer outer-loop steps, stricter tool schemas, and a global token budget that includes thinking — otherwise you pay for thought plus ten tool-call thoughts.",
+    "idealAnswerFraming": "Senior agent design. Combine step budget with reasoning budget.",
+    "idealAnswerKeyPoints": [
+      "One reasoned plan + tool batch can beat 15 ReAct micro-thoughts on a cheap model",
+      "Still need tools for live data; thinking does not replace retrieval",
+      "Cap both agent steps and reasoning tokens; log both",
+      "Tool errors: feed the error back; do not start a new 20k-token rumination from scratch every time",
+      "Eval trajectories, not just the final string"
+    ],
+    "idealAnswerFollowups": [
+      "Would you still use explicit ReAct thoughts with o3?",
+      "How do you prevent a reasoner-agent from looping on the same tool?"
+    ],
+    "tags": ["agents", "tools", "reasoning-models", "budgets"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "advanced",
+    "question": "How do you evaluate reasoning models without overfitting to a visible chain of thought?",
+    "idealAnswerCore": "Score final-task success with verifiers (tests, exact match, execution); treat traces as debug artifacts; if you must grade reasoning, use a holdout rubric and never optimize the product prompt against a judge that only rewards long thoughts.",
+    "idealAnswerFraming": "Goodhart: verbose CoT looks smart. Outcome-first evals.",
+    "idealAnswerKeyPoints": [
+      "Primary: pass rate on held-out tasks with deterministic checkers",
+      "Secondary: cost, latency, tool-call precision",
+      "Trace evals: only for safety (did it plan a disallowed action) and debugging",
+      "Hidden-trace APIs: you cannot gold-label thoughts; do not pretend you can",
+      "Watch length hacking: models write novels to farm process scores"
+    ],
+    "idealAnswerFollowups": [
+      "How would you eval a reasoner on customer support where there is no unit test?",
+      "Is BLEU on the explanation useful?"
+    ],
+    "tags": ["evals", "reasoning-models", "goodhart", "verifiers"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "foundational",
+    "question": "What is self-consistency, and how does it relate to modern reasoning models?",
+    "idealAnswerCore": "Self-consistency samples multiple reasoning paths and majority-votes the answer — an early parallel test-time-compute trick; sequential reasoners internalize some of that search, but best-of-N plus a verifier is still useful on chat models and for extra hard items.",
+    "idealAnswerFraming": "Show history: Wang et al. self-consistency → o1 sequential search. Know when to sample vs think longer.",
+    "idealAnswerKeyPoints": [
+      "Works when answers are discrete and paths are diverse",
+      "Fails when all samples share the same bug",
+      "Cost: N full generations; often worse $ than one medium reasoner call",
+      "Combine: reasoner for hard intents, self-consistency on a cheap model for math quizzes",
+      "Need a canonicalization step (0.5 vs 1/2) before voting"
+    ],
+    "idealAnswerFollowups": [
+      "How is this different from an ensemble of different models?",
+      "When is a process reward model a better aggregator than majority vote?"
+    ],
+    "tags": ["self-consistency", "test-time-compute", "sampling"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "intermediate",
+    "question": "How do reasoning tokens interact with context windows, caching, and streaming UX?",
+    "idealAnswerCore": "Thoughts consume context and often cannot be prefix-cached across users; they delay the first visible answer token; product design should show a working state, optionally stream sanitized thoughts, and keep the durable history as the final answer plus tools — not megabytes of rumination.",
+    "idealAnswerFraming": "Systems question. Connect KV cache, billing, and UX.",
+    "idealAnswerKeyPoints": [
+      "Reasoning tokens count toward context; long thoughts crowd out RAG",
+      "Prompt cache hits the static prefix, not unique thoughts",
+      "Do not persist raw thoughts into the next turn unless you need them — they rot and leak",
+      "Safety: thoughts may contain disallowed planning; filter before showing",
+      "Streaming: some APIs stream thought deltas separately from the answer"
+    ],
+    "idealAnswerFollowups": [
+      "Should the next user turn include the previous thought?",
+      "How would you compact a 40k-token thought for memory?"
+    ],
+    "tags": ["context", "caching", "streaming", "reasoning-models"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "advanced",
+    "question": "What is inference-time search (ToT, MCTS, verifier-guided decode) versus a single long chain, and when is search worth it?",
+    "idealAnswerCore": "Search expands multiple partial solutions and uses a value/verifier to prune; a single long chain is cheaper and simpler. Search wins on puzzles with cheap simulators (code tests, game states) and loses when the verifier is another expensive LLM call each node.",
+    "idealAnswerFraming": "Do not propose MCTS for a chatbot. Give a decision rule.",
+    "idealAnswerKeyPoints": [
+      "Need a cheap, accurate verifier or the tree amplifies judge noise",
+      "Branching factor and depth explode cost; cap expansions",
+      "Agents already search via tools; adding ToT on every message is usually waste",
+      "Hybrid: one reasoned plan, then search only on failed unit tests",
+      "Latency: search is batch-friendly, not TTFT-friendly"
+    ],
+    "idealAnswerFollowups": [
+      "How would you use test-execution as a verifier in a coding agent?",
+      "Why did many production teams skip ToT after the paper hype?"
+    ],
+    "tags": ["tree-of-thought", "mcts", "search", "verifiers"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "foundational",
+    "question": "How do you explain the cost of a reasoning-model feature to a PM?",
+    "idealAnswerCore": "Quote $ per successful task and P95 latency at each effort level, plus the percent of traffic that actually needs a reasoner — a 5% hard-query tail should not price the other 95% like o3.",
+    "idealAnswerFraming": "Business translation. Bring a cascade diagram.",
+    "idealAnswerKeyPoints": [
+      "Show a table: model × effort × quality × $ × P95",
+      "North star: successful resolutions, not tokens",
+      "Offer a default cascade and an 'advanced' toggle",
+      "Include eval/regression cost of the reasoner path",
+      "Call out failure mode: users leave if thinking is silent and slow"
+    ],
+    "idealAnswerFollowups": [
+      "What if the PM wants GPT-4o quality at R1-high spend?",
+      "How do you prevent a single tenant from burning the monthly budget on high effort?"
+    ],
+    "tags": ["product", "cost", "reasoning-models", "communication"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "intermediate",
+    "question": "What is 'overthinking' and how do you detect it in production?",
+    "idealAnswerCore": "Overthinking is using a long reasoning trace on a query that a cheap model already answers correctly — detect it by pairing a shadow cheap model, tracking reasoning tokens vs. task type, and flagging high spend with unchanged user outcomes.",
+    "idealAnswerFraming": "Ops metric, not philosophy.",
+    "idealAnswerKeyPoints": [
+      "Slice reasoning-token histograms by intent",
+      "Shadow a mini model on a sample; if agreement is high, route down",
+      "User signals: regenerate, 'just give me the JSON'",
+      "Hard cap + classifier beats hoping the model self-throttles",
+      "Some tasks (security review) should overthink on purpose — whitelist them"
+    ],
+    "idealAnswerFollowups": [
+      "How is overthinking different from a hung agent loop?",
+      "Would you train a length penalty into the reasoner?"
+    ],
+    "tags": ["overthinking", "routing", "observability", "cost"],
+    "source": "seed"
+  },
+  {
+    "domainId": "reasoning-models",
+    "difficulty": "advanced",
+    "question": "How do you combine RAG with a reasoning model without wasting the thinking budget on retrieving?",
+    "idealAnswerCore": "Retrieve first (or with a cheap rewrite), stuff only the top grounded chunks, then let the reasoner synthesize under a citation contract — do not ask the reasoner to 'think about what to search' for ten thousand tokens when a query rewriter plus hybrid search is enough.",
+    "idealAnswerFraming": "Architecture: retrieval planner vs reasoner. Two-model pipeline is often cheaper.",
+    "idealAnswerKeyPoints": [
+      "Cheap model: query rewrite / decompose; reasoner: answer + citations",
+      "If retrieval is empty, abstain — extra thinking will hallucinate",
+      "Put evidence before the question to reduce lost-in-the-middle if you must use one call",
+      "Eval faithfulness separately from reasoning quality",
+      "Agentic RAG: bound search steps; reasoner should not browse forever"
+    ],
+    "idealAnswerFollowups": [
+      "When is agentic search actually worth a reasoner?",
+      "How do you keep citations aligned after a long thought?"
+    ],
+    "tags": ["rag", "reasoning-models", "routing", "citations"],
+    "source": "seed"
+  }
+]

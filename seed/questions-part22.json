@@ -1,0 +1,302 @@
+[
+  {
+    "domainId": "context-engineering",
+    "difficulty": "foundational",
+    "question": "What is context engineering, and how is it different from prompt engineering?",
+    "idealAnswerCore": "Prompt engineering is the wording of instructions; context engineering is the system that decides what tokens enter the window each turn — retrieved docs, tool results, memories, history, schemas — under token, cache, and freshness constraints.",
+    "idealAnswerFraming": "This is the 2025–2026 name for what production teams actually do. Interviewers want a pipeline, not a prettier system prompt.",
+    "idealAnswerKeyPoints": [
+      "Inputs: user message, system policy, RAG, tools, memory, structured state",
+      "Budgets: reserve tokens for output, tools, and a stable prefix for caching",
+      "Quality: too little context → hallucination; too much → lost-in-the-middle and cost",
+      "Version the assembler like code; eval it like a retriever",
+      "Prompt copy is one module inside the assembler, not the whole job"
+    ],
+    "idealAnswerFollowups": [
+      "What would you log to debug a bad context pack?",
+      "How does context engineering change with a 1M-token model?"
+    ],
+    "tags": ["context-engineering", "prompting", "systems"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "foundational",
+    "question": "What should always live in the stable prompt prefix versus the per-turn suffix?",
+    "idealAnswerCore": "Put immutable policy, tool schemas, and static style rules in a byte-stable prefix so provider prompt caches hit; put user text, retrieved chunks, and timestamps in the suffix so they do not bust the cache or leak across users.",
+    "idealAnswerFraming": "Tie to Anthropic/OpenAI prefix caching. Give a layout.",
+    "idealAnswerKeyPoints": [
+      "Prefix: system policy, tool JSON schemas, static few-shots",
+      "Suffix: user query, RAG hits, conversation tail",
+      "Never put another tenant's data or the current date in the cached prefix",
+      "Changing one character of the prefix invalidates the cache for everyone",
+      "Measure cache hit rate after every prompt edit"
+    ],
+    "idealAnswerFollowups": [
+      "Where do per-user preferences go if they break the prefix cache?",
+      "How do tool schema changes interact with caching?"
+    ],
+    "tags": ["prompt-cache", "prefix", "layout", "cost"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "intermediate",
+    "question": "How do you compact a long conversation without losing constraints the user stated?",
+    "idealAnswerCore": "Keep the last N turns verbatim, maintain a structured state object for durable constraints (name, IDs, 'never email the customer'), and summarize the rest with an explicit 'do not drop constraints' prompt — then eval compaction on a golden set of constraint-carry tests.",
+    "idealAnswerFraming": "This is the production memory problem. Structured state beats a fuzzy paragraph summary.",
+    "idealAnswerKeyPoints": [
+      "Extract slots: goals, entities, bans, pending tool results",
+      "Verbatim tail preserves tone and recent corrections",
+      "Tell the user when history was compacted",
+      "Never compact away safety or billing constraints",
+      "Test: 'always reply in French' still holds after 40 turns"
+    ],
+    "idealAnswerFollowups": [
+      "When is a vector memory of past turns better than a running summary?",
+      "How do citations survive compaction?"
+    ],
+    "tags": ["compaction", "memory", "conversation", "state"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "intermediate",
+    "question": "How should tool results be placed in context so they stay useful and safe?",
+    "idealAnswerCore": "Treat tool output as untrusted data in a delimited block, truncate or schema-project huge payloads, keep a handle to the full blob in your store, and never let a 200k log dump crowd out the user question.",
+    "idealAnswerFraming": "Agents die from stuffing curl output into the window. Show truncation + pointer pattern.",
+    "idealAnswerKeyPoints": [
+      "Project: keep fields the model needs (id, status, error), drop blobs",
+      "Hash or URL to fetch more via another tool if required",
+      "Delimit as data, not as new system instructions",
+      "Cap per-tool tokens; summarize tables",
+      "Eval: can the agent still answer after a verbose tool?"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle a tool that returns a 50MB JSON file?",
+      "Should failed tool errors be summarized or shown raw?"
+    ],
+    "tags": ["tools", "truncation", "injection", "agents"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "intermediate",
+    "question": "When do you use long context, RAG, or external memory for the same product question?",
+    "idealAnswerCore": "Long context for one or few documents the user just uploaded; RAG for a large, changing corpus with citations; external memory for durable user/state facts — most products use all three with a router, not one slogan.",
+    "idealAnswerFraming": "Classic design fork. Give failure modes of each.",
+    "idealAnswerKeyPoints": [
+      "Long context: simple, loses middle, expensive, weak ACLs at chunk level",
+      "RAG: scalable, needs chunking/eval, can miss if retrieval fails",
+      "Memory: preferences and tickets, not the knowledge base",
+      "Do not embed the entire chat into the vector store by default",
+      "Measure $ and faithfulness for each path"
+    ],
+    "idealAnswerFollowups": [
+      "How would you handle a 400-page PDF plus a 10M-doc wiki?",
+      "Does a 1M context window kill RAG?"
+    ],
+    "tags": ["long-context", "rag", "memory", "routing"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "intermediate",
+    "question": "What is context rot (or lost-in-the-middle), and how do you design around it?",
+    "idealAnswerCore": "Models use the start and end of a long prompt better than the middle; stuffing more chunks can lower accuracy. Put the question and the best evidence at the edges, rerank aggressively, and keep k small.",
+    "idealAnswerFraming": "Cite the lost-in-the-middle result. Product implication: bigger window ≠ better.",
+    "idealAnswerKeyPoints": [
+      "Rerank to 5–10 chunks instead of 50",
+      "Repeat the user question after documents",
+      "Break multi-hop into sub-questions instead of one giant pack",
+      "Eval with needles at different positions",
+      "Long-context models still show U-shaped use; measure, do not assume"
+    ],
+    "idealAnswerFollowups": [
+      "How would you test needle position in CI?",
+      "Does instruction hierarchy survive a 200k RAG pack?"
+    ],
+    "tags": ["lost-in-the-middle", "context-rot", "rag", "position"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "advanced",
+    "question": "How do you assemble context for a coding agent over a large repository?",
+    "idealAnswerCore": "Do not dump the repo: retrieve by semantic + grep + dependency graph, pin open files and the patch hunk, keep a map of paths, and use tools to read more — the window holds a working set, not the monorepo.",
+    "idealAnswerFraming": "Cursor/Copilot-style interview. Mention AST/path ranking.",
+    "idealAnswerKeyPoints": [
+      "Always include: user instruction, current file/selection, compiler errors",
+      "Retrieve: similar code, definitions, tests for the symbol",
+      "Ignore generated lockfiles and node_modules",
+      "Budget: code is token-heavy; prefer snippets with line numbers",
+      "Eval on SWE-like tasks plus your private repo golden patches"
+    ],
+    "idealAnswerFollowups": [
+      "How do you keep the agent from editing the wrong file with a similar name?",
+      "Where does repo-wide grep sit vs embeddings?"
+    ],
+    "tags": ["coding-agents", "retrieval", "working-set", "repos"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "advanced",
+    "question": "How do you keep context packing deterministic enough for evals and prompt cache, but personalized per user?",
+    "idealAnswerCore": "Split the pack into a global immutable prefix, a tenant-stable middle (tools allowed for this plan), and a request-specific tail; hash each layer; evals freeze retrieval snapshots so you are not scoring a moving index.",
+    "idealAnswerFraming": "Platform question. Reproducibility vs personalization.",
+    "idealAnswerKeyPoints": [
+      "Record prompt_hash, retrieval_ids, memory_ids on every trace",
+      "Golden evals pin chunk IDs, not live search",
+      "Personalization belongs in the tail or a small cached-per-user segment",
+      "Feature flags that change tools must version the prefix",
+      "Flaky packing is an eval flake — sort chunks by id if scores tie"
+    ],
+    "idealAnswerFollowups": [
+      "How do you replay a production failure from hashes?",
+      "Should chunk order be relevance or document order?"
+    ],
+    "tags": ["determinism", "evals", "caching", "personalization"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "foundational",
+    "question": "How do you count tokens for context budgets, and why do naive character estimates fail?",
+    "idealAnswerCore": "Use the same tokenizer as the target model (or the provider's count API); character/4 heuristics fail on code, CJK, and special tokens, and you must reserve max_output plus tool schemas or you will overflow at runtime.",
+    "idealAnswerFraming": "Practical. Mention different tokenizers per model in a multi-provider gateway.",
+    "idealAnswerKeyPoints": [
+      "Count system + tools + history + RAG + user before calling",
+      "Reserve output tokens or the API truncates JSON",
+      "Images/audio have their own token tariffs",
+      "A gateway that routes GPT vs Claude cannot share one counter",
+      "Fail with a user-visible 'too long' and a compact action, not a raw 400"
+    ],
+    "idealAnswerFollowups": [
+      "How do you budget multimodal screenshots?",
+      "What if the provider's tokenizer is not public?"
+    ],
+    "tags": ["tokenization", "budgets", "overflow"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "intermediate",
+    "question": "What is a context assembler (or prompt compiler), and why put it in one module?",
+    "idealAnswerCore": "A single assembler function owns ordering, budgets, redaction, and hashes so product features cannot each concatenate strings into the prompt — that is how injection, cache misses, and irreproducible bugs happen.",
+    "idealAnswerFraming": "Software architecture for LLM apps. One choke point.",
+    "idealAnswerKeyPoints": [
+      "API: structured parts in, ChatMessage[] out",
+      "Enforces delimiters and privilege (system vs data)",
+      "Applies DLP/redaction before send",
+      "Unit-testable with fixtures",
+      "The rest of the app never string-concats a prompt"
+    ],
+    "idealAnswerFollowups": [
+      "How do you test an assembler without calling a model?",
+      "Who owns the assembler in a multi-team platform?"
+    ],
+    "tags": ["architecture", "assembler", "prompt-compiler"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "advanced",
+    "question": "How do you handle conflicting context (old memory vs new doc vs user correction)?",
+    "idealAnswerCore": "Define a precedence policy: explicit user correction > current-turn retrieved source with recency > long-term memory > model priors; show conflicts when stakes are high instead of silently averaging.",
+    "idealAnswerFraming": "Truth maintenance. Legal/support examples.",
+    "idealAnswerKeyPoints": [
+      "Stamp memories with time and source",
+      "Invalidate memory when the user says 'forget that'",
+      "RAG should prefer document date for policy questions",
+      "If two sources conflict, cite both",
+      "Eval a 'user corrected the bot' slice"
+    ],
+    "idealAnswerFollowups": [
+      "What if memory says a discount the new policy forbids?",
+      "How do you prevent the model from 'smoothing' two opposite SLAs?"
+    ],
+    "tags": ["conflicts", "memory", "precedence", "rag"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "intermediate",
+    "question": "How does context packing change for reasoning models with large hidden thoughts?",
+    "idealAnswerCore": "Leave headroom for reasoning tokens, keep evidence tight so thoughts are not crowding RAG, and do not automatically append previous thoughts into the next pack — they are expensive, sometimes sensitive, and usually redundant with the final answer.",
+    "idealAnswerFraming": "Connect the two new domains. Budget is shared.",
+    "idealAnswerKeyPoints": [
+      "max_output includes thoughts on some APIs — read the docs",
+      "Prefer better retrieval over a bigger thinking budget when facts are missing",
+      "Strip thoughts from stored history unless debugging",
+      "A fat context plus high effort is the worst $ quadrant",
+      "Measure overflow errors after enabling a reasoner"
+    ],
+    "idealAnswerFollowups": [
+      "Would you drop RAG chunks to make room for thinking?",
+      "How do you explain a context-overflow to a user of a 'smart' mode?"
+    ],
+    "tags": ["reasoning-models", "budgets", "context-engineering"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "foundational",
+    "question": "Why is 'just put everything in the prompt' a bad context strategy even with huge windows?",
+    "idealAnswerCore": "Huge windows still cost, still miss the middle, still mix untrusted data with instructions, and still weaken caching and ACLs — retrieval and packing remain the control plane.",
+    "idealAnswerFraming": "Push back on the 'RAG is dead' take without being dogmatic.",
+    "idealAnswerKeyPoints": [
+      "Cost scales with input tokens every call",
+      "Attention is uneven across positions",
+      "Tenants and secrets should not all sit in one blob",
+      "Prompt cache wants stability, not a unique 800k dump",
+      "Ops: you cannot debug what you cannot name (chunk IDs)"
+    ],
+    "idealAnswerFollowups": [
+      "When is stuffing the whole ticket thread actually right?",
+      "How would you sunset RAG if a model were truly uniform over 1M tokens?"
+    ],
+    "tags": ["long-context", "rag", "cost", "acl"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "advanced",
+    "question": "How would you design context for a multi-agent system so agents do not leak or duplicate state?",
+    "idealAnswerCore": "Give each agent the minimum working set plus a shared structured blackboard (task graph, artifacts, IDs); do not paste the full orchestrator transcript into every worker; pass handles to files in object storage instead of inlined blobs.",
+    "idealAnswerFraming": "Multi-agent context is a distributed-systems problem.",
+    "idealAnswerKeyPoints": [
+      "Per-agent system prompts stay specialized and cacheable",
+      "Shared store: tickets, patches, retrieval IDs",
+      "Summarize worker output before sending to the parent",
+      "ACL: a research agent should not see payroll tools in its schema",
+      "Trace the blackboard, not only the chat"
+    ],
+    "idealAnswerFollowups": [
+      "How do you prevent two agents from writing conflicting summaries into the blackboard?",
+      "When is a single-threaded agent with tools simpler?"
+    ],
+    "tags": ["multi-agent", "blackboard", "least-privilege", "state"],
+    "source": "seed"
+  },
+  {
+    "domainId": "context-engineering",
+    "difficulty": "intermediate",
+    "question": "How do you redact PII in context without breaking the model's ability to complete the task?",
+    "idealAnswerCore": "Replace secrets with stable placeholders (CUSTOMER_1, TOKEN_A) that you map back after generation, keep format (email-shaped) if the task needs it, and never embed raw PAN/keys in RAG or traces — test that the model still joins entities correctly.",
+    "idealAnswerFraming": "Privacy vs utility. Placeholder scheme.",
+    "idealAnswerKeyPoints": [
+      "Deterministic placeholders so 'Alice' stays the same across chunks",
+      "Do not hash in a way that breaks referential mentions",
+      "Rehydrate only in the UI for authorized users",
+      "Some tasks (fraud) need real values inside a tighter ACL path",
+      "Eval entity resolution after redaction"
+    ],
+    "idealAnswerFollowups": [
+      "How do you redact inside images or PDFs?",
+      "What if the user pastes a password and needs a login agent?"
+    ],
+    "tags": ["pii", "redaction", "privacy", "placeholders"],
+    "source": "seed"
+  }
+]

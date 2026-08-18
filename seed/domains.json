@@ -70,5 +70,23 @@
     "slug": "production-apps",
     "name": "Production GenAI Applications",
     "description": "Cost control, caching, streaming UX, observability, context management, structured output, and shipping reliable GenAI features."
+  },
+  {
+    "id": "reasoning-models",
+    "slug": "reasoning-models",
+    "name": "Reasoning Models & Test-Time Compute",
+    "description": "o-series and R1-style models, inference-time scaling, thinking budgets, process vs outcome rewards, when to skip reasoning models, and distillation of traces."
+  },
+  {
+    "id": "context-engineering",
+    "slug": "context-engineering",
+    "name": "Context Engineering",
+    "description": "What goes in the window, compaction, tool-result management, memory vs RAG vs long context, context rot, and prefix-cache-friendly layouts."
+  },
+  {
+    "id": "genai-system-design",
+    "slug": "genai-system-design",
+    "name": "GenAI System Design",
+    "description": "End-to-end design interviews: copilots, support agents, document QA, voice, and cost/latency/safety trade-offs at product scale."
   }
 ]

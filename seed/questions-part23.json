@@ -1,0 +1,302 @@
+[
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "foundational",
+    "question": "How do you structure a 45-minute GenAI system-design interview answer?",
+    "idealAnswerCore": "Clarify the job-to-be-done, constraints (latency, cost, risk, tenancy), then walk ingestion → context/tools → model routing → guardrails → evals → serving/ops — call out 2–3 hard tradeoffs instead of naming every vendor.",
+    "idealAnswerFraming": "Same as distributed-systems design: requirements first. Interviewers fail people who jump to 'we'll use LangChain'.",
+    "idealAnswerKeyPoints": [
+      "Ask: QPS, P95, data sensitivity, write actions, languages",
+      "Draw trust boundaries (user, docs, tools, model provider)",
+      "Pick an MVP path and a scale path",
+      "Define evals and kill switches as part of the design, not an afterthought",
+      "Quantify: tokens, index size, $ per day at 1k DAU"
+    ],
+    "idealAnswerFollowups": [
+      "What question do you ask first if the prompt is 'build ChatGPT for our company'?",
+      "How do you handle a interviewer who wants Kubernetes before the eval plan?"
+    ],
+    "tags": ["system-design", "interviews", "requirements"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "intermediate",
+    "question": "Design an internal knowledge assistant for 20k employees over Confluence, Slack, and Drive.",
+    "idealAnswerCore": "ACL-aware connectors, incremental index, hybrid search + rerank, citation UX, per-app identity, evals on real tickets, and no write tools in v1 — retrieval isolation is the design, not the choice of GPT vs Claude.",
+    "idealAnswerFraming": "Enterprise RAG system design. Spend time on permissions and freshness.",
+    "idealAnswerKeyPoints": [
+      "Auth: SSO; retrieval must filter by the user's tokens, not the bot's god mode",
+      "Connectors: webhooks/cursors for updates; tombstones on delete",
+      "Slack is noisy — channel allowlists and recency",
+      "Answer with links to the source page/message",
+      "Launch: one division canary, DLP, audit logs"
+    ],
+    "idealAnswerFollowups": [
+      "How do you index a Google Doc the user cannot open?",
+      "How fresh is 'good enough' for HR policy vs chat trivia?"
+    ],
+    "tags": ["system-design", "enterprise-rag", "acl", "connectors"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "intermediate",
+    "question": "Design a customer-support agent that can look up orders and issue refunds.",
+    "idealAnswerCore": "Split chat from side effects: retrieve policy + order tools under the user's identity, draft replies with citations, and require a policy engine plus HITL or strict limits on refunds — evals must include adversarial tickets and idempotent refunds.",
+    "idealAnswerFraming": "This is the classic agent design. Safety of money > fluency.",
+    "idealAnswerKeyPoints": [
+      "v1: retrieve + draft for humans; v2: auto-refund under $X",
+      "Tools: get_order, list_payments, create_refund with idempotency keys",
+      "Policy as code, not only in the prompt",
+      "Injection: ticket text is untrusted",
+      "Metrics: containment, refund accuracy, handle time, CSAT"
+    ],
+    "idealAnswerFollowups": [
+      "What if the LLM is down during a sale?",
+      "How do you stop double refunds on retry?"
+    ],
+    "tags": ["system-design", "support-agent", "hitl", "payments"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "advanced",
+    "question": "Design a coding copilot for a 50-million-line monorepo.",
+    "idealAnswerCore": "IDE client + context assembler (open files, grep, semantic retrieve, build errors), repo index with incremental updates, fill-in-the-middle plus chat/agent modes, secret scanning, and evals on private golden patches — do not stream the whole repo to a public model without a contract.",
+    "idealAnswerFraming": "Staff-level. Mention privacy, latency for FIM, and agent vs autocomplete.",
+    "idealAnswerKeyPoints": [
+      "Autocomplete: <100ms local or small model; chat can be slower",
+      "Index: embeddings + symbols + build graph; sharded by repo path",
+      "Zero-retention or self-host for sensitive code",
+      "Agent mode: patch + tests in a sandbox, step budget",
+      "Eval: acceptance rate, SWE-like tasks on internal issues"
+    ],
+    "idealAnswerFollowups": [
+      "How do you keep the index fresh after every merge?",
+      "Would you run the agent on CI or only in the IDE?"
+    ],
+    "tags": ["system-design", "copilot", "code-index", "privacy"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "intermediate",
+    "question": "Design a document-QA product for messy PDFs (scans, tables, slides).",
+    "idealAnswerCore": "Parse with a layout-aware pipeline (OCR, tables, figures), store page/bbox metadata, retrieve with text + visual embeddings if needed, answer with page-level citations, and eval on table numbers — naive text extraction will fail the demo.",
+    "idealAnswerFraming": "Multimodal RAG design without boiling the ocean.",
+    "idealAnswerKeyPoints": [
+      "Detect scanned vs digital PDFs",
+      "Keep table structure (HTML/markdown) not flattened soup",
+      "Citation: page + highlight coordinates",
+      "Queue big files as jobs; stream status",
+      "Human review for extracted amounts in finance"
+    ],
+    "idealAnswerFollowups": [
+      "When do you use a VLM over the page image vs OCR text?",
+      "How do you handle 500-page contracts?"
+    ],
+    "tags": ["system-design", "pdf", "ocr", "multimodal"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "advanced",
+    "question": "Design a real-time voice agent for phone support (STT → LLM → TTS).",
+    "idealAnswerCore": "Optimize for time-to-first-audio: streaming STT, speculative LLM, streaming TTS, interruption (barge-in), and a tight tool set — use a fast model for turn-taking and escalate to a reasoner only off the call path.",
+    "idealAnswerFraming": "Latency budget in milliseconds. Mention WebRTC/SIP, not just the LLM.",
+    "idealAnswerKeyPoints": [
+      "Budget: STT partials <300ms, LLM first audio <800ms if possible",
+      "Endpointing and barge-in so the bot does not talk over the user",
+      "State machine for IVR-like flows plus LLM for the tail",
+      "PII: voice recordings have retention rules",
+      "Fallback to human queue with the transcript"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle an accent the STT mangles?",
+      "Where does tool calling sit without killing latency?"
+    ],
+    "tags": ["system-design", "voice", "realtime", "latency"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "intermediate",
+    "question": "Design model routing for a SaaS feature that must hit a cost target and a quality bar.",
+    "idealAnswerCore": "Classify intent/complexity, send easy traffic to small/cheap models, hard or failing cases to a frontier or reasoner, cache semantic hits, and keep an eval scorecard per route — never a single default 'best model'.",
+    "idealAnswerFraming": "FinOps + quality. Draw the cascade.",
+    "idealAnswerKeyPoints": [
+      "Signals: length, intent, user plan, validator fail, tenant SLO",
+      "Shadow the expensive model to label the router",
+      "Pin versions; a silent model upgrade is a routing bug",
+      "Per-route SLOs and $ dashboards",
+      "Safety route cannot skip guardrails to save money"
+    ],
+    "idealAnswerFollowups": [
+      "How do you train the complexity classifier without leaking PII?",
+      "What if the cheap model is fluent but unfaithful?"
+    ],
+    "tags": ["system-design", "routing", "cost", "cascade"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "advanced",
+    "question": "Design a multi-tenant LLM gateway used by many internal product teams.",
+    "idealAnswerCore": "Centralize keys, quotas, tracing, retries, DLP, and model pinning behind an internal API with chargeback; give teams a prompt registry and eval hooks — the gateway is a control plane, not a place to hide business logic.",
+    "idealAnswerFraming": "Platform design. Noisy neighbors and governance.",
+    "idealAnswerKeyPoints": [
+      "AuthN/Z per team and environment",
+      "Token budgets and bulkheads (interactive vs batch vs evals)",
+      "Standard error model and streaming",
+      "Policy plugins: PII, allowlisted models",
+      "SLOs of the gateway vs the provider"
+    ],
+    "idealAnswerFollowups": [
+      "When may a team bypass the gateway?",
+      "How do you onboard a new provider without breaking teams?"
+    ],
+    "tags": ["system-design", "gateway", "platform", "multi-tenant"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "intermediate",
+    "question": "Design an evaluation and launch plan for a GenAI feature that has no single gold answer.",
+    "idealAnswerCore": "Write a rubric, build a 50–200 case golden set from real traces, add contract tests (schema, citations, refusals), LLM-as-judge calibrated to humans, then shadow → canary with online task metrics and a kill switch.",
+    "idealAnswerFraming": "System design of quality. Interviewees who only say 'we'll A/B CSAT' are incomplete.",
+    "idealAnswerKeyPoints": [
+      "Contracts before judges",
+      "Slice by language and risk",
+      "Human panel monthly to recailbrate",
+      "Launch criteria written with PM/legal",
+      "Budget for eval spend in COGS"
+    ],
+    "idealAnswerFollowups": [
+      "What if judges disagree with support agents?",
+      "How small a canary is ethical for refunds?"
+    ],
+    "tags": ["system-design", "evals", "launch", "rubrics"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "advanced",
+    "question": "Design a text-to-SQL assistant over a 3k-table warehouse without letting it DROP TABLE.",
+    "idealAnswerCore": "Retrieve relevant schemas and certified metrics, generate SQL under a read-only role, dry-run EXPLAIN, lint for forbidden statements, and require warehouse row-level security — the model never sees admin credentials.",
+    "idealAnswerFraming": "Classic. Schema retrieval + execution sandbox.",
+    "idealAnswerKeyPoints": [
+      "Don't paste 3k CREATE TABLEs; retrieve by question embedding + usage stats",
+      "Semantic layer / dbt metrics for business definitions",
+      "Allowlist: SELECT only; timeout; max bytes",
+      "Show the SQL and a sample before auto-run for destructive-looking queries",
+      "Eval: execution accuracy on a warehouse clone"
+    ],
+    "idealAnswerFollowups": [
+      "How do you handle ambiguous 'revenue' definitions?",
+      "What if the generated SQL is correct but scans 40TB?"
+    ],
+    "tags": ["system-design", "text-to-sql", "warehouse", "sandbox"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "intermediate",
+    "question": "Design an image-generation feature (ads, product shots) with brand and safety constraints.",
+    "idealAnswerCore": "Separate prompt construction, a gated model API, content moderation on prompt and image, brand style LoRAs or IP-adapters, human review for external campaigns, and provenance (C2PA) — plus a policy for training-data/IP risk.",
+    "idealAnswerFraming": "GenAI is not only LLMs. Show safety + brand.",
+    "idealAnswerKeyPoints": [
+      "Prompt templates with locked negative constraints",
+      "Moderation before and after generation",
+      "Do not fine-tune on unlicensed artist styles if legal forbids it",
+      "Cache and reuse approved assets",
+      "Eval: brand-guideline rubric + NSFW classifier false-positive rate"
+    ],
+    "idealAnswerFollowups": [
+      "How do you stop a user from generating a competitor's logo?",
+      "When is a human designer still in the loop?"
+    ],
+    "tags": ["system-design", "diffusion", "safety", "brand"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "advanced",
+    "question": "Design for provider outage: your product is an LLM wrapper with 99.9% availability target.",
+    "idealAnswerCore": "Multi-provider adapters with a tested degraded prompt, caches, circuit breakers, and a documented quality cliff — 99.9% is an error-budget conversation because model APIs will miss that alone.",
+    "idealAnswerFraming": "Reliability system design. Be honest about vendor SLAs.",
+    "idealAnswerKeyPoints": [
+      "Primary + secondary + cache + retrieval-only mode",
+      "Prompt portability evals on the backup model",
+      "Shed batch before interactive",
+      "Status page and in-app banner",
+      "Error budget: freeze launches when burned"
+    ],
+    "idealAnswerFollowups": [
+      "Do you fail open to a weaker-aligned model?",
+      "How do you keep conversations consistent across failover?"
+    ],
+    "tags": ["system-design", "availability", "failover", "slo"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "foundational",
+    "question": "How would you estimate cost and GPU/API capacity before building a GenAI feature?",
+    "idealAnswerCore": "Start from DAU × messages × tokens × price (or GPU hours), add RAG embeddings and retries/evals (often 10–30% extra), then apply cache hit and routing discounts — present a range, not a fake-precise number.",
+    "idealAnswerFraming": "Back-of-envelope. Interviewers want assumptions listed.",
+    "idealAnswerKeyPoints": [
+      "Split input vs output tokens; output often dominates chat",
+      "Include failed retries and tool loops",
+      "Self-host: MFU, KV cache, replicas for P95, not just model weights",
+      "Sensitivity: ±2× tokens if history grows",
+      "Compare COGS to willingness-to-pay or hours saved"
+    ],
+    "idealAnswerFollowups": [
+      "Walk through 10k DAU support bot numbers out loud",
+      "When does self-hosting beat APIs?"
+    ],
+    "tags": ["system-design", "cost", "capacity", "estimation"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "intermediate",
+    "question": "Design a feedback flywheel that improves the product without poisoning the model.",
+    "idealAnswerCore": "Collect implicit/explicit feedback with traces, cluster failures, promote to golden evals and retrieval/prompt fixes first; only then consider SFT on redacted, licensed, high-agreement data — thumbs-up is not a training label.",
+    "idealAnswerFraming": "Data flywheel with brakes.",
+    "idealAnswerKeyPoints": [
+      "Privacy: redact before any vendor fine-tune",
+      "Human review on a sample of 'good' traces — they contain PII and bad advice",
+      "Prompt/RAG fixes are faster than weights",
+      "Watch distribution shift if you only train on happy users",
+      "Legal: user content license in ToS"
+    ],
+    "idealAnswerFollowups": [
+      "How do you avoid training on jailbreak 'successes'?",
+      "When is RL from production traces justified?"
+    ],
+    "tags": ["system-design", "flywheel", "feedback", "fine-tuning"],
+    "source": "seed"
+  },
+  {
+    "domainId": "genai-system-design",
+    "difficulty": "advanced",
+    "question": "Design an on-device + cloud hybrid assistant (phone/laptop) that works offline.",
+    "idealAnswerCore": "Run a quantized SLM locally for autocomplete, classification, and private drafts; escalate to cloud for hard tasks when online; keep a sync protocol for memory with encryption — never assume the local model is as aligned as the cloud policy stack.",
+    "idealAnswerFraming": "Edge + privacy. Mention llama.cpp/MLX/NNAPI class runtimes without being vendor-religious.",
+    "idealAnswerKeyPoints": [
+      "Task router: local vs cloud based on sensitivity and hardness",
+      "On-device RAG over user files with local embeddings",
+      "Update path for model weights (signed, staged)",
+      "Offline UX: queue cloud jobs",
+      "Security: local tools still need sandboxing"
+    ],
+    "idealAnswerFollowups": [
+      "How do you eval a 7B local model vs cloud on the same rubric?",
+      "What if the user is on a 4GB RAM device?"
+    ],
+    "tags": ["system-design", "on-device", "slm", "hybrid"],
+    "source": "seed"
+  }
+]
