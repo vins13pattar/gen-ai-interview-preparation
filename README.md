@@ -12,7 +12,7 @@ Browse 600+ realistic interview questions across 12 Gen AI domains, each paired 
 - Retrieval-Augmented Generation (vector DBs, chunking, reranking, RAGAS evaluation)
 - Fine-tuning & Alignment (LoRA, QLoRA, RLHF, DPO, dataset curation)
 - Prompt Engineering (CoT, structured output, adversarial prompting)
-- Agentic Systems & Tool Use (MCP, ReAct, multi-agent, memory architectures)
+- Agentic Systems & Tool Use (MCP 2026-07-28, ReAct, multi-agent, memory architectures)
 - MLOps for LLMs (vLLM, TGI, observability, cost optimization)
 - AI Safety & Ethics (hallucination mitigation, red-teaming, EU AI Act)
 - LLM Evaluation & Quality (golden sets, LLM-as-judge, regression evals, online metrics)

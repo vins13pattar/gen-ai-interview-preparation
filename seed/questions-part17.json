@@ -278,14 +278,14 @@
     "domainId": "security-guardrails",
     "difficulty": "intermediate",
     "question": "How should you threat-model MCP servers, plugins, and third-party tools connected to an LLM?",
-    "idealAnswerCore": "Treat each tool as a supply-chain dependency: least privilege, signed/reviewed code, network egress controls, user consent for data leaving the boundary, and isolation so a malicious or compromised tool cannot read secrets from other tools.",
-    "idealAnswerFraming": "MCP/plugin ecosystems expand the attack surface beyond the model. Stay at architecture level.",
+    "idealAnswerCore": "Treat each MCP server as a supply-chain dependency: least privilege, reviewed/pinned versions, egress controls, user consent, and isolation so a compromised server cannot use another tool's credentials — going stateless in 2026-07-28 does not reduce this risk.",
+    "idealAnswerFraming": "MCP/plugin ecosystems expand the attack surface beyond the model. Stay at architecture level; do not walk through exploits.",
     "idealAnswerKeyPoints": [
-      "Inventory tools: data they can read, actions they can take, where data is sent",
-      "Pin versions; review updates; disable unused tools",
-      "Sandbox: separate processes, no ambient cloud credentials, allowlisted hosts",
-      "User-visible permission prompts when a tool wants new scopes",
-      "Assume tool output is untrusted (indirect injection) and validate before feeding back"
+      "Inventory servers: data they can read, actions they can take, where data is sent, and whether they are local stdio vs remote HTTP",
+      "Pin versions and review updates; disable unused tools; treat tool descriptions as untrusted unless the server is trusted",
+      "Sandbox: separate processes, no ambient cloud credentials, allowlisted hosts; gateways can route on Mcp-Method/Mcp-Name without parsing bodies",
+      "Auth: OAuth with issuer validation (RFC 9207) and CIMD over deprecated Dynamic Client Registration; never reuse client credentials across issuers",
+      "Assume tool output is untrusted (indirect injection); validate arguments in your host, not only in the model"
     ],
     "idealAnswerFollowups": [
       "How is a malicious MCP server similar to a malicious browser extension?",

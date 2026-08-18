@@ -1,6 +1,9 @@
 /**
  * Seed script: imports domains and questions from seed/ directory into SQLite.
  * Run with: npx tsx scripts/seed.ts
+ *
+ * Existing seed questions are upserted by question text so answer updates
+ * (e.g. MCP 2026-07-28) replace stale copies. User-generated questions are not overwritten.
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -29,7 +32,8 @@ async function main() {
     .filter((f) => f.startsWith('questions-') && f.endsWith('.json'))
     .sort();
 
-  let total = 0;
+  let created = 0;
+  let updated = 0;
   let skipped = 0;
 
   for (const file of questionFiles) {
@@ -37,23 +41,46 @@ async function main() {
     console.log(`Processing ${file} (${questions.length} questions)...`);
 
     for (const q of questions) {
+      const text = (q.question as string).trim();
+      const payload = {
+        domainId: q.domainId,
+        difficulty: q.difficulty,
+        question: text,
+        idealAnswerCore: q.idealAnswerCore,
+        idealAnswerFraming: q.idealAnswerFraming,
+        idealAnswerKeyPoints: JSON.stringify(q.idealAnswerKeyPoints || []),
+        idealAnswerFollowups: JSON.stringify(q.idealAnswerFollowups || []),
+        tags: JSON.stringify(q.tags || []),
+        source: q.source || 'seed',
+      };
+
       try {
-        await db.question.create({
+        const existing = await db.question.findUnique({ where: { question: text } });
+        if (!existing) {
+          await db.question.create({ data: payload });
+          created++;
+          continue;
+        }
+        if (existing.source !== 'seed') {
+          skipped++;
+          continue;
+        }
+        await db.question.update({
+          where: { id: existing.id },
           data: {
-            domainId: q.domainId,
-            difficulty: q.difficulty,
-            question: q.question.trim(),
-            idealAnswerCore: q.idealAnswerCore,
-            idealAnswerFraming: q.idealAnswerFraming,
-            idealAnswerKeyPoints: JSON.stringify(q.idealAnswerKeyPoints || []),
-            idealAnswerFollowups: JSON.stringify(q.idealAnswerFollowups || []),
-            tags: JSON.stringify(q.tags || []),
-            source: q.source || 'seed',
+            domainId: payload.domainId,
+            difficulty: payload.difficulty,
+            idealAnswerCore: payload.idealAnswerCore,
+            idealAnswerFraming: payload.idealAnswerFraming,
+            idealAnswerKeyPoints: payload.idealAnswerKeyPoints,
+            idealAnswerFollowups: payload.idealAnswerFollowups,
+            tags: payload.tags,
+            source: payload.source,
           },
         });
-        total++;
+        updated++;
       } catch {
-        skipped++; // duplicate
+        skipped++;
       }
     }
   }
@@ -64,7 +91,7 @@ async function main() {
     await db.domain.update({ where: { id: domain.id }, data: { questionCount: count } });
   }
 
-  console.log(`\n✓ Seeded ${total} questions (${skipped} duplicates skipped)`);
+  console.log(`\n✓ Seeded questions: ${created} created, ${updated} updated, ${skipped} skipped`);
 }
 
 main()

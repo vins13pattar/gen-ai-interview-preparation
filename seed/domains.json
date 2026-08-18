@@ -27,7 +27,7 @@
     "id": "agentic-systems",
     "slug": "agentic-systems",
     "name": "Agentic Systems & Tool Use",
-    "description": "Function calling, Model Context Protocol (MCP), ReAct, Plan-and-Execute, multi-agent orchestration, and agent memory architectures."
+    "description": "Function calling, Model Context Protocol (MCP 2026-07-28 stateless spec, tools/resources/prompts), ReAct, Plan-and-Execute, multi-agent orchestration, and agent memory architectures."
   },
   {
     "id": "mlops",
