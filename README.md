@@ -2,7 +2,7 @@
 
 **A free, open-source, self-hosted tool for Gen AI developer interview preparation.**
 
-Browse 700+ realistic interview questions across 15 Gen AI domains, each paired with a curated ideal answer — the kind of answer that would impress a senior interviewer. No timers, no scores, no pressure.
+Browse 690+ realistic interview questions across 15 Gen AI domains, each paired with a curated ideal answer — the kind of answer that would impress a senior interviewer. No timers, no scores, no pressure.
 
 **Bring Your Own Key (BYOK):** Supply your own OpenAI, Anthropic, or Ollama API key. Keys are encrypted with AES-256 and stored locally — never sent anywhere except your configured LLM provider.
 
