@@ -7,11 +7,13 @@
     "build": "prisma generate && NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint",
+    "app:setup": "npx tsx scripts/cleanup-fts5.ts && prisma db push && npx tsx scripts/seed.ts && npx tsx scripts/migrate-fts5.ts",
     "db:push": "prisma db push",
     "db:seed": "npx tsx scripts/seed.ts",
+    "db:cleanup-fts5": "npx tsx scripts/cleanup-fts5.ts",
     "db:migrate-fts5": "npx tsx scripts/migrate-fts5.ts",
-    "db:reset": "rm -f prisma/local.db .keyfile && prisma db push && npx tsx scripts/seed.ts && npx tsx scripts/migrate-fts5.ts",
-    "setup": "prisma db push && npx tsx scripts/seed.ts && npx tsx scripts/migrate-fts5.ts"
+    "db:reset": "rm -f local.db prisma/local.db .keyfile && pnpm run app:setup",
+    "setup": "pnpm run app:setup"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

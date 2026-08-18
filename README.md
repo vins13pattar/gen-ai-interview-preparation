@@ -44,7 +44,7 @@ pnpm install
 
 ```bash
 cp .env.example .env
-pnpm setup
+pnpm run setup
 ```
 
 This creates a local SQLite database and seeds it with 690+ questions. No API key needed for this step.

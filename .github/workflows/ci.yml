@@ -30,7 +30,7 @@ jobs:
         run: pnpm lint
 
       - name: Prisma schema + FTS (matches local setup)
-        run: pnpm exec prisma db push && pnpm exec tsx scripts/migrate-fts5.ts
+        run: pnpm exec tsx scripts/cleanup-fts5.ts && pnpm exec prisma db push && pnpm exec tsx scripts/migrate-fts5.ts
 
       - name: Build
         run: pnpm build
